@@ -1,0 +1,41 @@
+﻿./gradlew : WARNING: A 
+restricted method in 
+java.lang.System has been 
+called
+At line:1 char:13
++ cd android; ./gradlew 
+assembleDebug --stacktrace 
+2>&1 | Out-File -Fil ...
++             ~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (WARNI  
+  NG: A rest...has been c   
+ alled:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+WARNING: 
+java.lang.System::load has 
+been called by net.rubygrape
+fruit.platform.internal.Nati
+veLibraryLoader in an 
+unnamed module (file:/C:/Use
+rs/Abhishek.S/.gradle/wrappe
+r/dists/gradle-8.14-all/c2qo
+npi39x1mddn7hk5gh9iqj/gradle
+-8.14/lib/native-platform-0.
+22-milestone-28.jar)
+WARNING: Use --enable-native
+-access=ALL-UNNAMED to 
+avoid a warning for callers 
+in this module
+WARNING: Restricted methods 
+will be blocked in a future 
+release unless native 
+access is enabled
+
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:pluginDescriptors UP-TO-DATE
+> Task :gradle:processResources UP-TO-DATE
