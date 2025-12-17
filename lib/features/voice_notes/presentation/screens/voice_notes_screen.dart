@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:just_audio/just_audio.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/audio_service.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/vibration_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
@@ -26,33 +29,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
   late AnimationController _pulseController;
-
-  // Sample voice notes
-  final List<VoiceNote> _voiceNotes = [
-    VoiceNote(
-      id: '1',
-      senderId: 'partner',
-      durationSeconds: 15,
-      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-      isSynced: true,
-    ),
-    VoiceNote(
-      id: '2',
-      senderId: 'me',
-      durationSeconds: 8,
-      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-      playedAt: DateTime.now().subtract(const Duration(hours: 1)),
-      isSynced: true,
-    ),
-    VoiceNote(
-      id: '3',
-      senderId: 'partner',
-      durationSeconds: 22,
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      playedAt: DateTime.now().subtract(const Duration(hours: 12)),
-      isSynced: true,
-    ),
-  ];
+  String? _playingId;
 
   @override
   void initState() {
@@ -70,33 +47,45 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
     super.dispose();
   }
 
-  void _startRecording() {
-    setState(() {
-      _isRecording = true;
-      _recordingSeconds = 0;
-    });
+  Future<void> _startRecording() async {
+    try {
+      final audioService = ref.read(audioServiceProvider);
+      await audioService.startRecording();
 
-    _pulseController.repeat(reverse: true);
-
-    // Start timer
-    _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        _recordingSeconds++;
+        _isRecording = true;
+        _recordingSeconds = 0;
       });
 
-      // Auto-stop at max duration
-      if (_recordingSeconds >= AppConstants.voiceNoteMaxDuration) {
-        _stopRecording();
+      _pulseController.repeat(reverse: true);
+
+      // Start timer
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          _recordingSeconds++;
+        });
+
+        // Auto-stop at max duration
+        if (_recordingSeconds >= AppConstants.voiceNoteMaxDuration) {
+          _stopRecording();
+        }
+      });
+
+      // Light vibration feedback
+      ref.read(vibrationServiceProvider).lightImpact();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start recording: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
-    });
-
-    // Light vibration feedback
-    ref.read(vibrationServiceProvider).lightImpact();
-
-    // TODO: Start actual recording
+    }
   }
 
-  void _stopRecording() {
+  Future<void> _stopRecording() async {
     _recordingTimer?.cancel();
     _pulseController.stop();
     _pulseController.reset();
@@ -105,25 +94,83 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
       _isRecording = false;
     });
 
-    // Confirmation vibration
-    ref.read(vibrationServiceProvider).success();
+    try {
+      final audioService = ref.read(audioServiceProvider);
+      final voiceNote = await audioService.stopRecording();
 
-    // TODO: Stop recording and save
+      // Confirmation vibration
+      ref.read(vibrationServiceProvider).success();
 
-    if (_recordingSeconds >= AppConstants.voiceNoteMinDuration) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Voice note recorded! (${_recordingSeconds}s) Sending to partner...',
+      if (voiceNote != null &&
+          _recordingSeconds >= AppConstants.voiceNoteMinDuration) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Voice note sent! 🎤 (${_recordingSeconds}s)'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        }
+      } else if (_recordingSeconds < AppConstants.voiceNoteMinDuration) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Recording too short'),
+              backgroundColor: AppColors.warning,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save recording: $e'),
+            backgroundColor: AppColors.error,
           ),
-          backgroundColor: AppColors.success,
-        ),
-      );
+        );
+      }
+    }
+  }
+
+  Future<void> _playVoiceNote(VoiceNote note) async {
+    try {
+      final audioService = ref.read(audioServiceProvider);
+
+      if (_playingId == note.id) {
+        await audioService.stopPlaying();
+        setState(() => _playingId = null);
+      } else {
+        setState(() => _playingId = note.id);
+        await audioService.playVoiceNote(note);
+
+        // Listen for completion
+        audioService.playerStateStream.listen((state) {
+          if (mounted && state.processingState == ProcessingState.completed) {
+            setState(() => _playingId = null);
+          }
+        });
+
+        ref.read(vibrationServiceProvider).vibrateVoiceNoteReceived();
+      }
+    } catch (e) {
+      setState(() => _playingId = null);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to play: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final voiceNotesAsync = ref.watch(voiceNotesStreamProvider);
+    final currentUser = ref.watch(currentAppUserProvider).value;
+
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -138,8 +185,40 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
                   children: [
                     const SizedBox(height: 20),
 
-                    // Recent voice notes
-                    if (!_isRecording) Expanded(child: _buildVoiceNotesList()),
+                    // Content
+                    if (!_isRecording)
+                      Expanded(
+                        child: voiceNotesAsync.when(
+                          data: (notes) {
+                            if (notes.isEmpty) {
+                              return _buildEmptyState();
+                            }
+                            return _buildVoiceNotesList(notes, currentUser?.id);
+                          },
+                          loading: () =>
+                              const Center(child: CircularProgressIndicator()),
+                          error: (e, _) => Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 48,
+                                  color: AppColors.gray,
+                                ),
+                                const SizedBox(height: 16),
+                                Text('Unable to load voice notes'),
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: () =>
+                                      ref.refresh(voiceNotesStreamProvider),
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
 
                     // Recording UI
                     if (_isRecording) Expanded(child: _buildRecordingUI()),
@@ -153,6 +232,43 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppGradients.voiceNote,
+              ),
+              child: const Icon(Icons.mic, size: 48, color: AppColors.white),
+            ).animate().scale(curve: Curves.elasticOut),
+            const SizedBox(height: 24),
+            Text(
+              'No Voice Notes Yet',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Record your first voice note to send to your partner!',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.grayDark),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -176,13 +292,16 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
     );
   }
 
-  Widget _buildVoiceNotesList() {
+  Widget _buildVoiceNotesList(
+    List<VoiceNote> voiceNotes,
+    String? currentUserId,
+  ) {
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      itemCount: _voiceNotes.length,
+      itemCount: voiceNotes.length,
       itemBuilder: (context, index) {
-        final note = _voiceNotes[index];
-        final isMe = note.senderId == 'me';
+        final note = voiceNotes[index];
+        final isMe = note.senderId == currentUserId;
 
         return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -196,6 +315,8 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
   }
 
   Widget _buildVoiceNoteItem(VoiceNote note, bool isMe) {
+    final isPlaying = _playingId == note.id;
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -220,14 +341,11 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
                       : AppGradients.voiceNote,
                 ),
                 child: IconButton(
-                  onPressed: () {
-                    // TODO: Play voice note
-                    ref
-                        .read(vibrationServiceProvider)
-                        .vibrateVoiceNoteReceived();
-                  },
+                  onPressed: () => _playVoiceNote(note),
                   icon: Icon(
-                    note.isPlayed ? Icons.replay : Icons.play_arrow,
+                    isPlaying
+                        ? Icons.stop
+                        : (note.isPlayed ? Icons.replay : Icons.play_arrow),
                     color: AppColors.white,
                   ),
                 ),
@@ -250,9 +368,18 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
                         children: List.generate(
                           20,
                           (i) => Expanded(
-                            child: Container(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
                               margin: const EdgeInsets.symmetric(horizontal: 1),
-                              height: 4 + (i % 5) * 4.0,
+                              height: isPlaying
+                                  ? 4 +
+                                        ((i +
+                                                    DateTime.now()
+                                                            .millisecond ~/
+                                                        100) %
+                                                6) *
+                                            4.0
+                                  : 4 + (i % 5) * 4.0,
                               decoration: BoxDecoration(
                                 color:
                                     (isMe

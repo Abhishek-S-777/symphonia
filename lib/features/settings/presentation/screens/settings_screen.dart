@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/router/routes.dart';
+import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/couple_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
 import '../../../../shared/widgets/glass_card.dart';
@@ -22,9 +25,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _soundEnabled = true;
   bool _heartbeatEnabled = true;
   bool _darkMode = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
+      _vibrationEnabled = prefs.getBool('vibrationEnabled') ?? true;
+      _soundEnabled = prefs.getBool('soundEnabled') ?? true;
+      _heartbeatEnabled = prefs.getBool('heartbeatEnabled') ?? true;
+      _darkMode = prefs.getBool('darkMode') ?? false;
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('notificationsEnabled', _notificationsEnabled);
+    await prefs.setBool('vibrationEnabled', _vibrationEnabled);
+    await prefs.setBool('soundEnabled', _soundEnabled);
+    await prefs.setBool('heartbeatEnabled', _heartbeatEnabled);
+    await prefs.setBool('darkMode', _darkMode);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = ref.watch(currentAppUserProvider).value;
+    final couple = ref.watch(currentCoupleProvider).value;
+
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(
@@ -40,7 +73,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Profile section
-                      _buildProfileSection()
+                      _buildProfileSection(currentUser)
                           .animate()
                           .fadeIn(delay: 100.ms)
                           .slideY(begin: 0.1, end: 0),
@@ -56,8 +89,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               title: 'Push Notifications',
                               subtitle: 'Receive alerts from your partner',
                               value: _notificationsEnabled,
-                              onChanged: (value) =>
-                                  setState(() => _notificationsEnabled = value),
+                              onChanged: (value) {
+                                setState(() => _notificationsEnabled = value);
+                                _saveSettings();
+                              },
                             ),
                             _buildDivider(),
                             _buildSwitchTile(
@@ -65,8 +100,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               title: 'Vibration',
                               subtitle: 'Haptic feedback for interactions',
                               value: _vibrationEnabled,
-                              onChanged: (value) =>
-                                  setState(() => _vibrationEnabled = value),
+                              onChanged: (value) {
+                                setState(() => _vibrationEnabled = value);
+                                _saveSettings();
+                              },
                             ),
                             _buildDivider(),
                             _buildSwitchTile(
@@ -74,8 +111,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               title: 'Sound',
                               subtitle: 'Notification sounds',
                               value: _soundEnabled,
-                              onChanged: (value) =>
-                                  setState(() => _soundEnabled = value),
+                              onChanged: (value) {
+                                setState(() => _soundEnabled = value);
+                                _saveSettings();
+                              },
                             ),
                           ])
                           .animate()
@@ -94,8 +133,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               subtitle:
                                   'Send heartbeats even when app is closed',
                               value: _heartbeatEnabled,
-                              onChanged: (value) =>
-                                  setState(() => _heartbeatEnabled = value),
+                              onChanged: (value) {
+                                setState(() => _heartbeatEnabled = value);
+                                _saveSettings();
+                              },
                             ),
                           ])
                           .animate()
@@ -113,8 +154,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               title: 'Dark Mode',
                               subtitle: 'Switch to dark theme',
                               value: _darkMode,
-                              onChanged: (value) =>
-                                  setState(() => _darkMode = value),
+                              onChanged: (value) {
+                                setState(() => _darkMode = value);
+                                _saveSettings();
+                                // TODO: Implement theme switching
+                              },
                             ),
                           ])
                           .animate()
@@ -130,26 +174,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             _buildActionTile(
                               icon: Icons.person_outline,
                               title: 'Edit Profile',
-                              onTap: () {
-                                // TODO: Navigate to profile edit
-                              },
+                              onTap: () => _showEditProfileDialog(currentUser),
                             ),
                             _buildDivider(),
                             _buildActionTile(
                               icon: Icons.lock_outline,
                               title: 'Change Password',
-                              onTap: () {
-                                // TODO: Navigate to password change
-                              },
+                              onTap: () => _showChangePasswordDialog(),
                             ),
                             _buildDivider(),
                             _buildActionTile(
                               icon: Icons.link_off,
                               title: 'Unpair Device',
                               color: AppColors.warning,
-                              onTap: () {
-                                _showUnpairDialog();
-                              },
+                              onTap: () => _showUnpairDialog(couple?.id),
                             ),
                           ])
                           .animate()
@@ -165,9 +203,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             _buildActionTile(
                               icon: Icons.info_outline,
                               title: 'About Symphonia',
-                              onTap: () {
-                                _showAboutDialog();
-                              },
+                              onTap: () => _showAboutDialog(),
                             ),
                             _buildDivider(),
                             _buildActionTile(
@@ -175,6 +211,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               title: 'Privacy Policy',
                               onTap: () {
                                 // TODO: Open privacy policy
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Privacy Policy coming soon'),
+                                  ),
+                                );
                               },
                             ),
                             _buildDivider(),
@@ -183,6 +224,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               title: 'Terms of Service',
                               onTap: () {
                                 // TODO: Open terms
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Terms of Service coming soon',
+                                    ),
+                                  ),
+                                );
                               },
                             ),
                           ])
@@ -194,20 +242,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                       // Logout button
                       Center(
-                        child: TextButton.icon(
-                          onPressed: () {
-                            _showLogoutDialog();
-                          },
-                          icon: const Icon(
-                            Icons.logout,
-                            color: AppColors.error,
-                          ),
-                          label: Text(
-                            'Sign Out',
-                            style: Theme.of(context).textTheme.labelLarge
-                                ?.copyWith(color: AppColors.error),
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator()
+                            : TextButton.icon(
+                                onPressed: () => _showLogoutDialog(),
+                                icon: const Icon(
+                                  Icons.logout,
+                                  color: AppColors.error,
+                                ),
+                                label: Text(
+                                  'Sign Out',
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(color: AppColors.error),
+                                ),
+                              ),
                       ).animate().fadeIn(delay: 700.ms),
 
                       const SizedBox(height: 16),
@@ -251,7 +299,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildProfileSection() {
+  Widget _buildProfileSection(dynamic user) {
     return GlassCard(
       child: Row(
         children: [
@@ -264,7 +312,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 colors: [AppColors.primary, AppColors.primaryLight],
               ),
             ),
-            child: const Icon(Icons.person, color: AppColors.white, size: 32),
+            child: user?.photoUrl != null
+                ? ClipOval(
+                    child: Image.network(
+                      user.photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.person,
+                        color: AppColors.white,
+                        size: 32,
+                      ),
+                    ),
+                  )
+                : const Icon(Icons.person, color: AppColors.white, size: 32),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -272,12 +332,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your Name', // TODO: Get from user
+                  user?.displayName ?? 'Your Name',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'you@email.com', // TODO: Get from user
+                  user?.email ?? 'you@email.com',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.gray),
@@ -286,9 +346,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {
-              // TODO: Edit profile
-            },
+            onPressed: () => _showEditProfileDialog(user),
             icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
           ),
         ],
@@ -357,24 +415,157 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Divider(height: 1, indent: 56, color: AppColors.grayLight);
   }
 
-  void _showUnpairDialog() {
+  void _showEditProfileDialog(dynamic user) {
+    final nameController = TextEditingController(text: user?.displayName ?? '');
+    bool isLoading = false;
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Edit Profile'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Display Name',
+                  hintText: 'Enter your name',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      if (nameController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(content: Text('Please enter a name')),
+                        );
+                        return;
+                      }
+
+                      setDialogState(() => isLoading = true);
+
+                      try {
+                        final authService = ref.read(authServiceProvider);
+                        await authService.updateProfile(
+                          displayName: nameController.text.trim(),
+                        );
+
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                        }
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Profile updated!'),
+                              backgroundColor: AppColors.success,
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (dialogContext.mounted) {
+                          setDialogState(() => isLoading = false);
+                        }
+                      }
+                    },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    )
+                  : const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Password change link sent to your email'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+
+    // Send password reset email
+    final authService = ref.read(authServiceProvider);
+    final email = authService.currentUser?.email;
+    if (email != null) {
+      authService.sendPasswordResetEmail(email);
+    }
+  }
+
+  void _showUnpairDialog(String? coupleId) {
+    if (coupleId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You are not currently paired')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Unpair Device?'),
         content: const Text(
-          'This will disconnect you from your partner. You can pair again with a new code.',
+          'This will disconnect you from your partner. Your messages and memories will be preserved. You can pair again with a new code.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Unpair and go to pairing screen
-              context.go(Routes.pairingPath);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+
+              setState(() => _isLoading = true);
+
+              try {
+                final coupleService = ref.read(coupleServiceProvider);
+                await coupleService.unpair(coupleId);
+
+                if (mounted) {
+                  context.go(Routes.pairingPath);
+                }
+              } catch (e) {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text(
               'Unpair',
@@ -389,21 +580,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _showLogoutDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Sign Out?'),
         content: const Text(
           'You will need to sign in again to access your account.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Sign out and go to login
-              context.go(Routes.loginPath);
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+
+              setState(() => _isLoading = true);
+
+              try {
+                final authService = ref.read(authServiceProvider);
+                await authService.signOut();
+
+                if (mounted) {
+                  context.go(Routes.loginPath);
+                }
+              } catch (e) {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: AppColors.error,
+                    ),
+                  );
+                }
+              }
             },
             child: const Text(
               'Sign Out',

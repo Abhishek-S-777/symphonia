@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/routes.dart';
+import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/couple_service.dart';
+import '../../../../core/services/message_service.dart';
+import '../../../../core/services/quote_service.dart';
 import '../../../../core/services/vibration_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
@@ -20,8 +24,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedIndex = 0;
-
   @override
   void initState() {
     super.initState();
@@ -32,103 +34,125 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Initialize vibration service
     final vibrationService = ref.read(vibrationServiceProvider);
     await vibrationService.initialize();
+
+    // Update last active
+    final authService = ref.read(authServiceProvider);
+    await authService.updateLastActive();
   }
 
-  void _onHeartPressed() {
-    // TODO: Send heartbeat to partner via Firebase
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.favorite, color: AppColors.white),
-            const SizedBox(width: 12),
-            const Text('Heartbeat sent! 💓'),
-          ],
+  Future<void> _onHeartPressed() async {
+    try {
+      final messageService = ref.read(messageServiceProvider);
+      await messageService.sendHeartbeat();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.favorite, color: AppColors.white),
+              SizedBox(width: 12),
+              Text('Heartbeat sent!'),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to send heartbeat: ${e.toString()}'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              // App bar
-              _buildAppBar(),
+    final partner = ref.watch(partnerUserProvider);
+    final couple = ref.watch(currentCoupleProvider);
+    final dailyQuote = ref.watch(dailyQuoteProvider);
+    final unreadCount = ref.watch(unreadMessagesCountProvider);
 
-              // Main content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 20),
+    return GradientBackground(
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // App bar
+            _buildAppBar(unreadCount.value ?? 0),
 
-                      // Partner status card
-                      _buildPartnerCard()
-                          .animate()
-                          .fadeIn(delay: 200.ms)
-                          .slideY(begin: 0.1, end: 0),
+            // Main content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
 
-                      const SizedBox(height: 40),
+                    // Partner status card
+                    _buildPartnerCard(partner.value, couple.value)
+                        .animate()
+                        .fadeIn(delay: 200.ms)
+                        .slideY(begin: 0.1, end: 0),
 
-                      // Big Heart Button
-                      HeartButton(
-                        onPressed: _onHeartPressed,
-                        size: 180,
-                      ).animate().scale(
-                        delay: 400.ms,
-                        duration: 600.ms,
-                        curve: Curves.elasticOut,
+                    const SizedBox(height: 40),
+
+                    // Big Heart Button
+                    HeartButton(
+                      onPressed: _onHeartPressed,
+                      size: 180,
+                    ).animate().scale(
+                      delay: 400.ms,
+                      duration: 600.ms,
+                      curve: Curves.elasticOut,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Instruction text
+                    Text(
+                      'Tap to send a heartbeat',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.gray,
+                        fontStyle: FontStyle.italic,
                       ),
+                    ).animate().fadeIn(delay: 600.ms),
 
-                      const SizedBox(height: 16),
+                    const SizedBox(height: 40),
 
-                      // Instruction text
-                      Text(
-                        'Tap to send a heartbeat',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.gray,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ).animate().fadeIn(delay: 600.ms),
+                    // Quick actions
+                    _buildQuickActions()
+                        .animate()
+                        .fadeIn(delay: 700.ms)
+                        .slideY(begin: 0.1, end: 0),
 
-                      const SizedBox(height: 40),
+                    const SizedBox(height: 24),
 
-                      // Quick actions
-                      _buildQuickActions()
-                          .animate()
-                          .fadeIn(delay: 700.ms)
-                          .slideY(begin: 0.1, end: 0),
+                    // Daily message card
+                    _buildDailyMessageCard(dailyQuote)
+                        .animate()
+                        .fadeIn(delay: 800.ms)
+                        .slideY(begin: 0.1, end: 0),
 
-                      const SizedBox(height: 24),
-
-                      // Daily message card
-                      _buildDailyMessageCard()
-                          .animate()
-                          .fadeIn(delay: 800.ms)
-                          .slideY(begin: 0.1, end: 0),
-
-                      const SizedBox(height: 100), // Space for nav bar
-                    ],
-                  ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(int unreadCount) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
@@ -159,24 +183,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           // Notifications
           IconButton(
-            onPressed: () {
-              // TODO: Show notifications
-            },
+            onPressed: () => context.go(Routes.messagesPath),
             icon: Stack(
               children: [
                 const Icon(Icons.notifications_outlined),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary,
+                if (unreadCount > 0)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary,
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 9 ? '9+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -191,7 +224,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildPartnerCard() {
+  Widget _buildPartnerCard(dynamic partner, dynamic couple) {
+    final isOnline =
+        partner != null &&
+        DateTime.now().difference(partner.lastActive as DateTime).inMinutes < 5;
+
+    final daysTogether = couple?.daysTogether ?? 0;
+    final partnerName = partner?.displayName ?? 'Your Partner';
+
     return GlassCard(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -211,7 +251,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ],
             ),
-            child: const Icon(Icons.person, color: AppColors.white, size: 28),
+            child: partner?.photoUrl != null
+                ? ClipOval(
+                    child: Image.network(
+                      partner.photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.person,
+                        color: AppColors.white,
+                        size: 28,
+                      ),
+                    ),
+                  )
+                : const Icon(Icons.person, color: AppColors.white, size: 28),
           ),
 
           const SizedBox(width: 16),
@@ -222,7 +274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your Partner', // TODO: Get partner name
+                  partnerName,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -233,17 +285,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.success,
+                        color: isOnline ? AppColors.success : AppColors.gray,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Online now',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.success),
+                      isOnline ? 'Online now' : 'Offline',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isOnline ? AppColors.success : AppColors.gray,
+                      ),
                     ),
                   ],
                 ),
@@ -264,7 +316,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const Icon(Icons.favorite, size: 14, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
-                  '365 days', // TODO: Calculate days together
+                  '$daysTogether days',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold,
@@ -283,22 +335,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _buildQuickActionButton(
-          icon: Icons.message,
-          label: 'Message',
-          color: AppColors.primary,
-          onTap: () => context.push(Routes.messagesPath),
-        ),
-        _buildQuickActionButton(
           icon: Icons.mic,
           label: 'Voice',
           color: AppColors.accent,
           onTap: () => context.push(Routes.voiceNotesPath),
         ),
         _buildQuickActionButton(
-          icon: Icons.photo_library,
-          label: 'Gallery',
+          icon: Icons.event,
+          label: 'Events',
           color: AppColors.secondary,
-          onTap: () => context.push(Routes.galleryPath),
+          onTap: () => context.go(Routes.eventsPath),
+        ),
+        _buildQuickActionButton(
+          icon: Icons.settings,
+          label: 'Settings',
+          color: AppColors.grayDark,
+          onTap: () => context.push(Routes.settingsPath),
         ),
       ],
     );
@@ -336,7 +388,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildDailyMessageCard() {
+  Widget _buildDailyMessageCard(AsyncValue<DailyQuote> quoteAsync) {
     return GradientGlassCard(
       borderGradient: AppGradients.twilight,
       padding: const EdgeInsets.all(20),
@@ -356,124 +408,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            '"In all the world, there is no heart for me like yours. In all the world, there is no love for you like mine."',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontStyle: FontStyle.italic,
-              height: 1.6,
+          quoteAsync.when(
+            data: (quote) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '"${quote.quote}"',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '— ${quote.author}',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '— Maya Angelou',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+            error: (_, __) => Text(
+              '"Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day."',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                fontStyle: FontStyle.italic,
+                height: 1.6,
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.white.withValues(alpha: 0.95),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.charcoal.withValues(alpha: 0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home,
-                label: 'Home',
-                index: 0,
-              ),
-              _buildNavItem(
-                icon: Icons.chat_bubble_outline,
-                activeIcon: Icons.chat_bubble,
-                label: 'Messages',
-                index: 1,
-                onTap: () => context.push(Routes.messagesPath),
-              ),
-              _buildNavItem(
-                icon: Icons.photo_library_outlined,
-                activeIcon: Icons.photo_library,
-                label: 'Gallery',
-                index: 2,
-                onTap: () => context.push(Routes.galleryPath),
-              ),
-              _buildNavItem(
-                icon: Icons.event_outlined,
-                activeIcon: Icons.event,
-                label: 'Events',
-                index: 3,
-                onTap: () {
-                  // TODO: Navigate to events
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required IconData activeIcon,
-    required String label,
-    required int index,
-    VoidCallback? onTap,
-  }) {
-    final isActive = _selectedIndex == index;
-
-    return GestureDetector(
-      onTap:
-          onTap ??
-          () {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? AppColors.primarySoft : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? AppColors.primary : AppColors.gray,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: isActive ? AppColors.primary : AppColors.gray,
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

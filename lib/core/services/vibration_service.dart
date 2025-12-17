@@ -18,7 +18,7 @@ class VibrationService {
   /// Initialize vibration capabilities
   Future<void> initialize() async {
     _hasVibrator = await Vibration.hasVibrator();
-    _hasCustomVibration = await Vibration.hasCustomVibrationsSupport() ?? false;
+    _hasCustomVibration = await Vibration.hasCustomVibrationsSupport();
   }
 
   /// Check if device supports vibration
@@ -40,7 +40,7 @@ class VibrationService {
       // Use custom pattern for heartbeat effect
       await Vibration.vibrate(
         pattern: AppConstants.heartbeatPattern,
-        intensities: [0, 200, 0, 200, 0, 200, 0, 200, 0],
+        // intensities: AppConstants.heartbeatIntensities,
       );
     } else {
       // Fallback: simple double vibration

@@ -36,6 +36,7 @@ dependencies:
 
   # Networking & Connectivity
   connectivity_plus: ^7.0.0
+  http: ^1.2.0
 
   # UI Components
   flutter_animate: ^4.5.2

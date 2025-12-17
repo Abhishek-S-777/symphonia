@@ -1,14 +1,12 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/router/routes.dart';
+import '../../../../core/services/couple_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
@@ -30,6 +28,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
   String? _generatedCode;
   bool _isLoading = false;
   bool _isPairing = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -44,26 +43,15 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     super.dispose();
   }
 
-  String _generatePairingCode() {
-    final random = Random.secure();
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    return List.generate(
-      AppConstants.pairingCodeLength,
-      (index) => chars[random.nextInt(chars.length)],
-    ).join();
-  }
-
   Future<void> _createPairingCode() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      // Generate a unique code
-      final code = _generatePairingCode();
-
-      // TODO: Save to Firebase with user ID and expiry
-      await Future.delayed(const Duration(milliseconds: 500));
+      final coupleService = ref.read(coupleServiceProvider);
+      final code = await coupleService.createPairingCode();
 
       setState(() {
         _generatedCode = code;
@@ -71,10 +59,8 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to generate code: $e')));
       setState(() {
+        _errorMessage = 'Failed to generate code. Please try again.';
         _isLoading = false;
       });
     }
@@ -83,31 +69,44 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
   Future<void> _validateCode() async {
     final code = _codeController.text.toUpperCase().trim();
     if (code.length != AppConstants.pairingCodeLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid 6-character code')),
-      );
+      setState(() {
+        _errorMessage =
+            'Please enter a valid ${AppConstants.pairingCodeLength}-character code';
+      });
       return;
     }
 
     setState(() {
       _isPairing = true;
+      _errorMessage = null;
     });
 
     try {
-      // TODO: Validate code in Firebase and create couple
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Mark as paired
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(StorageKeys.isPaired, true);
+      final coupleService = ref.read(coupleServiceProvider);
+      await coupleService.usePairingCode(code);
 
       if (!mounted) return;
-      context.go(Routes.homePath);
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.favorite, color: AppColors.white),
+              SizedBox(width: 12),
+              Text('Successfully paired! 💕'),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+
+      context.go(Routes.permissionSetupPath);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Invalid or expired code: $e')));
+      setState(() {
+        _errorMessage = _getErrorMessage(e.toString());
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -115,6 +114,19 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
         });
       }
     }
+  }
+
+  String _getErrorMessage(String error) {
+    if (error.contains('Invalid pairing code')) {
+      return 'Invalid pairing code. Please check and try again.';
+    } else if (error.contains('expired')) {
+      return 'This code has expired. Ask your partner for a new one.';
+    } else if (error.contains('yourself')) {
+      return 'You cannot pair with yourself.';
+    } else if (error.contains('already paired')) {
+      return 'This partner is already paired with someone else.';
+    }
+    return 'Pairing failed. Please try again.';
   }
 
   @override
@@ -216,6 +228,39 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
 
               const SizedBox(height: 24),
 
+              // Error message
+              if (_errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.error),
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().shake(),
+
+              if (_errorMessage != null) const SizedBox(height: 16),
+
               // Tab content
               Expanded(
                 child: TabBarView(
@@ -285,7 +330,10 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: _generatedCode!));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Code copied!')),
+                          const SnackBar(
+                            content: Text('Code copied to clipboard!'),
+                            backgroundColor: AppColors.success,
+                          ),
                         );
                       },
                       icon: const Icon(Icons.copy, color: AppColors.primary),
@@ -308,6 +356,17 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
               ),
 
+              const SizedBox(height: 8),
+
+              Text(
+                'Share this code with your partner. They should enter it in the "Enter Code" tab.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.grayDark,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+
               const SizedBox(height: 24),
 
               SecondaryButton(
@@ -317,6 +376,8 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               ),
             ] else ...[
               // Generate button
+              const Icon(Icons.qr_code_2, size: 80, color: AppColors.gray),
+              const SizedBox(height: 24),
               PrimaryButton(
                 text: 'Generate Code',
                 icon: Icons.qr_code,
@@ -338,7 +399,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
         child: Column(
           children: [
             Text(
-              'Enter Partner\'s Code',
+              "Enter Partner's Code",
               style: Theme.of(context).textTheme.titleLarge,
             ),
 
@@ -380,6 +441,13 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9]')),
                 UpperCaseTextFormatter(),
               ],
+              onChanged: (value) {
+                if (_errorMessage != null) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
+              },
             ),
 
             const SizedBox(height: 24),

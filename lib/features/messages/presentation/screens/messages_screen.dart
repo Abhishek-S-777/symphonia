@@ -5,10 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/router/routes.dart';
+import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/message_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/glass_card.dart';
 import '../../domain/entities/message.dart';
 
 /// Messages screen showing conversation with partner
@@ -21,101 +22,182 @@ class MessagesScreen extends ConsumerStatefulWidget {
 
 class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _messageController = TextEditingController();
+  bool _isSending = false;
 
-  // Sample messages for demo
-  final List<Message> _messages = [
-    Message(
-      id: '1',
-      senderId: 'partner',
-      content: 'Good morning, love! ☀️',
-      type: MessageType.text,
-      sentAt: DateTime.now().subtract(const Duration(hours: 2)),
-      isDelivered: true,
-      isSynced: true,
-    ),
-    Message(
-      id: '2',
-      senderId: 'me',
-      content: 'Good morning! Hope you have a wonderful day 💕',
-      type: MessageType.text,
-      sentAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 55)),
-      readAt: DateTime.now().subtract(const Duration(hours: 1, minutes: 50)),
-      isDelivered: true,
-      isSynced: true,
-    ),
-    Message(
-      id: '3',
-      senderId: 'partner',
-      content: 'I love you ❤️',
-      type: MessageType.predefined,
-      sentAt: DateTime.now().subtract(const Duration(minutes: 30)),
-      isDelivered: true,
-      isSynced: true,
-    ),
-    Message(
-      id: '4',
-      senderId: 'partner',
-      content: '💓',
-      type: MessageType.heartbeat,
-      sentAt: DateTime.now().subtract(const Duration(minutes: 5)),
-      isDelivered: true,
-      isSynced: true,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _markMessagesAsRead();
+  }
+
+  Future<void> _markMessagesAsRead() async {
+    // Small delay to ensure the screen is fully loaded
+    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      final messageService = ref.read(messageServiceProvider);
+      await messageService.markAllAsRead();
+    } catch (e) {
+      // Ignore errors when marking as read
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _messageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendMessage(
+    String content, {
+    MessageType type = MessageType.text,
+  }) async {
+    if (content.trim().isEmpty) return;
+
+    setState(() => _isSending = true);
+
+    try {
+      final messageService = ref.read(messageServiceProvider);
+      await messageService.sendMessage(content: content.trim(), type: type);
+      _messageController.clear();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: GradientBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              // App bar
-              _buildAppBar(),
+    final messagesAsync = ref.watch(messagesStreamProvider);
+    final partner = ref.watch(partnerUserProvider).value;
+    final currentUser = ref.watch(currentAppUserProvider).value;
 
-              // Messages list
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  reverse: true,
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final message = _messages[_messages.length - 1 - index];
-                    final isMe = message.senderId == 'me';
-                    return _buildMessageBubble(message, isMe)
-                        .animate()
-                        .fadeIn(delay: Duration(milliseconds: 50 * index))
-                        .slideX(
-                          begin: isMe ? 0.1 : -0.1,
-                          end: 0,
-                          delay: Duration(milliseconds: 50 * index),
-                        );
-                  },
+    final isOnline =
+        partner != null &&
+        DateTime.now().difference(partner.lastActive).inMinutes < 5;
+    final partnerName = partner?.displayName ?? 'Your Partner';
+
+    return GradientBackground(
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // App bar
+            _buildAppBar(partnerName, isOnline, partner?.photoUrl),
+
+            // Messages list
+            Expanded(
+              child: messagesAsync.when(
+                data: (messages) {
+                  if (messages.isEmpty) {
+                    return _buildEmptyState();
+                  }
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    reverse: true,
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final isMe = message.senderId == currentUser?.id;
+                      return _buildMessageBubble(message, isMe);
+                    },
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: AppColors.gray,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Unable to load messages',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => ref.refresh(messagesStreamProvider),
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            ),
 
-              // Quick messages
-              _buildQuickMessages(),
+            // Quick messages
+            _buildQuickMessages(),
 
-              // Input area
-              _buildInputArea(),
-            ],
-          ),
+            // Input area
+            _buildInputArea(),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppGradients.primarySoft,
+              ),
+              child: const Icon(
+                Icons.chat_bubble_outline,
+                size: 48,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Messages Yet',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Send the first message to your partner!',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.grayDark),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar(String partnerName, bool isOnline, String? photoUrl) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_ios),
-          ),
           Container(
             width: 44,
             height: 44,
@@ -123,7 +205,19 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               shape: BoxShape.circle,
               gradient: AppGradients.sunset,
             ),
-            child: const Icon(Icons.person, color: AppColors.white, size: 22),
+            child: photoUrl != null
+                ? ClipOval(
+                    child: Image.network(
+                      photoUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                        Icons.person,
+                        color: AppColors.white,
+                        size: 22,
+                      ),
+                    ),
+                  )
+                : const Icon(Icons.person, color: AppColors.white, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -131,7 +225,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your Partner',
+                  partnerName,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -141,17 +235,17 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     Container(
                       width: 6,
                       height: 6,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.success,
+                        color: isOnline ? AppColors.success : AppColors.gray,
                       ),
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'Online',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: AppColors.success),
+                      isOnline ? 'Online' : 'Offline',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: isOnline ? AppColors.success : AppColors.gray,
+                      ),
                     ),
                   ],
                 ),
@@ -159,10 +253,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             ),
           ),
           IconButton(
-            onPressed: () {
-              // TODO: Show call options
-            },
-            icon: const Icon(Icons.call_outlined),
+            onPressed: () => context.push(Routes.voiceNotesPath),
+            icon: const Icon(Icons.mic_outlined),
           ),
         ],
       ),
@@ -290,12 +382,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onTap: () {
-                // TODO: Send quick message
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Sending: $message')));
-              },
+              onTap: () => _sendMessage(message, type: MessageType.predefined),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -326,7 +413,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.white.withValues(alpha: 0.9),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.white.withValues(alpha: 0.9),
+            AppColors.primarySoft.withValues(alpha: 0.3),
+          ],
+        ),
         boxShadow: [
           BoxShadow(
             color: AppColors.charcoal.withValues(alpha: 0.05),
@@ -346,14 +440,20 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: TextField(
+                  controller: _messageController,
+                  textCapitalization: TextCapitalization.sentences,
+                  maxLength: AppConstants.messageMaxLength,
+                  maxLines: null,
                   decoration: InputDecoration(
                     hintText: 'Type a message...',
                     hintStyle: Theme.of(
                       context,
                     ).textTheme.bodyMedium?.copyWith(color: AppColors.gray),
                     border: InputBorder.none,
+                    counterText: '',
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
+                  onSubmitted: (value) => _sendMessage(value),
                 ),
               ),
             ),
@@ -365,12 +465,21 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 shape: BoxShape.circle,
                 gradient: AppGradients.primary,
               ),
-              child: IconButton(
-                onPressed: () {
-                  // TODO: Send message
-                },
-                icon: const Icon(Icons.send, color: AppColors.white),
-              ),
+              child: _isSending
+                  ? const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.white,
+                        ),
+                      ),
+                    )
+                  : IconButton(
+                      onPressed: () => _sendMessage(_messageController.text),
+                      icon: const Icon(Icons.send, color: AppColors.white),
+                    ),
             ),
           ],
         ),

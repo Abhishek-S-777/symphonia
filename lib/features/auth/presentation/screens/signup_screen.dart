@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/routes.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
 import '../../../../shared/widgets/custom_button.dart';
@@ -26,6 +27,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -41,21 +43,24 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
-      // TODO: Implement Firebase Auth signup
-      // For now, simulate signup and go to pairing
-      await Future.delayed(const Duration(seconds: 1));
+      final authService = ref.read(authServiceProvider);
+      await authService.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        displayName: _nameController.text.trim(),
+      );
 
       if (!mounted) return;
       context.go(Routes.pairingPath);
     } catch (e) {
-      // Handle error
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Signup failed: $e')));
+      setState(() {
+        _errorMessage = _getErrorMessage(e.toString());
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -63,6 +68,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         });
       }
     }
+  }
+
+  String _getErrorMessage(String error) {
+    if (error.contains('email-already-in-use')) {
+      return 'An account already exists with this email';
+    } else if (error.contains('invalid-email')) {
+      return 'Invalid email address';
+    } else if (error.contains('weak-password')) {
+      return 'Password is too weak. Use at least 8 characters';
+    } else if (error.contains('operation-not-allowed')) {
+      return 'Signup is currently disabled';
+    } else if (error.contains('network')) {
+      return 'Network error. Please check your connection';
+    }
+    return 'Signup failed. Please try again';
   }
 
   @override
@@ -142,6 +162,37 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                 const SizedBox(height: 32),
 
+                // Error message
+                if (_errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: AppColors.error,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.error),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ).animate().shake(),
+
                 // Signup form
                 GlassCard(
                   padding: const EdgeInsets.all(24),
@@ -154,6 +205,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         TextFormField(
                           controller: _nameController,
                           textCapitalization: TextCapitalization.words,
+                          textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
                             labelText: 'Your Name',
                             hintText: 'Enter your name',
@@ -176,6 +228,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
                           decoration: const InputDecoration(
                             labelText: 'Email',
                             hintText: 'Enter your email',
@@ -185,7 +238,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             if (value == null || value.isEmpty) {
                               return 'Please enter your email';
                             }
-                            if (!value.contains('@')) {
+                            if (!value.contains('@') || !value.contains('.')) {
                               return 'Please enter a valid email';
                             }
                             return null;
@@ -198,6 +251,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: 'Password',
                             hintText: 'Create a password',
@@ -232,6 +286,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         TextFormField(
                           controller: _confirmPasswordController,
                           obscureText: _obscureConfirmPassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _signup(),
                           decoration: InputDecoration(
                             labelText: 'Confirm Password',
                             hintText: 'Confirm your password',
