@@ -195,7 +195,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   Widget _buildAppBar(String partnerName, bool isOnline, String? photoUrl) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
           Container(
@@ -372,10 +372,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   Widget _buildQuickMessages() {
     return Container(
       height: 50,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: AppConstants.predefinedMessages.length,
         itemBuilder: (context, index) {
           final message = AppConstants.predefinedMessages[index];
@@ -411,7 +410,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: SafeArea(
         child: Row(
           children: [

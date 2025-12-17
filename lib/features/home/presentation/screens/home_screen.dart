@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
@@ -197,7 +198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildAppBar(int unreadCount) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
           // Logo
@@ -206,7 +207,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             height: 40,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: AppGradients.primary,
+              gradient: AppGradients.glassOverlay,
             ),
             child: const Icon(Icons.favorite, color: AppColors.white, size: 20),
           ),
@@ -216,9 +217,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // App name
           Text(
             'Symphonia',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
+            style: GoogleFonts.lavishlyYours(
+              fontSize: 38,
+              fontWeight: FontWeight.normal,
+              color: AppColors.white,
             ),
           ),
 
@@ -285,21 +287,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: AppGradients.sunset,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.secondary.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(color: AppColors.white),
             ),
             child: partner?.photoUrl != null
                 ? ClipOval(
                     child: Image.network(
                       partner.photoUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (_, _, _) => const Icon(
                         Icons.person,
                         color: AppColors.white,
                         size: 28,
@@ -350,7 +345,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primarySoft,
+              border: Border.all(color: AppColors.white),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -361,7 +356,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text(
                   '$daysTogether days',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.primary,
+                    color: AppColors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -480,7 +475,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             ),
-            error: (_, __) => Text(
+            error: (_, _) => Text(
               '"Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day."',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 fontStyle: FontStyle.italic,

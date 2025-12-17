@@ -9,7 +9,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
 import '../../../../shared/widgets/glass_card.dart';
-import '../../../../shared/widgets/custom_button.dart';
 import '../../domain/entities/event.dart';
 
 /// Events screen for managing countdowns and special dates
@@ -45,21 +44,18 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
+        shape: const CircleBorder(),
         onPressed: () => _showAddEventDialog(context),
         backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: AppColors.white),
-        label: const Text(
-          'Add Event',
-          style: TextStyle(color: AppColors.white),
-        ),
+        child: const Icon(Icons.add, color: AppColors.white),
       ).animate().scale(delay: 300.ms, curve: Curves.elasticOut),
     );
   }
 
   Widget _buildAppBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
           Text(
@@ -86,7 +82,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: AppGradients.twilight,
+                border: Border.all(color: AppColors.white),
               ),
               child: const Icon(Icons.event, size: 60, color: AppColors.white),
             ).animate().scale(curve: Curves.elasticOut),
@@ -105,12 +101,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ).textTheme.bodyMedium?.copyWith(color: AppColors.grayDark),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            PrimaryButton(
-              text: 'Create First Event',
-              icon: Icons.add,
-              onPressed: () => _showAddEventDialog(context),
-            ),
           ],
         ),
       ),
@@ -126,7 +116,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         .toList();
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       children: [
         if (upcoming.isNotEmpty) ...[
           Text(
