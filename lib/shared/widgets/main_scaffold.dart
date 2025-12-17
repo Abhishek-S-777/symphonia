@@ -123,13 +123,13 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                       isSelected: selectedIndex == 1,
                       badge: unreadCount,
                     ),
-                    _buildNavItem(
-                      icon: Icons.photo_library_outlined,
-                      activeIcon: Icons.photo_library_rounded,
-                      label: 'Gallery',
-                      index: 2,
-                      isSelected: selectedIndex == 2,
-                    ),
+                    // _buildNavItem(
+                    //   icon: Icons.photo_library_outlined,
+                    //   activeIcon: Icons.photo_library_rounded,
+                    //   label: 'Gallery',
+                    //   index: 2,
+                    //   isSelected: selectedIndex == 2,
+                    // ),
                     _buildNavItem(
                       icon: Icons.event_outlined,
                       activeIcon: Icons.event_rounded,

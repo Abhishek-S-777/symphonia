@@ -103,10 +103,6 @@ class _HeartButtonState extends ConsumerState<HeartButton>
     _pulseController.stop();
     _pressController.forward(from: 0);
 
-    // Play vibration
-    final vibrationService = ref.read(vibrationServiceProvider);
-    await vibrationService.playHeartbeat();
-
     // Callback
     widget.onPressed?.call();
 

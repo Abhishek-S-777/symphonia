@@ -30,6 +30,38 @@ final messagesStreamProvider = StreamProvider<List<Message>>((ref) {
       });
 });
 
+/// Latest Received Heartbeat Provider - listens for new heartbeats from partner
+/// This triggers vibration on the receiver's device
+final latestReceivedHeartbeatProvider = StreamProvider<Message?>((ref) {
+  final currentUser = ref.watch(currentAppUserProvider).value;
+  if (currentUser == null || currentUser.coupleId == null) {
+    return Stream.value(null);
+  }
+
+  // Only get heartbeats from the last 30 seconds that are from the partner
+  final thirtySecondsAgo = DateTime.now().subtract(const Duration(seconds: 30));
+
+  return FirebaseFirestore.instance
+      .collection(FirebaseCollections.couples)
+      .doc(currentUser.coupleId)
+      .collection(FirebaseCollections.messages)
+      .where(FirebaseCollections.messageType, isEqualTo: 'heartbeat')
+      .where(FirebaseCollections.messageSenderId, isNotEqualTo: currentUser.id)
+      .orderBy(FirebaseCollections.messageSenderId)
+      .orderBy(FirebaseCollections.messageSentAt, descending: true)
+      .limit(1)
+      .snapshots()
+      .map((snapshot) {
+        if (snapshot.docs.isEmpty) return null;
+        final message = _messageFromFirestore(snapshot.docs.first);
+        // Only return if it's recent (within last 30 seconds)
+        if (message.sentAt.isAfter(thirtySecondsAgo)) {
+          return message;
+        }
+        return null;
+      });
+});
+
 /// Unread Messages Count Provider
 final unreadMessagesCountProvider = StreamProvider<int>((ref) {
   final currentUser = ref.watch(currentAppUserProvider).value;

@@ -40,7 +40,7 @@ class VibrationService {
       // Use custom pattern for heartbeat effect
       await Vibration.vibrate(
         pattern: AppConstants.heartbeatPattern,
-        // intensities: AppConstants.heartbeatIntensities,
+        intensities: AppConstants.heartbeatIntensities,
       );
     } else {
       // Fallback: simple double vibration

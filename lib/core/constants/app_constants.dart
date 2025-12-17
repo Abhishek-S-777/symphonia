@@ -53,15 +53,6 @@ class AppConstants {
   /// Heartbeat vibration pattern (in milliseconds)
   /// Mimics: lub-dub... lub-dub...lub-dub
   static const List<int> heartbeatPattern = [
-    // 0, // Initial delay
-    // 80, // First beat
-    // 100, // Pause
-    // 80, // Second beat
-    // 400, // Long pause
-    // 80, // First beat
-    // 100, // Pause
-    // 80, // Second beat
-    // 400, // Long pause
     0, // Initial delay
     // Beat 1
     80, // LUB
@@ -103,9 +94,10 @@ class AppConstants {
   /// Single heartbeat vibration
   static const List<int> singleHeartbeat = [
     0, // Initial delay
-    100, // Beat
-    80, // Short pause
-    100, // Beat
+    // Beat 1
+    80, // LUB
+    140, // short pause
+    50, // DUB
   ];
 
   // ═══════════════════════════════════════════════════════════════════════════

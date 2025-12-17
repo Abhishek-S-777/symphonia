@@ -24,6 +24,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  String? _lastHeartbeatId;
+
   @override
   void initState() {
     super.initState();
@@ -40,8 +42,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await authService.updateLastActive();
   }
 
+  /// Listen for incoming heartbeats and vibrate
+  void _handleIncomingHeartbeat(AsyncValue<dynamic> heartbeatAsync) {
+    final heartbeat = heartbeatAsync.value;
+    if (heartbeat != null && heartbeat.id != _lastHeartbeatId) {
+      _lastHeartbeatId = heartbeat.id;
+
+      // Play the heartbeat vibration pattern for the receiver!
+      final vibrationService = ref.read(vibrationServiceProvider);
+      vibrationService.playHeartbeat();
+
+      // Show a snackbar notification
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.favorite, color: AppColors.white),
+                SizedBox(width: 12),
+                Text('Your partner sent you a heartbeat!'),
+              ],
+            ),
+            backgroundColor: AppColors.secondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _onHeartPressed() async {
     try {
+      // Light haptic feedback for sender only
+      final vibrationService = ref.read(vibrationServiceProvider);
+      await vibrationService.lightImpact();
+
       final messageService = ref.read(messageServiceProvider);
       await messageService.sendHeartbeat();
 
@@ -79,6 +117,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final couple = ref.watch(currentCoupleProvider);
     final dailyQuote = ref.watch(dailyQuoteProvider);
     final unreadCount = ref.watch(unreadMessagesCountProvider);
+
+    // Listen for incoming heartbeats from partner
+    ref.listen(latestReceivedHeartbeatProvider, (previous, next) {
+      _handleIncomingHeartbeat(next);
+    });
 
     return GradientBackground(
       child: SafeArea(

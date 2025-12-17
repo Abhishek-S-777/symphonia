@@ -229,4 +229,22 @@ class FCMService {
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Handle background messages
   // This is called when app is in background or terminated
+
+  final data = message.data;
+
+  // If it's a heartbeat, trigger vibration
+  if (data['type'] == 'heartbeat') {
+    final hasVibrator = await Vibration.hasVibrator();
+    if (hasVibrator == true) {
+      final hasCustom = await Vibration.hasCustomVibrationsSupport();
+      if (hasCustom == true) {
+        await Vibration.vibrate(pattern: AppConstants.heartbeatPattern);
+      } else {
+        // Fallback: simple double vibration
+        await Vibration.vibrate(duration: 100);
+        await Future.delayed(const Duration(milliseconds: 100));
+        await Vibration.vibrate(duration: 100);
+      }
+    }
+  }
 }
