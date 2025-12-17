@@ -412,49 +412,28 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   Widget _buildInputArea() {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppColors.white.withValues(alpha: 0.9),
-            AppColors.primarySoft.withValues(alpha: 0.3),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.charcoal.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
       child: SafeArea(
         child: Row(
           children: [
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: AppColors.grayLight,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: TextField(
-                  controller: _messageController,
-                  textCapitalization: TextCapitalization.sentences,
-                  maxLength: AppConstants.messageMaxLength,
-                  maxLines: null,
-                  decoration: InputDecoration(
-                    hintText: 'Type a message...',
-                    hintStyle: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: AppColors.gray),
-                    border: InputBorder.none,
-                    counterText: '',
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              child: TextField(
+                controller: _messageController,
+                textCapitalization: TextCapitalization.sentences,
+                maxLength: AppConstants.messageMaxLength,
+                maxLines: null,
+                decoration: InputDecoration(
+                  hintText: 'Type a message...',
+                  hintStyle: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: AppColors.gray),
+                  border: InputBorder.none,
+                  counterText: '',
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 12,
                   ),
-                  onSubmitted: (value) => _sendMessage(value),
                 ),
+                onSubmitted: (value) => _sendMessage(value),
               ),
             ),
             const SizedBox(width: 12),

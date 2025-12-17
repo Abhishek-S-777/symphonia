@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
 
 /// Beautiful gradients for Symphonia
 /// Creates the premium, romantic feel throughout the app
