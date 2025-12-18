@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/storage_keys.dart';
@@ -32,19 +33,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       gradient: AppGradients.primary,
     ),
     OnboardingPage(
-      icon: Icons.mic,
-      title: 'Voice Notes',
+      icon: Icons.chat_bubble,
+      title: 'Messages',
       description:
-          'Record sweet voice messages and let your partner hear your voice whenever they miss you.',
+          'Send your heartfelt messages or record sweet voice messages and let your partner hear your voice whenever they miss you.',
       gradient: AppGradients.voiceNote,
     ),
     OnboardingPage(
-      icon: Icons.photo_library,
-      title: 'Memory Timeline',
+      icon: Icons.auto_awesome,
+      title: 'Special Moments',
       description:
-          'Capture and cherish your special moments together in a beautiful shared gallery.',
-      gradient: AppGradients.sunset,
+          'Create special events with countdowns and let your partner know when it is time to celebrate the special moments.',
+      gradient: AppGradients.specialMoments,
     ),
+    // OnboardingPage(
+    //   icon: Icons.photo_library,
+    //   title: 'Memory Timeline',
+    //   description:
+    //       'Capture and cherish your special moments together in a beautiful shared gallery.',
+    //   gradient: AppGradients.sunset,
+    // ),
     OnboardingPage(
       icon: Icons.lock,
       title: 'Just You Two',
@@ -191,9 +199,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           // Title
           Text(
                 page.title,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.charcoal,
+                style: GoogleFonts.lavishlyYours(
+                  fontSize: 42,
+                  fontWeight: FontWeight.normal,
+                  color: AppColors.white,
                 ),
                 textAlign: TextAlign.center,
               )
@@ -207,7 +216,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           Text(
                 page.description,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.grayDark,
+                  color: AppColors.gray,
                   height: 1.6,
                 ),
                 textAlign: TextAlign.center,

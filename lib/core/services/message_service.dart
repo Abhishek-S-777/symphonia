@@ -38,9 +38,6 @@ final latestReceivedHeartbeatProvider = StreamProvider<Message?>((ref) {
     return Stream.value(null);
   }
 
-  // Only get heartbeats from the last 30 seconds that are from the partner
-  final thirtySecondsAgo = DateTime.now().subtract(const Duration(seconds: 30));
-
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
       .doc(currentUser.coupleId)
@@ -54,6 +51,9 @@ final latestReceivedHeartbeatProvider = StreamProvider<Message?>((ref) {
       .map((snapshot) {
         if (snapshot.docs.isEmpty) return null;
         final message = _messageFromFirestore(snapshot.docs.first);
+        // Check timestamp dynamically at map time, not at provider creation
+        final now = DateTime.now();
+        final thirtySecondsAgo = now.subtract(const Duration(seconds: 30));
         // Only return if it's recent (within last 30 seconds)
         if (message.sentAt.isAfter(thirtySecondsAgo)) {
           return message;

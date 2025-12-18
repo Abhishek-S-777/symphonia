@@ -24,9 +24,9 @@ class NotificationService {
     // Initialize timezone
     tz_data.initializeTimeZones();
 
-    // Android initialization
+    // Android initialization - use custom notification icon
     const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
+      '@drawable/ic_notification',
     );
 
     // iOS initialization (for future use)
@@ -61,14 +61,48 @@ class NotificationService {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // NOTIFICATION CHANNELS
+  // These channel IDs must match what Cloud Functions send in FCM notifications
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Love messages channel
-  static const AndroidNotificationChannel _messagesChannel =
+  /// Heartbeat channel - for heartbeat notifications from partner
+  static const AndroidNotificationChannel _heartbeatNotificationChannel =
       AndroidNotificationChannel(
-        'symphonia_messages',
-        'Love Messages',
-        description: 'Notifications for love messages from your partner',
+        'heartbeat_channel',
+        'Heartbeat',
+        description: 'Notifications when your partner sends you a heartbeat',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
+
+  /// Message channel - for text messages from partner
+  static const AndroidNotificationChannel _messageChannel =
+      AndroidNotificationChannel(
+        'message_channel',
+        'Messages',
+        description: 'Notifications for messages from your partner',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
+
+  /// Event channel - for new events created by partner
+  static const AndroidNotificationChannel _eventChannel =
+      AndroidNotificationChannel(
+        'event_channel',
+        'Events',
+        description: 'Notifications when partner creates new events',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
+
+  /// Reminder channel - for event countdown and reminders
+  static const AndroidNotificationChannel _reminderChannel =
+      AndroidNotificationChannel(
+        'reminder_channel',
+        'Reminders',
+        description: 'Event reminders and countdown notifications',
         importance: Importance.high,
         playSound: true,
         enableVibration: true,
@@ -85,8 +119,8 @@ class NotificationService {
         enableVibration: true,
       );
 
-  /// Heartbeat channel (for background service)
-  static const AndroidNotificationChannel _heartbeatChannel =
+  /// Heartbeat service channel (for foreground service - low priority)
+  static const AndroidNotificationChannel _heartbeatServiceChannel =
       AndroidNotificationChannel(
         'symphonia_heartbeat',
         'Heartbeat Service',
@@ -94,17 +128,6 @@ class NotificationService {
         importance: Importance.low,
         playSound: false,
         enableVibration: false,
-      );
-
-  /// Reminders channel
-  static const AndroidNotificationChannel _remindersChannel =
-      AndroidNotificationChannel(
-        'symphonia_reminders',
-        'Reminders',
-        description: 'Scheduled reminders and event notifications',
-        importance: Importance.defaultImportance,
-        playSound: true,
-        enableVibration: true,
       );
 
   /// Create notification channels (Android 8+)
@@ -115,10 +138,17 @@ class NotificationService {
         >();
 
     if (androidPlugin != null) {
-      await androidPlugin.createNotificationChannel(_messagesChannel);
+      // FCM notification channels (must match Cloud Functions)
+      await androidPlugin.createNotificationChannel(
+        _heartbeatNotificationChannel,
+      );
+      await androidPlugin.createNotificationChannel(_messageChannel);
+      await androidPlugin.createNotificationChannel(_eventChannel);
+      await androidPlugin.createNotificationChannel(_reminderChannel);
+
+      // Local notification channels
       await androidPlugin.createNotificationChannel(_voiceNotesChannel);
-      await androidPlugin.createNotificationChannel(_heartbeatChannel);
-      await androidPlugin.createNotificationChannel(_remindersChannel);
+      await androidPlugin.createNotificationChannel(_heartbeatServiceChannel);
     }
   }
 
@@ -139,7 +169,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
       color: AppColors.primary,
       category: AndroidNotificationCategory.message,
     );
@@ -168,7 +198,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
       color: AppColors.accent,
       category: AndroidNotificationCategory.message,
     );
@@ -193,7 +223,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
       color: AppColors.heartRed,
       category: AndroidNotificationCategory.message,
     );
@@ -222,7 +252,7 @@ class NotificationService {
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
       showWhen: true,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
       color: AppColors.secondary,
     );
 
@@ -241,7 +271,7 @@ class NotificationService {
       priority: Priority.low,
       ongoing: true,
       autoCancel: false,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
       color: AppColors.primary,
     );
 
@@ -273,7 +303,7 @@ class NotificationService {
       channelDescription: 'Scheduled reminders and event notifications',
       importance: Importance.high,
       priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_notification',
       color: AppColors.primary,
     );
 

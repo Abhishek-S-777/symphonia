@@ -203,7 +203,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: AppGradients.sunset,
+              border: Border.all(color: AppColors.white),
             ),
             child: photoUrl != null
                 ? ClipOval(

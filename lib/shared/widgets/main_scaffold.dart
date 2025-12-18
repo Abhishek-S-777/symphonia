@@ -110,7 +110,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       onTap: () => _onItemTapped(index),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.only(left: 12, right: 12, top: 12),
+        padding: EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

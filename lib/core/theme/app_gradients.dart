@@ -123,6 +123,16 @@ class AppGradients {
     colors: [Color(0xFFB47ED8), Color(0xFF8B5CB8)],
   );
 
+  /// Special moments gradient
+  static const LinearGradient specialMoments = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [
+      Color.fromARGB(255, 186, 216, 126),
+      Color.fromARGB(255, 170, 184, 92),
+    ],
+  );
+
   // ═══════════════════════════════════════════════════════════════════════════
   // SHIMMER GRADIENTS
   // ═══════════════════════════════════════════════════════════════════════════

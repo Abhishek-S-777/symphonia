@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../app.dart';
 import '../../../../core/services/event_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
@@ -20,6 +21,8 @@ class EventsScreen extends ConsumerStatefulWidget {
 }
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
+  final rootContext = rootNavigatorKey.currentContext;
+
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(eventsStreamProvider);
@@ -310,36 +313,43 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   }
 
   void _showEventOptions(Event event) {
+    if (rootContext == null) return;
     showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
+      context: rootContext!,
+      useRootNavigator: true,
+      enableDrag: false,
+      isScrollControlled: true,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
-          color: AppColors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.grayLight,
-                borderRadius: BorderRadius.circular(2),
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    event.title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: AppColors.gray),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-            Text(
-              event.title,
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
+
+            const Divider(height: 1),
+            const SizedBox(height: 12),
             ListTile(
-              leading: const Icon(Icons.edit, color: AppColors.primary),
+              leading: const Icon(Icons.edit, color: Colors.blueAccent),
               title: const Text('Edit Event'),
               onTap: () {
                 Navigator.pop(context);
@@ -348,16 +358,13 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.delete, color: AppColors.error),
-              title: const Text(
-                'Delete Event',
-                style: TextStyle(color: AppColors.error),
-              ),
+              title: const Text('Delete Event'),
               onTap: () {
                 Navigator.pop(context);
                 _deleteEvent(event);
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -365,14 +372,14 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   }
 
   void _showAddEventDialog(BuildContext context) {
-    _showEventDialog(context, null);
+    _showEventBottomSheet(context, null);
   }
 
   void _showEditEventDialog(Event event) {
-    _showEventDialog(context, event);
+    _showEventBottomSheet(context, event);
   }
 
-  void _showEventDialog(BuildContext context, Event? event) {
+  void _showEventBottomSheet(BuildContext context, Event? event) {
     final isEditing = event != null;
     final titleController = TextEditingController(text: event?.title ?? '');
     final descriptionController = TextEditingController(
@@ -389,201 +396,442 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
           )
         : const material.TimeOfDay(hour: 9, minute: 0);
     bool isLoading = false;
+    bool isPickerOpen = false;
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(isEditing ? 'Edit Event' : 'New Event'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Event Name',
-                    hintText: "e.g., Partner's Birthday",
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Description (optional)',
-                    hintText: 'Add a note...',
-                  ),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    Icons.calendar_today,
-                    color: AppColors.primary,
-                  ),
-                  title: const Text('Date'),
-                  subtitle: Text(
-                    DateFormat('MMMM d, yyyy').format(selectedDate),
-                  ),
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: dialogContext,
-                      initialDate: selectedDate,
-                      firstDate: DateTime.now().subtract(
-                        const Duration(days: 365 * 10),
-                      ),
-                      lastDate: DateTime.now().add(
-                        const Duration(days: 365 * 10),
-                      ),
-                    );
-                    if (date != null) {
-                      setDialogState(() => selectedDate = date);
-                    }
-                  },
-                ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Repeats Yearly'),
-                  subtitle: const Text('For birthdays & anniversaries'),
-                  value: isRecurring,
-                  onChanged: (value) {
-                    setDialogState(() {
-                      isRecurring = value;
-                      if (value) recurringType = RecurringType.yearly;
-                    });
-                  },
-                  activeColor: AppColors.primary,
-                ),
-                const SizedBox(height: 8),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
-                    Icons.notifications,
-                    color: AppColors.accent,
-                  ),
-                  title: const Text('Reminder Time'),
-                  subtitle: Text(notificationTime.format(dialogContext)),
-                  onTap: () async {
-                    final time = await showTimePicker(
-                      context: dialogContext,
-                      initialTime: notificationTime,
-                    );
-                    if (time != null) {
-                      setDialogState(() => notificationTime = time);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      if (titleController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please enter an event name'),
-                          ),
-                        );
-                        return;
-                      }
+    // Use root navigator context to show over navigation bar
+    if (rootContext == null) return;
 
-                      setDialogState(() => isLoading = true);
-
-                      try {
-                        final eventService = ref.read(eventServiceProvider);
-
-                        final eventTimeOfDay = TimeOfDay(
-                          hour: notificationTime.hour,
-                          minute: notificationTime.minute,
-                        );
-
-                        if (isEditing) {
-                          await eventService.updateEvent(
-                            event.copyWith(
-                              title: titleController.text.trim(),
-                              description:
-                                  descriptionController.text.trim().isEmpty
-                                  ? null
-                                  : descriptionController.text.trim(),
-                              eventDate: selectedDate,
-                              isRecurring: isRecurring,
-                              recurringType: isRecurring
-                                  ? recurringType
-                                  : RecurringType.none,
-                              notificationTime: eventTimeOfDay,
-                            ),
-                          );
-                        } else {
-                          await eventService.createEvent(
-                            title: titleController.text.trim(),
-                            description:
-                                descriptionController.text.trim().isEmpty
-                                ? null
-                                : descriptionController.text.trim(),
-                            eventDate: selectedDate,
-                            isRecurring: isRecurring,
-                            recurringType: isRecurring
-                                ? recurringType
-                                : RecurringType.none,
-                            notificationTime: eventTimeOfDay,
-                          );
-                        }
-
-                        if (dialogContext.mounted) {
-                          Navigator.pop(dialogContext);
-                        }
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                isEditing
-                                    ? 'Event updated!'
-                                    : 'Event created! 🎉',
-                              ),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error: $e'),
-                              backgroundColor: AppColors.error,
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (dialogContext.mounted) {
-                          setDialogState(() => isLoading = false);
-                        }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
+    showModalBottomSheet(
+      context: rootContext!,
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (sheetContext, setSheetState) {
+          return Visibility(
+            visible: !isPickerOpen,
+            maintainState: true,
+            maintainAnimation: true,
+            maintainSize: false,
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
               ),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.white,
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Title
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 24,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isEditing ? 'Edit Event' : 'New Event',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.pop(sheetContext),
+                          icon: const Icon(Icons.close, color: AppColors.gray),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Divider(height: 1),
+
+                  // Scrollable content
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Event Name
+                          TextField(
+                            controller: titleController,
+                            decoration: InputDecoration(
+                              labelText: 'Event Name',
+                              hintText: "e.g., Partner's Birthday",
+                              prefixIcon: const Icon(
+                                Icons.event,
+                                color: AppColors.primary,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.gray,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Description
+                          TextField(
+                            controller: descriptionController,
+                            decoration: InputDecoration(
+                              labelText: 'Description (optional)',
+                              hintText: 'Add a note...',
+                              prefixIcon: const Icon(
+                                Icons.notes,
+                                color: AppColors.gray,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.gray,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 2,
+                                ),
+                              ),
+                            ),
+                            maxLines: 2,
+                          ),
+                          const SizedBox(height: 20),
+
+                          // Date picker
+                          _buildPickerTile(
+                            icon: Icons.calendar_today,
+                            iconColor: AppColors.primary,
+                            title: 'Date',
+                            subtitle: DateFormat(
+                              'MMMM d, yyyy',
+                            ).format(selectedDate),
+                            onTap: () async {
+                              setSheetState(() => isPickerOpen = true);
+
+                              final date = await showDatePicker(
+                                context: context,
+                                initialDate: selectedDate,
+                                firstDate: DateTime.now().subtract(
+                                  const Duration(days: 365 * 10),
+                                ),
+                                lastDate: DateTime.now().add(
+                                  const Duration(days: 365 * 10),
+                                ),
+                              );
+
+                              setSheetState(() {
+                                isPickerOpen = false;
+                                if (date != null) selectedDate = date;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Recurring toggle
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.grayLight.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Repeats Yearly'),
+                              subtitle: const Text(
+                                'For birthdays & anniversaries',
+                              ),
+                              value: isRecurring,
+                              onChanged: (value) {
+                                setSheetState(() {
+                                  isRecurring = value;
+                                  if (value)
+                                    recurringType = RecurringType.yearly;
+                                });
+                              },
+                              activeColor: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Notification time picker
+                          _buildPickerTile(
+                            icon: Icons.notifications,
+                            iconColor: AppColors.accent,
+                            title: 'Reminder Time',
+                            subtitle: notificationTime.format(context),
+                            onTap: () async {
+                              setSheetState(() => isPickerOpen = true);
+
+                              final time = await showTimePicker(
+                                context: context,
+                                initialTime: notificationTime,
+                              );
+
+                              setSheetState(() {
+                                isPickerOpen = false;
+                                if (time != null) notificationTime = time;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Action buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.pop(sheetContext),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    side: const BorderSide(
+                                      color: AppColors.gray,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text('Cancel'),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 2,
+                                child: ElevatedButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () async {
+                                          if (titleController.text
+                                              .trim()
+                                              .isEmpty) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Please enter an event name',
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+
+                                          setSheetState(() => isLoading = true);
+
+                                          try {
+                                            final eventService = ref.read(
+                                              eventServiceProvider,
+                                            );
+
+                                            final eventTimeOfDay = TimeOfDay(
+                                              hour: notificationTime.hour,
+                                              minute: notificationTime.minute,
+                                            );
+
+                                            if (isEditing) {
+                                              await eventService.updateEvent(
+                                                event.copyWith(
+                                                  title: titleController.text
+                                                      .trim(),
+                                                  description:
+                                                      descriptionController.text
+                                                          .trim()
+                                                          .isEmpty
+                                                      ? null
+                                                      : descriptionController
+                                                            .text
+                                                            .trim(),
+                                                  eventDate: selectedDate,
+                                                  isRecurring: isRecurring,
+                                                  recurringType: isRecurring
+                                                      ? recurringType
+                                                      : RecurringType.none,
+                                                  notificationTime:
+                                                      eventTimeOfDay,
+                                                ),
+                                              );
+                                            } else {
+                                              await eventService.createEvent(
+                                                title: titleController.text
+                                                    .trim(),
+                                                description:
+                                                    descriptionController.text
+                                                        .trim()
+                                                        .isEmpty
+                                                    ? null
+                                                    : descriptionController.text
+                                                          .trim(),
+                                                eventDate: selectedDate,
+                                                isRecurring: isRecurring,
+                                                recurringType: isRecurring
+                                                    ? recurringType
+                                                    : RecurringType.none,
+                                                notificationTime:
+                                                    eventTimeOfDay,
+                                              );
+                                            }
+
+                                            if (sheetContext.mounted) {
+                                              Navigator.pop(sheetContext);
+                                            }
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(
+                                                    isEditing
+                                                        ? 'Event updated!'
+                                                        : 'Event created! 🎉',
+                                                  ),
+                                                  backgroundColor:
+                                                      AppColors.success,
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            if (mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Error: $e'),
+                                                  backgroundColor:
+                                                      AppColors.error,
+                                                ),
+                                              );
+                                            }
+                                          } finally {
+                                            if (sheetContext.mounted) {
+                                              setSheetState(
+                                                () => isLoading = false,
+                                              );
+                                            }
+                                          }
+                                        },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: isLoading
+                                      ? const SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppColors.white,
+                                          ),
+                                        )
+                                      : Text(
+                                          isEditing
+                                              ? 'Save Changes'
+                                              : 'Create Event',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          // Bottom padding for safe area
+                          SizedBox(
+                            height: MediaQuery.of(context).viewInsets.bottom,
+                          ),
+                        ],
                       ),
-                    )
-                  : Text(isEditing ? 'Save' : 'Create'),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPickerTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: AppColors.grayLight.withValues(alpha: 0.3),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.gray,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.gray),
+            ],
+          ),
         ),
       ),
     );

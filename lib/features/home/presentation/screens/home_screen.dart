@@ -25,54 +25,16 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  String? _lastHeartbeatId;
-
   @override
   void initState() {
     super.initState();
-    _initializeServices();
+    _updateLastActive();
   }
 
-  Future<void> _initializeServices() async {
-    // Initialize vibration service
-    final vibrationService = ref.read(vibrationServiceProvider);
-    await vibrationService.initialize();
-
+  Future<void> _updateLastActive() async {
     // Update last active
     final authService = ref.read(authServiceProvider);
     await authService.updateLastActive();
-  }
-
-  /// Listen for incoming heartbeats and vibrate
-  void _handleIncomingHeartbeat(AsyncValue<dynamic> heartbeatAsync) {
-    final heartbeat = heartbeatAsync.value;
-    if (heartbeat != null && heartbeat.id != _lastHeartbeatId) {
-      _lastHeartbeatId = heartbeat.id;
-
-      // Play the heartbeat vibration pattern for the receiver!
-      final vibrationService = ref.read(vibrationServiceProvider);
-      vibrationService.playHeartbeat();
-
-      // Show a snackbar notification
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.favorite, color: AppColors.white),
-                SizedBox(width: 12),
-                Text('Your partner sent you a heartbeat!'),
-              ],
-            ),
-            backgroundColor: AppColors.secondary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    }
   }
 
   Future<void> _onHeartPressed() async {
@@ -118,11 +80,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final couple = ref.watch(currentCoupleProvider);
     final dailyQuote = ref.watch(dailyQuoteProvider);
     final unreadCount = ref.watch(unreadMessagesCountProvider);
-
-    // Listen for incoming heartbeats from partner
-    ref.listen(latestReceivedHeartbeatProvider, (previous, next) {
-      _handleIncomingHeartbeat(next);
-    });
 
     return GradientBackground(
       child: SafeArea(
@@ -201,19 +158,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Row(
         children: [
-          // Logo
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppGradients.glassOverlay,
-            ),
-            child: const Icon(Icons.favorite, color: AppColors.white, size: 20),
-          ),
-
-          const SizedBox(width: 12),
-
           // App name
           Text(
             'Symphonia',

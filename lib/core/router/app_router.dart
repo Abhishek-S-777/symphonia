@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
+import '../../app.dart';
 import 'routes.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
@@ -30,7 +31,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 class AppRouter {
   AppRouter._();
 
-  static final _rootNavigatorKey = GlobalKey<NavigatorState>();
   static final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
   /// Auth routes that don't require authentication
@@ -44,7 +44,7 @@ class AppRouter {
   /// Create router with authentication guard
   static GoRouter createRouter(Ref ref) {
     return GoRouter(
-      navigatorKey: _rootNavigatorKey,
+      navigatorKey: rootNavigatorKey, // Use global key from app.dart
       initialLocation: Routes.splashPath,
       debugLogDiagnostics: true,
 

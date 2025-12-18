@@ -32,6 +32,7 @@ class FirebaseCollections {
   static const String userCoupleId = 'coupleId';
   static const String userCreatedAt = 'createdAt';
   static const String userLastActive = 'lastActive';
+  static const String userIsOnline = 'isOnline';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // COUPLE FIELDS

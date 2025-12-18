@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/router/routes.dart';
+import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/couple_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
@@ -29,6 +30,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
   bool _isLoading = false;
   bool _isPairing = false;
   String? _errorMessage;
+  bool _hasNavigated = false; // Prevent multiple navigations
 
   @override
   void initState() {
@@ -131,6 +133,41 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Listen for when the current user gets paired
+    // This handles the case where Partner A creates a code and Partner B uses it
+    // Partner A will be automatically redirected when pairing is successful
+    ref.listen(currentAppUserProvider, (previous, next) {
+      final previousUser = previous?.value;
+      final currentUser = next.value;
+
+      // Check if user just got paired (coupleId changed from null to non-null)
+      if (previousUser != null &&
+          previousUser.coupleId == null &&
+          currentUser != null &&
+          currentUser.coupleId != null &&
+          !_hasNavigated) {
+        _hasNavigated = true;
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.favorite, color: AppColors.white),
+                SizedBox(width: 12),
+                Text('Your partner connected! 💕'),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        // Navigate to permissions/home
+        context.go(Routes.permissionSetupPath);
+      }
+    });
+
     return Scaffold(
       body: GradientBackground(
         child: SafeArea(

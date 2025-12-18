@@ -11,6 +11,7 @@ class User extends Equatable {
   final String? coupleId;
   final DateTime createdAt;
   final DateTime lastActive;
+  final bool isOnline;
 
   const User({
     required this.id,
@@ -22,10 +23,25 @@ class User extends Equatable {
     this.coupleId,
     required this.createdAt,
     required this.lastActive,
+    this.isOnline = false,
   });
 
   /// Check if user is paired with someone
   bool get isPaired => coupleId != null;
+
+  /// Get a human-readable "last seen" string
+  String get lastSeenText {
+    if (isOnline) return 'Online';
+
+    final now = DateTime.now();
+    final difference = now.difference(lastActive);
+
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    return 'A while ago';
+  }
 
   /// Create a copy with updated fields
   User copyWith({
@@ -38,6 +54,7 @@ class User extends Equatable {
     String? coupleId,
     DateTime? createdAt,
     DateTime? lastActive,
+    bool? isOnline,
   }) {
     return User(
       id: id ?? this.id,
@@ -49,6 +66,7 @@ class User extends Equatable {
       coupleId: coupleId ?? this.coupleId,
       createdAt: createdAt ?? this.createdAt,
       lastActive: lastActive ?? this.lastActive,
+      isOnline: isOnline ?? this.isOnline,
     );
   }
 
@@ -63,5 +81,6 @@ class User extends Equatable {
     coupleId,
     createdAt,
     lastActive,
+    isOnline,
   ];
 }

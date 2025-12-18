@@ -52,7 +52,7 @@ class FCMService {
   /// Initialize local notifications
   Future<void> _initializeLocalNotifications() async {
     const androidSettings = AndroidInitializationSettings(
-      '@mipmap/ic_launcher',
+      '@drawable/ic_notification',
     );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -78,28 +78,33 @@ class FCMService {
     final data = message.data;
 
     if (notification != null) {
-      String channelId = 'default';
-      String channelName = 'Default';
+      // Use channel IDs that match what Cloud Functions send
+      String channelId = 'message_channel';
+      String channelName = 'Messages';
 
       // Determine channel based on message type and trigger vibration
       if (data['type'] == 'heartbeat') {
-        channelId = 'heartbeat';
+        channelId = 'heartbeat_channel';
         channelName = 'Heartbeat';
         // Play heartbeat vibration pattern
         _playHeartbeatVibration();
       } else if (data['type'] == 'message') {
-        channelId = 'messages';
+        channelId = 'message_channel';
         channelName = 'Messages';
         // Play message vibration
         _playMessageVibration();
       } else if (data['type'] == 'voice_note') {
-        channelId = 'voice_notes';
+        channelId = 'symphonia_voice_notes';
         channelName = 'Voice Notes';
         // Play voice note vibration
         _playVoiceNoteVibration();
-      } else if (data['type'] == 'event') {
-        channelId = 'events';
+      } else if (data['type'] == 'event_created') {
+        channelId = 'event_channel';
         channelName = 'Events';
+      } else if (data['type'] == 'event_countdown' ||
+          data['type'] == 'event_today') {
+        channelId = 'reminder_channel';
+        channelName = 'Reminders';
       }
 
       await _localNotifications.show(
@@ -113,7 +118,7 @@ class FCMService {
             channelDescription: 'Symphonia $channelName notifications',
             importance: Importance.high,
             priority: Priority.high,
-            icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+            icon: android?.smallIcon ?? '@drawable/ic_notification',
             enableVibration: true,
             vibrationPattern: data['type'] == 'heartbeat'
                 ? Int64List.fromList(AppConstants.heartbeatPattern)
@@ -139,7 +144,7 @@ class FCMService {
     if (hasCustom == true) {
       await Vibration.vibrate(
         pattern: AppConstants.heartbeatPattern,
-        intensities: [0, 200, 0, 200, 0, 200, 0, 200, 0],
+        intensities: AppConstants.heartbeatIntensities,
       );
     } else {
       // Fallback: simple double vibration

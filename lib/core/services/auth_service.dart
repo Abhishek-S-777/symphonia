@@ -38,19 +38,20 @@ final currentAppUserProvider = StreamProvider<app.User?>((ref) {
   );
 });
 
-/// Partner User Provider
+/// Partner User Provider - streams partner data in real-time
 final partnerUserProvider = StreamProvider<app.User?>((ref) {
   final currentUser = ref.watch(currentAppUserProvider).value;
   if (currentUser == null || currentUser.coupleId == null) {
     return Stream.value(null);
   }
 
+  // First get the couple document to find partner ID
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
       .doc(currentUser.coupleId)
       .snapshots()
-      .asyncMap((coupleDoc) async {
-        if (!coupleDoc.exists) return null;
+      .asyncExpand((coupleDoc) {
+        if (!coupleDoc.exists) return Stream.value(null);
 
         final data = coupleDoc.data()!;
         final partnerId =
@@ -58,13 +59,17 @@ final partnerUserProvider = StreamProvider<app.User?>((ref) {
             ? data[FirebaseCollections.coupleUser2Id]
             : data[FirebaseCollections.coupleUser1Id];
 
-        final partnerDoc = await FirebaseFirestore.instance
+        if (partnerId == null) return Stream.value(null);
+
+        // Stream partner's user document for real-time updates (including online status)
+        return FirebaseFirestore.instance
             .collection(FirebaseCollections.users)
             .doc(partnerId)
-            .get();
-
-        if (!partnerDoc.exists) return null;
-        return _userFromFirestore(partnerDoc);
+            .snapshots()
+            .map((partnerDoc) {
+              if (!partnerDoc.exists) return null;
+              return _userFromFirestore(partnerDoc);
+            });
       });
 });
 
@@ -84,6 +89,7 @@ app.User _userFromFirestore(DocumentSnapshot doc) {
     lastActive:
         (data[FirebaseCollections.userLastActive] as Timestamp?)?.toDate() ??
         DateTime.now(),
+    isOnline: data[FirebaseCollections.userIsOnline] ?? false,
   );
 }
 
@@ -218,6 +224,26 @@ class AuthService {
             FirebaseCollections.userLastActive: FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
     } catch (_) {}
+  }
+
+  /// Set user online/offline status
+  /// Uses fire-and-forget approach - doesn't wait for completion
+  /// Firestore's offline persistence will queue the write if app is backgrounded
+  void setOnlineStatus(bool isOnline) {
+    if (currentUser == null) return;
+
+    // Fire and forget - don't await
+    // This ensures we don't block when app goes to background
+    _firestore
+        .collection(FirebaseCollections.users)
+        .doc(currentUser!.uid)
+        .set({
+          FirebaseCollections.userIsOnline: isOnline,
+          FirebaseCollections.userLastActive: FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true))
+        .catchError((_) {
+          // Silently ignore errors - Firestore will retry with offline persistence
+        });
   }
 
   /// Check if user is paired
