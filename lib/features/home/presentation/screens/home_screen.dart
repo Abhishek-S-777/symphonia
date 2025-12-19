@@ -321,18 +321,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           color: AppColors.accent,
           onTap: () => context.push(Routes.voiceNotesPath),
         ),
-        _buildQuickActionButton(
-          icon: Icons.event,
-          label: 'Events',
-          color: AppColors.secondary,
-          onTap: () => context.go(Routes.eventsPath),
-        ),
-        _buildQuickActionButton(
-          icon: Icons.settings,
-          label: 'Settings',
-          color: AppColors.grayDark,
-          onTap: () => context.push(Routes.settingsPath),
-        ),
       ],
     );
   }
@@ -450,14 +438,18 @@ class _DailyMessageCardWidgetState
           // Header row with title and edit button
           Row(
             children: [
-              const Icon(Icons.auto_awesome, color: AppColors.accent, size: 20),
+              const Icon(
+                Icons.auto_awesome,
+                color: Colors.amberAccent,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Daily Love Note',
                   style: Theme.of(
                     context,
-                  ).textTheme.labelLarge?.copyWith(color: AppColors.accent),
+                  ).textTheme.labelLarge?.copyWith(color: Colors.amberAccent),
                 ),
               ),
               // Edit/Clear button
@@ -471,11 +463,7 @@ class _DailyMessageCardWidgetState
                         color: AppColors.romanticRed.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
-                        Icons.close,
-                        size: 18,
-                        color: AppColors.gray.withValues(alpha: 0.8),
-                      ),
+                      child: Icon(Icons.close, size: 18, color: AppColors.gray),
                     ),
                   ),
 
@@ -485,13 +473,13 @@ class _DailyMessageCardWidgetState
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.1),
+                      color: Colors.amberAccent.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
                       Icons.edit,
                       size: 16,
-                      color: AppColors.accent,
+                      color: Colors.amberAccent,
                     ),
                   ),
                 ),
@@ -622,9 +610,6 @@ class _DailyMessageCardWidgetState
                     child: Text(
                       '— ${quote.author}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: quote.isCustom
-                            ? AppColors.primary
-                            : AppColors.gray,
                         fontWeight: quote.isCustom
                             ? FontWeight.w600
                             : FontWeight.normal,
