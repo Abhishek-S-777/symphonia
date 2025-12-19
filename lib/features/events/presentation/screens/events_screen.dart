@@ -161,118 +161,124 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     final isToday = event.daysUntil == 0;
     final isTomorrow = event.daysUntil == 1;
 
-    return GlassCard(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Countdown circle
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: isToday
-                      ? AppGradients.primary
-                      : AppGradients.twilight,
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isToday ? AppColors.primary : AppColors.accent)
-                          .withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isToday ? '🎉' : event.daysUntil.toString(),
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: AppColors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      if (!isToday)
-                        Text(
-                          'days',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: AppColors.white.withValues(alpha: 0.8),
-                              ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _showEventSummary(event),
+      child:
+          GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        if (event.isRecurring)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: Icon(
-                              Icons.repeat,
-                              size: 16,
-                              color: AppColors.accent,
+                    // Countdown circle
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: isToday
+                            ? AppGradients.primary.withOpacity(0.7)
+                            : AppGradients.aurora.withOpacity(0.7),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                (isToday ? AppColors.primary : AppColors.accent)
+                                    .withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              isToday ? '🎉' : event.daysUntil.toString(),
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    color: AppColors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
-                          ),
-                        Expanded(
-                          child: Text(
-                            event.title,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
+                            if (!isToday)
+                              Text(
+                                'days',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.white),
+                              ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isToday
-                          ? 'Today! 🎊'
-                          : isTomorrow
-                          ? 'Tomorrow!'
-                          : DateFormat(
-                              'MMMM d, yyyy',
-                            ).format(event.nextOccurrence),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isToday ? AppColors.primary : AppColors.grayDark,
-                        fontWeight: isToday
-                            ? FontWeight.bold
-                            : FontWeight.normal,
                       ),
                     ),
-                    if (event.description != null &&
-                        event.description!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        event.description!,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              if (event.isRecurring)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: Icon(
+                                    Icons.repeat,
+                                    size: 16,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                              Expanded(
+                                child: Text(
+                                  event.title,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isToday
+                                ? 'Today! 🎊'
+                                : isTomorrow
+                                ? 'Tomorrow!'
+                                : DateFormat(
+                                    'MMMM d, yyyy',
+                                  ).format(event.nextOccurrence),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: isToday
+                                      ? AppColors.primary
+                                      : AppColors.grayDark,
+                                  fontWeight: isToday
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                          ),
+                          if (event.description != null &&
+                              event.description!.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              event.description!,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.gray),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
                       ),
-                    ],
+                    ),
+                    IconButton(
+                      onPressed: () => _showEventOptions(event),
+                      icon: const Icon(Icons.more_vert, color: AppColors.gray),
+                    ),
                   ],
                 ),
-              ),
-              IconButton(
-                onPressed: () => _showEventOptions(event),
-                icon: const Icon(Icons.more_vert, color: AppColors.gray),
-              ),
-            ],
-          ),
-        )
-        .animate(delay: Duration(milliseconds: 100 * index))
-        .fadeIn()
-        .slideX(begin: 0.1, end: 0);
+              )
+              .animate(delay: Duration(milliseconds: 100 * index))
+              .fadeIn()
+              .slideX(begin: 0.1, end: 0),
+    );
   }
 
   Widget _buildPastEventCard(Event event) {
@@ -348,6 +354,14 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
             const Divider(height: 1),
             const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.visibility, color: AppColors.accent),
+              title: const Text('View Details'),
+              onTap: () {
+                Navigator.pop(context);
+                _showEventSummary(event);
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.edit, color: Colors.blueAccent),
               title: const Text('Edit Event'),
@@ -458,6 +472,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           // Event Name
                           TextField(
                             controller: titleController,
+                            maxLength: 50,
                             decoration: InputDecoration(
                               labelText: 'Event Name',
                               hintText: "e.g., Partner's Birthday",
@@ -488,6 +503,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           // Description
                           TextField(
                             controller: descriptionController,
+                            maxLength: 100,
                             decoration: InputDecoration(
                               labelText: 'Description (optional)',
                               hintText: 'Add a note...',
@@ -514,7 +530,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             ),
                             maxLines: 2,
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 12),
 
                           // Date picker
                           _buildPickerTile(
@@ -544,36 +560,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                               });
                             },
                           ),
-                          const SizedBox(height: 12),
-
-                          // Recurring toggle
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.grayLight.withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: SwitchListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: const Text('Repeats Yearly'),
-                              subtitle: const Text(
-                                'For birthdays & anniversaries',
-                              ),
-                              value: isRecurring,
-                              onChanged: (value) {
-                                setSheetState(() {
-                                  isRecurring = value;
-                                  if (value)
-                                    recurringType = RecurringType.yearly;
-                                });
-                              },
-                              activeColor: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
 
                           // Notification time picker
                           _buildPickerTile(
@@ -595,183 +582,206 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                               });
                             },
                           ),
-                          const SizedBox(height: 24),
 
-                          // Action buttons
+                          const SizedBox(height: 12),
+
+                          // Recurring toggle
                           Row(
                             children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () => Navigator.pop(sheetContext),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    side: const BorderSide(
-                                      color: AppColors.gray,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.success.withValues(
+                                    alpha: 0.1,
                                   ),
-                                  child: const Text('Cancel'),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.repeat,
+                                  color: AppColors.success,
+                                  size: 22,
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                flex: 2,
-                                child: ElevatedButton(
-                                  onPressed: isLoading
-                                      ? null
-                                      : () async {
-                                          if (titleController.text
-                                              .trim()
-                                              .isEmpty) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'Please enter an event name',
-                                                ),
-                                              ),
-                                            );
-                                            return;
-                                          }
-
-                                          setSheetState(() => isLoading = true);
-
-                                          try {
-                                            final eventService = ref.read(
-                                              eventServiceProvider,
-                                            );
-
-                                            final eventTimeOfDay = TimeOfDay(
-                                              hour: notificationTime.hour,
-                                              minute: notificationTime.minute,
-                                            );
-
-                                            if (isEditing) {
-                                              await eventService.updateEvent(
-                                                event.copyWith(
-                                                  title: titleController.text
-                                                      .trim(),
-                                                  description:
-                                                      descriptionController.text
-                                                          .trim()
-                                                          .isEmpty
-                                                      ? null
-                                                      : descriptionController
-                                                            .text
-                                                            .trim(),
-                                                  eventDate: selectedDate,
-                                                  isRecurring: isRecurring,
-                                                  recurringType: isRecurring
-                                                      ? recurringType
-                                                      : RecurringType.none,
-                                                  notificationTime:
-                                                      eventTimeOfDay,
-                                                ),
-                                              );
-                                            } else {
-                                              await eventService.createEvent(
-                                                title: titleController.text
-                                                    .trim(),
-                                                description:
-                                                    descriptionController.text
-                                                        .trim()
-                                                        .isEmpty
-                                                    ? null
-                                                    : descriptionController.text
-                                                          .trim(),
-                                                eventDate: selectedDate,
-                                                isRecurring: isRecurring,
-                                                recurringType: isRecurring
-                                                    ? recurringType
-                                                    : RecurringType.none,
-                                                notificationTime:
-                                                    eventTimeOfDay,
-                                              );
-                                            }
-
-                                            if (sheetContext.mounted) {
-                                              Navigator.pop(sheetContext);
-                                            }
-                                            if (mounted) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text(
-                                                    isEditing
-                                                        ? 'Event updated!'
-                                                        : 'Event created! 🎉',
-                                                  ),
-                                                  backgroundColor:
-                                                      AppColors.success,
-                                                ),
-                                              );
-                                            }
-                                          } catch (e) {
-                                            if (mounted) {
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                SnackBar(
-                                                  content: Text('Error: $e'),
-                                                  backgroundColor:
-                                                      AppColors.error,
-                                                ),
-                                              );
-                                            }
-                                          } finally {
-                                            if (sheetContext.mounted) {
-                                              setSheetState(
-                                                () => isLoading = false,
-                                              );
-                                            }
-                                          }
-                                        },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
+                                child: SwitchListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('Repeats Yearly'),
+                                  subtitle: const Text(
+                                    'For birthdays & anniversaries',
                                   ),
-                                  child: isLoading
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: AppColors.white,
-                                          ),
-                                        )
-                                      : Text(
-                                          isEditing
-                                              ? 'Save Changes'
-                                              : 'Create Event',
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.white,
-                                          ),
-                                        ),
+                                  value: isRecurring,
+                                  onChanged: (value) {
+                                    setSheetState(() {
+                                      isRecurring = value;
+                                      if (value) {
+                                        recurringType = RecurringType.yearly;
+                                      }
+                                    });
+                                  },
+                                  activeThumbColor: AppColors.primary,
                                 ),
                               ),
                             ],
                           ),
-
-                          // Bottom padding for safe area
-                          SizedBox(
-                            height: MediaQuery.of(context).viewInsets.bottom,
-                          ),
+                          const SizedBox(height: 24),
                         ],
                       ),
                     ),
                   ),
+                  // Action buttons
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              side: const BorderSide(color: AppColors.gray),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: isLoading
+                                ? null
+                                : () async {
+                                    if (titleController.text.trim().isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Please enter an event name',
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    setSheetState(() => isLoading = true);
+
+                                    try {
+                                      final eventService = ref.read(
+                                        eventServiceProvider,
+                                      );
+
+                                      final eventTimeOfDay = TimeOfDay(
+                                        hour: notificationTime.hour,
+                                        minute: notificationTime.minute,
+                                      );
+
+                                      if (isEditing) {
+                                        await eventService.updateEvent(
+                                          event.copyWith(
+                                            title: titleController.text.trim(),
+                                            description:
+                                                descriptionController.text
+                                                    .trim()
+                                                    .isEmpty
+                                                ? null
+                                                : descriptionController.text
+                                                      .trim(),
+                                            eventDate: selectedDate,
+                                            isRecurring: isRecurring,
+                                            recurringType: isRecurring
+                                                ? recurringType
+                                                : RecurringType.none,
+                                            notificationTime: eventTimeOfDay,
+                                          ),
+                                        );
+                                      } else {
+                                        await eventService.createEvent(
+                                          title: titleController.text.trim(),
+                                          description:
+                                              descriptionController.text
+                                                  .trim()
+                                                  .isEmpty
+                                              ? null
+                                              : descriptionController.text
+                                                    .trim(),
+                                          eventDate: selectedDate,
+                                          isRecurring: isRecurring,
+                                          recurringType: isRecurring
+                                              ? recurringType
+                                              : RecurringType.none,
+                                          notificationTime: eventTimeOfDay,
+                                        );
+                                      }
+
+                                      if (sheetContext.mounted) {
+                                        Navigator.pop(sheetContext);
+                                      }
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              isEditing
+                                                  ? 'Event updated!'
+                                                  : 'Event created! 🎉',
+                                            ),
+                                            backgroundColor: AppColors.success,
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error: $e'),
+                                            backgroundColor: AppColors.error,
+                                          ),
+                                        );
+                                      }
+                                    } finally {
+                                      if (sheetContext.mounted) {
+                                        setSheetState(() => isLoading = false);
+                                      }
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    isEditing ? 'Save Changes' : 'Create Event',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Bottom padding for safe area
+                  SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
                 ],
               ),
             ),
@@ -788,51 +798,268 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: AppColors.grayLight.withValues(alpha: 0.3),
+    return InkWell(
+      onTap: onTap,
       borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontSize: 14, color: AppColors.gray),
                 ),
-                child: Icon(icon, color: iconColor, size: 22),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, color: AppColors.gray),
+        ],
+      ),
+    );
+  }
+
+  /// Show event summary in a read-only bottom sheet
+  void _showEventSummary(Event event) {
+    if (rootContext == null) return;
+
+    showModalBottomSheet(
+      context: rootContext!,
+      isDismissible: true,
+      enableDrag: false,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      builder: (sheetContext) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title with countdown badge
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+              child: Row(
+                children: [
+                  // Countdown badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: event.daysUntil == 0
+                          ? AppGradients.primary
+                          : AppGradients.aurora,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      event.daysUntil == 0
+                          ? '🎉 Today!'
+                          : event.daysUntil == 1
+                          ? '1 day'
+                          : '${event.daysUntil} days to go',
+                      style: const TextStyle(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(sheetContext),
+                    icon: const Icon(Icons.close, color: AppColors.gray),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
+            ),
+
+            const Divider(height: 1),
+
+            // Scrollable content
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: AppColors.gray,
-                      ),
+                    // Event Name (read-only display)
+                    _buildSummaryField(
+                      icon: Icons.event,
+                      iconColor: AppColors.primary,
+                      label: 'Event Name',
+                      value: event.title,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    const SizedBox(height: 16),
+
+                    // Description (if exists)
+                    if (event.description != null &&
+                        event.description!.isNotEmpty) ...[
+                      _buildSummaryField(
+                        icon: Icons.notes,
+                        iconColor: AppColors.gray,
+                        label: 'Description',
+                        value: event.description!,
                       ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Date
+                    _buildSummaryField(
+                      icon: Icons.calendar_today,
+                      iconColor: AppColors.primary,
+                      label: 'Date',
+                      value: DateFormat('MMMM d, yyyy').format(event.eventDate),
                     ),
+                    const SizedBox(height: 16),
+
+                    // Recurring status
+                    _buildSummaryField(
+                      icon: event.isRecurring ? Icons.repeat : Icons.repeat_one,
+                      iconColor: event.isRecurring
+                          ? AppColors.accent
+                          : AppColors.gray,
+                      label: 'Repeats',
+                      value: event.isRecurring
+                          ? 'Every year (${event.recurringType.name})'
+                          : 'Does not repeat',
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Notification time
+                    _buildSummaryField(
+                      icon: Icons.notifications,
+                      iconColor: AppColors.accent,
+                      label: 'Reminder Time',
+                      value: event.notificationTime != null
+                          ? material.TimeOfDay(
+                              hour: event.notificationTime!.hour,
+                              minute: event.notificationTime!.minute,
+                            ).format(context)
+                          : '9:00 AM',
+                    ),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: AppColors.gray),
-            ],
-          ),
+            ),
+
+            // Action buttons
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _showEditEventDialog(event);
+                      },
+                      icon: const Icon(Icons.edit, size: 18),
+                      label: const Text('Edit'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Colors.blueAccent),
+                        foregroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        _deleteEvent(event);
+                      },
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Delete'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppColors.error),
+                        foregroundColor: AppColors.error,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Bottom padding for safe area
+            SizedBox(height: 16),
+          ],
         ),
+      ),
+    );
+  }
+
+  /// Build a read-only summary field (similar to picker tile but without tap)
+  Widget _buildSummaryField({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 14, color: AppColors.gray),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

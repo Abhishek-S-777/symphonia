@@ -7,7 +7,6 @@ import 'package:timezone/data/latest.dart' as tz;
 import '../constants/firebase_collections.dart';
 import '../../features/events/domain/entities/event.dart';
 import 'auth_service.dart';
-import 'fcm_service.dart';
 
 /// Event Service Provider
 final eventServiceProvider = Provider<EventService>((ref) {
@@ -114,6 +113,10 @@ class EventService {
       notificationsEnabled: notificationsEnabled,
     );
 
+    // Prepare notification data for partner notification
+    final notificationTitle = '📅 New Event Added';
+    final notificationBody = '${currentUser.displayName} added: $title';
+
     await eventRef.set({
       FirebaseCollections.eventCreatorId: currentUser.id,
       FirebaseCollections.eventTitle: title,
@@ -127,15 +130,17 @@ class EventService {
         'minute': notificationTime.minute,
       },
       'notificationsEnabled': notificationsEnabled,
+      // Notification fields - Cloud Function will read and forward these
+      'notificationTitle': notificationTitle,
+      'notificationBody': notificationBody,
+      'notificationChannelId': 'event_channel',
+      'notificationType': 'event_created',
     });
 
-    // Schedule notifications
+    // Schedule local notifications for countdown reminders
     if (notificationsEnabled) {
       await _scheduleEventNotifications(event);
     }
-
-    // Notify partner
-    _sendNotificationToPartner(title, eventDate);
 
     return event;
   }
@@ -247,24 +252,6 @@ class EventService {
     for (int i = 0; i <= 30; i++) {
       await _notifications.cancel(eventId.hashCode + i);
     }
-  }
-
-  /// Send notification to partner about new event
-  Future<void> _sendNotificationToPartner(String title, DateTime date) async {
-    try {
-      final currentUser = _ref.read(currentAppUserProvider).value;
-      final partner = _ref.read(partnerUserProvider).value;
-      final fcmService = _ref.read(fcmServiceProvider);
-
-      if (partner?.fcmToken != null && currentUser != null) {
-        await fcmService.sendNotificationToToken(
-          token: partner!.fcmToken!,
-          title: '${currentUser.displayName} created an event',
-          body: '📅 $title',
-          data: {'type': 'event'},
-        );
-      }
-    } catch (_) {}
   }
 
   /// Reschedule all notifications (call on app start)

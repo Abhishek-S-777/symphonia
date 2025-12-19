@@ -65,14 +65,16 @@ class NotificationService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// Heartbeat channel - for heartbeat notifications from partner
+  /// Vibration is DISABLED here because we handle it manually in the background handler
+  /// for a custom heartbeat pattern
   static const AndroidNotificationChannel _heartbeatNotificationChannel =
       AndroidNotificationChannel(
         'heartbeat_channel',
         'Heartbeat',
         description: 'Notifications when your partner sends you a heartbeat',
         importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
+        playSound: false, // No sound, vibration is the heartbeat itself
+        enableVibration: false, // Handled by background handler
       );
 
   /// Message channel - for text messages from partner
@@ -138,6 +140,10 @@ class NotificationService {
         >();
 
     if (androidPlugin != null) {
+      // Delete heartbeat channel first to force vibration settings update
+      // Android caches channel settings, so we need to delete and recreate
+      await androidPlugin.deleteNotificationChannel('heartbeat_channel');
+
       // FCM notification channels (must match Cloud Functions)
       await androidPlugin.createNotificationChannel(
         _heartbeatNotificationChannel,

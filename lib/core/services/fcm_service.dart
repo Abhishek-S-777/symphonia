@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,13 +80,15 @@ class FCMService {
       // Use channel IDs that match what Cloud Functions send
       String channelId = 'message_channel';
       String channelName = 'Messages';
+      bool enableVibration = true;
 
-      // Determine channel based on message type and trigger vibration
+      // Determine channel based on message type
       if (data['type'] == 'heartbeat') {
         channelId = 'heartbeat_channel';
         channelName = 'Heartbeat';
-        // Play heartbeat vibration pattern
-        _playHeartbeatVibration();
+        // DON'T play vibration here - Firestore listener in app.dart handles it
+        // This prevents double vibration
+        enableVibration = false; // Also disable notification vibration
       } else if (data['type'] == 'message') {
         channelId = 'message_channel';
         channelName = 'Messages';
@@ -119,10 +120,9 @@ class FCMService {
             importance: Importance.high,
             priority: Priority.high,
             icon: android?.smallIcon ?? '@drawable/ic_notification',
-            enableVibration: true,
-            vibrationPattern: data['type'] == 'heartbeat'
-                ? Int64List.fromList(AppConstants.heartbeatPattern)
-                : null,
+            enableVibration: enableVibration,
+            vibrationPattern:
+                null, // Don't use channel vibration, we handle it manually
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,
@@ -132,25 +132,6 @@ class FCMService {
         ),
         payload: json.encode(data),
       );
-    }
-  }
-
-  /// Play heartbeat vibration pattern
-  Future<void> _playHeartbeatVibration() async {
-    final hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator != true) return;
-
-    final hasCustom = await Vibration.hasCustomVibrationsSupport();
-    if (hasCustom == true) {
-      await Vibration.vibrate(
-        pattern: AppConstants.heartbeatPattern,
-        intensities: AppConstants.heartbeatIntensities,
-      );
-    } else {
-      // Fallback: simple double vibration
-      await Vibration.vibrate(duration: 100);
-      await Future.delayed(const Duration(milliseconds: 100));
-      await Vibration.vibrate(duration: 100);
     }
   }
 
@@ -237,8 +218,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   final data = message.data;
 
-  // If it's a heartbeat, trigger vibration
+  // If it's a heartbeat, trigger vibration and show notification
   if (data['type'] == 'heartbeat') {
+    // Play heartbeat vibration pattern
     final hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator == true) {
       final hasCustom = await Vibration.hasCustomVibrationsSupport();
@@ -251,5 +233,35 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         await Vibration.vibrate(duration: 100);
       }
     }
+
+    // Show local notification (since data-only messages don't auto-show)
+    final notificationTitle =
+        data['notificationTitle'] ?? 'My 💓 beats for you';
+    final notificationBody =
+        data['notificationBody'] ?? 'You received a heartbeat!';
+
+    final localNotifications = FlutterLocalNotificationsPlugin();
+    await localNotifications.initialize(
+      const InitializationSettings(
+        android: AndroidInitializationSettings('@drawable/ic_notification'),
+      ),
+    );
+
+    await localNotifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notificationTitle,
+      notificationBody,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'heartbeat_channel',
+          'Heartbeat',
+          channelDescription: 'Heartbeat notifications',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@drawable/ic_notification',
+          enableVibration: false, // We already vibrated manually
+        ),
+      ),
+    );
   }
 }

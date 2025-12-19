@@ -231,10 +231,11 @@ class _HeartButtonState extends ConsumerState<HeartButton>
                         ],
                       ),
                       child: Center(
-                        child: Icon(
-                          Icons.favorite,
-                          size: widget.size * 0.5,
-                          color: Colors.white.withValues(alpha: 0.95),
+                        child: Image.asset(
+                          'assets/icons/app-icon-light-transparent.png',
+                          width: widget.size * 0.5,
+                          height: widget.size * 0.5,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),

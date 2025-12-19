@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../constants/firebase_collections.dart';
 import '../../features/messages/domain/entities/message.dart';
 import 'auth_service.dart';
-import 'fcm_service.dart';
 
 /// Message Service Provider
 final messageServiceProvider = Provider<MessageService>((ref) {
@@ -123,6 +122,26 @@ class MessageService {
         .collection(FirebaseCollections.messages)
         .doc();
 
+    // Prepare notification data based on message type
+    String notificationTitle;
+    String notificationBody;
+    String notificationChannelId;
+    String notificationType;
+
+    if (type == MessageType.heartbeat) {
+      notificationTitle = 'My 💓 beats for you';
+      notificationBody = '${currentUser.displayName} sent you love!';
+      notificationChannelId = 'heartbeat_channel';
+      notificationType = 'heartbeat';
+    } else {
+      notificationTitle = currentUser.displayName;
+      notificationBody = content.length > 100
+          ? '${content.substring(0, 100)}...'
+          : content;
+      notificationChannelId = 'message_channel';
+      notificationType = 'message';
+    }
+
     await messageRef.set({
       FirebaseCollections.messageSenderId: currentUser.id,
       FirebaseCollections.messageContent: content,
@@ -130,16 +149,12 @@ class MessageService {
       FirebaseCollections.messageSentAt: FieldValue.serverTimestamp(),
       FirebaseCollections.messageReadAt: null,
       FirebaseCollections.messageIsDelivered: true,
+      // Notification fields - Cloud Function will read and forward these
+      'notificationTitle': notificationTitle,
+      'notificationBody': notificationBody,
+      'notificationChannelId': notificationChannelId,
+      'notificationType': notificationType,
     });
-
-    // Send push notification to partner
-    _sendNotificationToPartner(
-      title: currentUser.displayName,
-      body: type == MessageType.heartbeat
-          ? '💓 sent you a heartbeat!'
-          : content,
-      type: type == MessageType.heartbeat ? 'heartbeat' : 'message',
-    );
   }
 
   /// Send a heartbeat
@@ -198,28 +213,5 @@ class MessageService {
         .collection(FirebaseCollections.messages)
         .doc(messageId)
         .delete();
-  }
-
-  /// Send notification to partner
-  Future<void> _sendNotificationToPartner({
-    required String title,
-    required String body,
-    required String type,
-  }) async {
-    try {
-      final fcmService = _ref.read(fcmServiceProvider);
-      final partner = _ref.read(partnerUserProvider).value;
-
-      if (partner?.fcmToken != null) {
-        await fcmService.sendNotificationToToken(
-          token: partner!.fcmToken!,
-          title: title,
-          body: body,
-          data: {'type': type},
-        );
-      }
-    } catch (e) {
-      // Ignore notification errors
-    }
   }
 }

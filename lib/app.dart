@@ -48,8 +48,8 @@ class SymphoniaApp extends ConsumerWidget {
   }
 }
 
-/// Global listener for heartbeats ONLY
-/// Simplified version without online/offline status to debug
+/// Global listener for heartbeats and online/offline status
+/// Handles app lifecycle to update online status
 class _GlobalHeartbeatListener extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -61,14 +61,29 @@ class _GlobalHeartbeatListener extends ConsumerStatefulWidget {
 }
 
 class _GlobalHeartbeatListenerState
-    extends ConsumerState<_GlobalHeartbeatListener> {
+    extends ConsumerState<_GlobalHeartbeatListener>
+    with WidgetsBindingObserver {
   String? _lastProcessedHeartbeatId;
   bool _isInitialized = false;
+  bool _isInForeground = true;
+  DateTime? _lastResumedAt;
 
   @override
   void initState() {
     super.initState();
+    // Register lifecycle observer
+    WidgetsBinding.instance.addObserver(this);
+    _lastResumedAt = DateTime.now();
     _initialize();
+  }
+
+  @override
+  void dispose() {
+    // Unregister lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
+    // Set offline when widget is disposed
+    _setOffline();
+    super.dispose();
   }
 
   Future<void> _initialize() async {
@@ -76,22 +91,88 @@ class _GlobalHeartbeatListenerState
     final vibrationService = ref.read(vibrationServiceProvider);
     await vibrationService.initialize();
 
-    // Update last active
-    final authService = ref.read(authServiceProvider);
-    await authService.updateLastActive();
+    // Set online status immediately when app starts
+    _setOnline();
 
     setState(() => _isInitialized = true);
-    debugPrint('✅ GlobalHeartbeatListener initialized');
+    debugPrint('✅ GlobalHeartbeatListener initialized - Set ONLINE');
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    debugPrint('🔄 App lifecycle changed to: $state');
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // App is in foreground - set online
+        debugPrint('📱 App RESUMED - Setting ONLINE');
+        _isInForeground = true;
+        _lastResumedAt = DateTime.now();
+        _setOnline();
+        break;
+      case AppLifecycleState.inactive:
+        // App is transitioning (switching apps, phone call)
+        // Set offline early while network is still available
+        debugPrint('📱 App INACTIVE - Setting OFFLINE');
+        _isInForeground = false;
+        _setOffline();
+        break;
+      case AppLifecycleState.paused:
+        // App is in background
+        debugPrint('📱 App PAUSED - Confirming OFFLINE');
+        _isInForeground = false;
+        _setOffline();
+        break;
+      case AppLifecycleState.hidden:
+        // App is hidden
+        debugPrint('📱 App HIDDEN');
+        _isInForeground = false;
+        break;
+      case AppLifecycleState.detached:
+        // App is being terminated
+        debugPrint('📱 App DETACHED');
+        _isInForeground = false;
+        _setOffline();
+        break;
+    }
+  }
+
+  void _setOnline() {
+    try {
+      final authService = ref.read(authServiceProvider);
+      authService.setOnlineStatus(true);
+    } catch (e) {
+      debugPrint('Error setting online: $e');
+    }
+  }
+
+  void _setOffline() {
+    try {
+      final authService = ref.read(authServiceProvider);
+      authService.setOnlineStatus(false);
+    } catch (e) {
+      debugPrint('Error setting offline: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     // Listen for incoming heartbeats globally
+    // This is ONLY for foreground - background is handled by FCM
     ref.listen(latestReceivedHeartbeatProvider, (previous, next) {
       debugPrint('💓 Heartbeat provider update: ${next.value?.id}');
 
       if (!_isInitialized) {
         debugPrint('⚠️ Not initialized yet');
+        return;
+      }
+
+      // Only process if app is in foreground
+      if (!_isInForeground) {
+        debugPrint(
+          '⚠️ App not in foreground, skipping (FCM handles background)',
+        );
         return;
       }
 
@@ -106,6 +187,17 @@ class _GlobalHeartbeatListenerState
         debugPrint('⚠️ Already processed this heartbeat');
         return;
       }
+
+      // Only process heartbeats that arrived AFTER app resumed
+      // This prevents cached/stale heartbeats from triggering
+      if (_lastResumedAt != null &&
+          heartbeat.sentAt.isBefore(_lastResumedAt!)) {
+        debugPrint('⚠️ Heartbeat is older than last resume time, skipping');
+        _lastProcessedHeartbeatId =
+            heartbeat.id; // Mark as processed to avoid future checks
+        return;
+      }
+
       _lastProcessedHeartbeatId = heartbeat.id;
 
       debugPrint('🎉 NEW HEARTBEAT! Playing vibration...');

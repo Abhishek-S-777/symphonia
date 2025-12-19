@@ -75,10 +75,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.favorite,
-                      size: 60,
-                      color: AppColors.white,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/icons/app-icon-light-transparent.png',
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   )
                   .animate(

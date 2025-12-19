@@ -214,9 +214,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildPartnerCard(dynamic partner, dynamic couple) {
-    final isOnline =
-        partner != null &&
-        DateTime.now().difference(partner.lastActive as DateTime).inMinutes < 5;
+    // Use the actual isOnline field from Firestore
+    final isOnline = partner?.isOnline ?? false;
 
     final daysTogether = couple?.daysTogether ?? 0;
     final partnerName = partner?.displayName ?? 'Your Partner';

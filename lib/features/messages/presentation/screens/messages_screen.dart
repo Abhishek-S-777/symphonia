@@ -83,9 +83,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     final partner = ref.watch(partnerUserProvider).value;
     final currentUser = ref.watch(currentAppUserProvider).value;
 
-    final isOnline =
-        partner != null &&
-        DateTime.now().difference(partner.lastActive).inMinutes < 5;
+    final isOnline = partner?.isOnline ?? false;
+
     final partnerName = partner?.displayName ?? 'Your Partner';
 
     return GradientBackground(

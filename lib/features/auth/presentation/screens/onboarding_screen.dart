@@ -26,7 +26,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   final List<OnboardingPage> _pages = [
     OnboardingPage(
-      icon: Icons.favorite,
+      image: Image.asset(
+        'assets/icons/app-icon-light-transparent.png',
+        width: 80,
+        height: 80,
+        fit: BoxFit.contain,
+      ),
       title: 'Share Your Heartbeat',
       description:
           'Send a gentle heartbeat to your partner with one tap. Let them feel your love, no matter the distance.',
@@ -183,7 +188,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                   ],
                 ),
-                child: Icon(page.icon, size: 70, color: AppColors.white),
+                child: page.icon != null
+                    ? Icon(page.icon!, size: 70, color: AppColors.white)
+                    : Center(child: page.image),
               )
               .animate(delay: 200.ms)
               .scale(
@@ -246,13 +253,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
 /// Data class for onboarding pages
 class OnboardingPage {
-  final IconData icon;
+  final IconData? icon;
+  final Image? image;
   final String title;
   final String description;
   final Gradient gradient;
 
   const OnboardingPage({
-    required this.icon,
+    this.icon,
+    this.image,
     required this.title,
     required this.description,
     required this.gradient,

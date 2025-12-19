@@ -146,24 +146,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           height: 80,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [
-                                AppColors.primary,
-                                AppColors.primaryLight,
-                              ],
-                            ),
+
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.primary.withValues(alpha: 0.3),
-                                blurRadius: 20,
+                                blurRadius: 30,
                                 spreadRadius: 2,
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.favorite,
-                            size: 40,
-                            color: AppColors.white,
+                          child: Center(
+                            child: Image.asset(
+                              'assets/icons/app-icon-light-transparent.png',
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ).animate().scale(
                           duration: 600.ms,
