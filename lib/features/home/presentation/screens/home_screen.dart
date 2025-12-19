@@ -370,62 +370,284 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildDailyMessageCard(AsyncValue<DailyQuote> quoteAsync) {
+    return _DailyMessageCardWidget(quoteAsync: quoteAsync);
+  }
+}
+
+/// Separate widget for daily message card to manage editing state
+class _DailyMessageCardWidget extends ConsumerStatefulWidget {
+  final AsyncValue<DailyQuote> quoteAsync;
+
+  const _DailyMessageCardWidget({required this.quoteAsync});
+
+  @override
+  ConsumerState<_DailyMessageCardWidget> createState() =>
+      _DailyMessageCardWidgetState();
+}
+
+class _DailyMessageCardWidgetState
+    extends ConsumerState<_DailyMessageCardWidget> {
+  bool _isEditing = false;
+  final _textController = TextEditingController();
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _startEditing() {
+    final currentQuote = widget.quoteAsync.value;
+    _textController.text = currentQuote?.isCustom == true
+        ? currentQuote!.quote
+        : '';
+    setState(() {
+      _isEditing = true;
+    });
+    // Focus after next frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNode.requestFocus();
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _isEditing = false;
+    });
+    _textController.clear();
+  }
+
+  Future<void> _saveQuote() async {
+    if (_textController.text.trim().isEmpty) {
+      _cancelEditing();
+      return;
+    }
+
+    final notifier = ref.read(dailyQuoteProvider.notifier);
+    await notifier.setCustomQuote(_textController.text.trim());
+
+    setState(() {
+      _isEditing = false;
+    });
+    _textController.clear();
+  }
+
+  Future<void> _clearCustomQuote() async {
+    final notifier = ref.read(dailyQuoteProvider.notifier);
+    await notifier.clearCustomQuote();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return GradientGlassCard(
       borderGradient: AppGradients.twilight,
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header row with title and edit button
           Row(
             children: [
               const Icon(Icons.auto_awesome, color: AppColors.accent, size: 20),
               const SizedBox(width: 8),
-              Text(
-                'Daily Love Note',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: AppColors.accent),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          quoteAsync.when(
-            data: (quote) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '"${quote.quote}"',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontStyle: FontStyle.italic,
-                    height: 1.6,
-                  ),
+              Expanded(
+                child: Text(
+                  'Daily Love Note',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(color: AppColors.accent),
                 ),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    '— ${quote.author}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
+              ),
+              // Edit/Clear button
+              if (!_isEditing) ...[
+                if (widget.quoteAsync.value?.isCustom == true)
+                  GestureDetector(
+                    onTap: _clearCustomQuote,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.romanticRed.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        size: 18,
+                        color: AppColors.gray.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: _startEditing,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      size: 16,
+                      color: AppColors.accent,
+                    ),
                   ),
                 ),
               ],
-            ),
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(20),
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-            error: (_, _) => Text(
-              '"Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day."',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontStyle: FontStyle.italic,
-                height: 1.6,
-              ),
-            ),
+            ],
           ),
+          const SizedBox(height: 12),
+
+          // Content: either editing or displaying
+          if (_isEditing) ...[
+            // Editing mode
+            TextField(
+              controller: _textController,
+              focusNode: _focusNode,
+              maxLines: 3,
+              maxLength: 200,
+              decoration: InputDecoration(
+                hintText: 'Write a love note for your partner...',
+                hintStyle: TextStyle(
+                  color: AppColors.gray.withValues(alpha: 0.6),
+                  fontStyle: FontStyle.italic,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.accent.withValues(alpha: 0.3),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.accent.withValues(alpha: 0.3),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.accent,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _cancelEditing,
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: AppColors.gray),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _saveQuote,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accent,
+                    foregroundColor: AppColors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Save'),
+                ),
+              ],
+            ),
+          ] else ...[
+            // Display mode
+            widget.quoteAsync.when(
+              data: (quote) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Custom quote indicator
+                  if (quote.isCustom)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.favorite,
+                              size: 12,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Custom Note',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  Text(
+                    '"${quote.quote}"',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontStyle: FontStyle.italic,
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      '— ${quote.author}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: quote.isCustom
+                            ? AppColors.primary
+                            : AppColors.gray,
+                        fontWeight: quote.isCustom
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              loading: () => const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              error: (_, __) => Text(
+                '"Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day."',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  height: 1.6,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
