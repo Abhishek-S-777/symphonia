@@ -11,15 +11,18 @@ final messageServiceProvider = Provider<MessageService>((ref) {
 });
 
 /// Messages Stream Provider
+/// Uses select() to only rebuild when coupleId changes
 final messagesStreamProvider = StreamProvider<List<Message>>((ref) {
-  final currentUser = ref.watch(currentAppUserProvider).value;
-  if (currentUser == null || currentUser.coupleId == null) {
+  final coupleId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.coupleId),
+  );
+  if (coupleId == null) {
     return Stream.value([]);
   }
 
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
-      .doc(currentUser.coupleId)
+      .doc(coupleId)
       .collection(FirebaseCollections.messages)
       .orderBy(FirebaseCollections.messageSentAt, descending: true)
       .limit(100)
@@ -31,18 +34,24 @@ final messagesStreamProvider = StreamProvider<List<Message>>((ref) {
 
 /// Latest Received Heartbeat Provider - listens for new heartbeats from partner
 /// This triggers vibration on the receiver's device
+/// Uses select() to only rebuild when coupleId or userId changes
 final latestReceivedHeartbeatProvider = StreamProvider<Message?>((ref) {
-  final currentUser = ref.watch(currentAppUserProvider).value;
-  if (currentUser == null || currentUser.coupleId == null) {
+  final coupleId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.coupleId),
+  );
+  final userId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.id),
+  );
+  if (coupleId == null || userId == null) {
     return Stream.value(null);
   }
 
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
-      .doc(currentUser.coupleId)
+      .doc(coupleId)
       .collection(FirebaseCollections.messages)
       .where(FirebaseCollections.messageType, isEqualTo: 'heartbeat')
-      .where(FirebaseCollections.messageSenderId, isNotEqualTo: currentUser.id)
+      .where(FirebaseCollections.messageSenderId, isNotEqualTo: userId)
       .orderBy(FirebaseCollections.messageSenderId)
       .orderBy(FirebaseCollections.messageSentAt, descending: true)
       .limit(1)
@@ -62,17 +71,23 @@ final latestReceivedHeartbeatProvider = StreamProvider<Message?>((ref) {
 });
 
 /// Unread Messages Count Provider
+/// Uses select() to only rebuild when coupleId or userId changes
 final unreadMessagesCountProvider = StreamProvider<int>((ref) {
-  final currentUser = ref.watch(currentAppUserProvider).value;
-  if (currentUser == null || currentUser.coupleId == null) {
+  final coupleId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.coupleId),
+  );
+  final userId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.id),
+  );
+  if (coupleId == null || userId == null) {
     return Stream.value(0);
   }
 
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
-      .doc(currentUser.coupleId)
+      .doc(coupleId)
       .collection(FirebaseCollections.messages)
-      .where(FirebaseCollections.messageSenderId, isNotEqualTo: currentUser.id)
+      .where(FirebaseCollections.messageSenderId, isNotEqualTo: userId)
       .where(FirebaseCollections.messageReadAt, isNull: true)
       .snapshots()
       .map((snapshot) => snapshot.docs.length);

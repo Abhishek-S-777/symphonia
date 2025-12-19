@@ -223,7 +223,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                   child: Icon(
                                     Icons.repeat,
                                     size: 16,
-                                    color: AppColors.accent,
+                                    color: AppColors.success,
                                   ),
                                 ),
                               Expanded(
@@ -935,19 +935,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Recurring status
-                    _buildSummaryField(
-                      icon: event.isRecurring ? Icons.repeat : Icons.repeat_one,
-                      iconColor: event.isRecurring
-                          ? AppColors.accent
-                          : AppColors.gray,
-                      label: 'Repeats',
-                      value: event.isRecurring
-                          ? 'Every year (${event.recurringType.name})'
-                          : 'Does not repeat',
-                    ),
-                    const SizedBox(height: 16),
-
                     // Notification time
                     _buildSummaryField(
                       icon: Icons.notifications,
@@ -960,6 +947,21 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             ).format(context)
                           : '9:00 AM',
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // Recurring status
+                    _buildSummaryField(
+                      icon: event.isRecurring ? Icons.repeat : Icons.repeat_one,
+                      iconColor: event.isRecurring
+                          ? AppColors.success
+                          : AppColors.gray,
+                      label: 'Repeats',
+                      value: event.isRecurring
+                          ? 'Every year (${event.recurringType.name})'
+                          : 'Does not repeat',
+                    ),
+
                     const SizedBox(height: 24),
                   ],
                 ),

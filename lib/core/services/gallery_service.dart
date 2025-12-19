@@ -17,15 +17,18 @@ final galleryServiceProvider = Provider<GalleryService>((ref) {
 });
 
 /// Memories Stream Provider
+/// Uses select() to only rebuild when coupleId changes
 final memoriesStreamProvider = StreamProvider<List<Memory>>((ref) {
-  final currentUser = ref.watch(currentAppUserProvider).value;
-  if (currentUser == null || currentUser.coupleId == null) {
+  final coupleId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.coupleId),
+  );
+  if (coupleId == null) {
     return Stream.value([]);
   }
 
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
-      .doc(currentUser.coupleId)
+      .doc(coupleId)
       .collection(FirebaseCollections.memories)
       .orderBy(FirebaseCollections.memoryDate, descending: true)
       .snapshots()

@@ -14,15 +14,18 @@ final coupleServiceProvider = Provider<CoupleService>((ref) {
 });
 
 /// Current Couple Provider
+/// Uses select() to only rebuild when coupleId changes
 final currentCoupleProvider = StreamProvider<Couple?>((ref) {
-  final currentUser = ref.watch(currentAppUserProvider).value;
-  if (currentUser == null || currentUser.coupleId == null) {
+  final coupleId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.coupleId),
+  );
+  if (coupleId == null) {
     return Stream.value(null);
   }
 
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
-      .doc(currentUser.coupleId)
+      .doc(coupleId)
       .snapshots()
       .map((doc) {
         if (!doc.exists) return null;

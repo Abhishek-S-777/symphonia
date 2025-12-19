@@ -14,15 +14,21 @@ final eventServiceProvider = Provider<EventService>((ref) {
 });
 
 /// Events Stream Provider
+/// Uses select() to only rebuild when coupleId changes, not on every user update
 final eventsStreamProvider = StreamProvider<List<Event>>((ref) {
-  final currentUser = ref.watch(currentAppUserProvider).value;
-  if (currentUser == null || currentUser.coupleId == null) {
+  // Only watch the coupleId, not the entire user object
+  // This prevents rebuilds when lastActive, isOnline, etc. change
+  final coupleId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.coupleId),
+  );
+
+  if (coupleId == null) {
     return Stream.value([]);
   }
 
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
-      .doc(currentUser.coupleId)
+      .doc(coupleId)
       .collection(FirebaseCollections.events)
       .orderBy(FirebaseCollections.eventDate)
       .snapshots()
