@@ -110,7 +110,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     itemBuilder: (context, index) {
                       final message = messages[index];
                       final isMe = message.senderId == currentUser?.id;
-                      return _buildMessageBubble(message, isMe);
+                      return _buildMessageBubble(message, partnerName, isMe);
                     },
                   );
                 },
@@ -260,7 +260,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     );
   }
 
-  Widget _buildMessageBubble(Message message, bool isMe) {
+  Widget _buildMessageBubble(Message message, String partnerName, bool isMe) {
     final isHeartbeat = message.type == MessageType.heartbeat;
 
     if (isHeartbeat) {
@@ -270,8 +270,11 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.primarySoft,
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -289,10 +292,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 Text(
                   isMe
                       ? 'You sent a heartbeat'
-                      : 'Partner sent you a heartbeat',
+                      : '$partnerName sent you a heartbeat',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.primary),
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
                 ),
               ],
             ),
@@ -387,17 +390,16 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySoft,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.2),
+                    color: AppColors.white.withValues(alpha: 0.5),
                   ),
                 ),
                 child: Text(
                   message,
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.primary),
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.white),
                 ),
               ),
             ),
