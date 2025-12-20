@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../../core/router/routes.dart';
+import '../../../../core/services/audio_service.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/couple_service.dart';
 import '../../../../core/services/message_service.dart';
@@ -301,6 +302,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildQuickActions() {
+    final unreadVoiceNotes = ref.watch(unreadVoiceNotesCountProvider);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -308,6 +311,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           icon: Icons.mic,
           label: 'Voice',
           color: AppColors.accent,
+          badgeCount: unreadVoiceNotes,
           onTap: () => context.push(Routes.voiceNotesPath),
         ),
       ],
@@ -319,20 +323,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String label,
     required Color color,
     required VoidCallback onTap,
+    int badgeCount = 0,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withValues(alpha: 0.2)),
-            ),
-            child: Icon(icon, color: color, size: 28),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.withValues(alpha: 0.2)),
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              // Badge
+              if (badgeCount > 0)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 20,
+                      minHeight: 20,
+                    ),
+                    child: Center(
+                      child: Text(
+                        badgeCount > 99 ? '99+' : '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(

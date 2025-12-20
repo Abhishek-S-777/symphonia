@@ -1,9 +1,9 @@
 import 'dart:async';
+import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:just_audio/just_audio.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/audio_service.dart';
@@ -12,6 +12,7 @@ import '../../../../core/services/vibration_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
+import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../domain/entities/voice_note.dart';
 
@@ -29,7 +30,6 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
   late AnimationController _pulseController;
-  String? _playingId;
 
   @override
   void initState() {
@@ -104,31 +104,19 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
       if (voiceNote != null &&
           _recordingSeconds >= AppConstants.voiceNoteMinDuration) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Voice note sent! 🎤 (${_recordingSeconds}s)'),
-              backgroundColor: AppColors.success,
-            ),
+          AppSnackbar.showSuccess(
+            context,
+            'Voice note sent! (${_recordingSeconds}s)',
           );
         }
       } else if (_recordingSeconds < AppConstants.voiceNoteMinDuration) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Recording too short'),
-              backgroundColor: AppColors.warning,
-            ),
-          );
+          AppSnackbar.showInfo(context, 'Recording too short');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save recording: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        AppSnackbar.showError(context, 'Failed to save recording: $e');
       }
     }
   }
@@ -136,32 +124,19 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
   Future<void> _playVoiceNote(VoiceNote note) async {
     try {
       final audioService = ref.read(audioServiceProvider);
+      final currentPlayingId = ref.read(currentlyPlayingIdProvider);
 
-      if (_playingId == note.id) {
+      if (currentPlayingId == note.id) {
+        // Stop if already playing this note
         await audioService.stopPlaying();
-        setState(() => _playingId = null);
       } else {
-        setState(() => _playingId = note.id);
+        // Play the new note (service handles stopping current playback)
         await audioService.playVoiceNote(note);
-
-        // Listen for completion
-        audioService.playerStateStream.listen((state) {
-          if (mounted && state.processingState == ProcessingState.completed) {
-            setState(() => _playingId = null);
-          }
-        });
-
         ref.read(vibrationServiceProvider).vibrateVoiceNoteReceived();
       }
     } catch (e) {
-      setState(() => _playingId = null);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to play: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        AppSnackbar.showError(context, 'Failed to play voice note');
       }
     }
   }
@@ -211,7 +186,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
                                 const SizedBox(height: 8),
                                 TextButton(
                                   onPressed: () =>
-                                      ref.refresh(voiceNotesStreamProvider),
+                                      ref.invalidate(voiceNotesStreamProvider),
                                   child: const Text('Retry'),
                                 ),
                               ],
@@ -315,106 +290,221 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
   }
 
   Widget _buildVoiceNoteItem(VoiceNote note, bool isMe) {
-    final isPlaying = _playingId == note.id;
+    final playingId = ref.watch(currentlyPlayingIdProvider);
+    final isPlaying = playingId == note.id;
+    final audioService = ref.read(audioServiceProvider);
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
         child: GlassCard(
           backgroundColor: isMe
               ? AppColors.primary.withValues(alpha: 0.1)
               : null,
-          child: Row(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Play button
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: isMe
-                      ? AppGradients.primary
-                      : AppGradients.voiceNote,
-                ),
-                child: IconButton(
-                  onPressed: () => _playVoiceNote(note),
-                  icon: Icon(
-                    isPlaying
-                        ? Icons.stop
-                        : (note.isPlayed ? Icons.replay : Icons.play_arrow),
-                    color: AppColors.white,
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Waveform placeholder & duration
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Waveform visualization placeholder
-                    Container(
-                      height: 24,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Skip backward button (only when playing)
+                  if (isPlaying)
+                    IconButton(
+                      onPressed: () => audioService.seekBackward(
+                        duration: const Duration(seconds: 5),
                       ),
-                      child: Row(
-                        children: List.generate(
-                          20,
-                          (i) => Expanded(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.symmetric(horizontal: 1),
-                              height: isPlaying
-                                  ? 4 +
-                                        ((i +
-                                                    DateTime.now()
-                                                            .millisecond ~/
-                                                        100) %
-                                                6) *
-                                            4.0
-                                  : 4 + (i % 5) * 4.0,
-                              decoration: BoxDecoration(
-                                color:
+                      icon: Icon(
+                        Icons.replay_5,
+                        color: isMe ? AppColors.primary : AppColors.accent,
+                        size: 22,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
+
+                  // Play/Stop button
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: isMe
+                          ? AppGradients.primary
+                          : AppGradients.voiceNote,
+                    ),
+                    child: IconButton(
+                      onPressed: () => _playVoiceNote(note),
+                      icon: Icon(
+                        isPlaying
+                            ? Icons.stop
+                            : (note.isPlayed ? Icons.replay : Icons.play_arrow),
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+
+                  // Skip forward button (only when playing)
+                  if (isPlaying)
+                    IconButton(
+                      onPressed: () => audioService.seekForward(
+                        duration: const Duration(seconds: 5),
+                      ),
+                      icon: Icon(
+                        Icons.forward_5,
+                        color: isMe ? AppColors.primary : AppColors.accent,
+                        size: 22,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
+
+                  const SizedBox(width: 8),
+
+                  // Progress bar & duration
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Interactive progress bar when playing
+                        if (isPlaying)
+                          StreamBuilder<Duration>(
+                            stream: audioService.positionStream,
+                            builder: (context, snapshot) {
+                              final position = snapshot.data ?? Duration.zero;
+                              final total = Duration(
+                                seconds: note.durationSeconds,
+                              );
+                              return ProgressBar(
+                                progress: position,
+                                total: total,
+                                buffered: total,
+                                onSeek: (duration) =>
+                                    audioService.seekTo(duration),
+                                barHeight: 4,
+                                thumbRadius: 6,
+                                thumbGlowRadius: 12,
+                                baseBarColor:
                                     (isMe
                                             ? AppColors.primary
                                             : AppColors.accent)
-                                        .withValues(
-                                          alpha: note.isPlayed ? 0.3 : 0.6,
-                                        ),
-                                borderRadius: BorderRadius.circular(2),
+                                        .withValues(alpha: 0.2),
+                                progressBarColor: isMe
+                                    ? AppColors.primary
+                                    : AppColors.accent,
+                                bufferedBarColor:
+                                    (isMe
+                                            ? AppColors.primary
+                                            : AppColors.accent)
+                                        .withValues(alpha: 0.3),
+                                thumbColor: isMe
+                                    ? AppColors.primary
+                                    : AppColors.accent,
+                                thumbGlowColor:
+                                    (isMe
+                                            ? AppColors.primary
+                                            : AppColors.accent)
+                                        .withValues(alpha: 0.3),
+                                timeLabelLocation: TimeLabelLocation.none,
+                              );
+                            },
+                          )
+                        else
+                          // Static waveform visualization when not playing
+                          Container(
+                            height: 24,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: List.generate(
+                                20,
+                                (i) => Expanded(
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 1,
+                                    ),
+                                    height: 4 + (i % 5) * 4.0,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          (isMe
+                                                  ? AppColors.primary
+                                                  : AppColors.accent)
+                                              .withValues(
+                                                alpha: note.isPlayed
+                                                    ? 0.3
+                                                    : 0.6,
+                                              ),
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
 
-                    const SizedBox(height: 4),
+                        const SizedBox(height: 4),
 
-                    Row(
-                      children: [
-                        Text(
-                          note.formattedDuration,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.gray),
-                        ),
-                        const Spacer(),
-                        Text(
-                          _formatTime(note.createdAt),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.gray, fontSize: 10),
+                        Row(
+                          children: [
+                            // Show current position when playing, otherwise show total duration
+                            if (isPlaying)
+                              StreamBuilder<Duration>(
+                                stream: audioService.positionStream,
+                                builder: (context, snapshot) {
+                                  final position =
+                                      snapshot.data ?? Duration.zero;
+                                  final posStr = _formatDuration(position);
+                                  final totalStr = note.formattedDuration;
+                                  return Text(
+                                    '$posStr / $totalStr',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: AppColors.gray),
+                                  );
+                                },
+                              )
+                            else
+                              Text(
+                                note.formattedDuration,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: AppColors.gray),
+                              ),
+                            const Spacer(),
+                            // Sync status indicator for pending notes
+                            if (!note.isSynced)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 4),
+                                child: SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            Text(
+                              _formatTime(note.createdAt),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.gray,
+                                    fontSize: 10,
+                                  ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -527,6 +617,12 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
   String _formatRecordingTime(int seconds) {
     final mins = seconds ~/ 60;
     final secs = seconds % 60;
+    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDuration(Duration duration) {
+    final mins = duration.inMinutes;
+    final secs = duration.inSeconds % 60;
     return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 

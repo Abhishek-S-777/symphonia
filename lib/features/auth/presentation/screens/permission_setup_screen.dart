@@ -181,24 +181,24 @@ class _PermissionSetupScreenState extends ConsumerState<PermissionSetupScreen> {
                               isGranted: _microphoneGranted,
                               onRequest: _requestMicrophone,
                             ),
-                            const SizedBox(height: 16),
-                            _buildPermissionItem(
-                              icon: Icons.camera_alt,
-                              title: 'Camera',
-                              description:
-                                  'Take photos to add to your shared gallery',
-                              isGranted: _cameraGranted,
-                              onRequest: _requestCamera,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildPermissionItem(
-                              icon: Icons.photo_library,
-                              title: 'Photos',
-                              description:
-                                  'Access your photos to share memories together',
-                              isGranted: _photosGranted,
-                              onRequest: _requestPhotos,
-                            ),
+                            // const SizedBox(height: 16),
+                            // _buildPermissionItem(
+                            //   icon: Icons.camera_alt,
+                            //   title: 'Camera',
+                            //   description:
+                            //       'Take photos to add to your shared gallery',
+                            //   isGranted: _cameraGranted,
+                            //   onRequest: _requestCamera,
+                            // ),
+                            // const SizedBox(height: 16),
+                            // _buildPermissionItem(
+                            //   icon: Icons.photo_library,
+                            //   title: 'Photos',
+                            //   description:
+                            //       'Access your photos to share memories together',
+                            //   isGranted: _photosGranted,
+                            //   onRequest: _requestPhotos,
+                            // ),
                           ],
                         ),
                       ),
@@ -300,6 +300,7 @@ class _PermissionSetupScreenState extends ConsumerState<PermissionSetupScreen> {
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: AppColors.grayDark,
                       ),
                     ),
                     if (isRequired) ...[

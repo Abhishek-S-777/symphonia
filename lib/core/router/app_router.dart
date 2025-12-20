@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 
 import '../../app.dart';
 import 'routes.dart';
+import '../services/auth_service.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -48,7 +49,7 @@ class AppRouter {
       initialLocation: Routes.splashPath,
       debugLogDiagnostics: true,
 
-      // Authentication redirect guard
+      // Authentication & pairing redirect guard
       redirect: (context, state) {
         // Use Firebase Auth directly to get current auth state (avoids stream timing issues)
         final firebaseUser = fb.FirebaseAuth.instance.currentUser;
@@ -56,6 +57,10 @@ class AppRouter {
         final currentPath = state.uri.path;
         final isPublicRoute = _publicRoutes.contains(currentPath);
         final isPairingRoute = currentPath == Routes.pairingPath;
+
+        // Get current user from provider to check pairing status
+        final currentUser = ref.read(currentAppUserProvider).value;
+        final isPaired = currentUser?.coupleId != null;
 
         // If on splash screen, don't redirect (splash handles its own navigation)
         if (currentPath == Routes.splashPath) {
@@ -67,8 +72,18 @@ class AppRouter {
           return Routes.loginPath;
         }
 
-        // If logged in and trying to access login/signup, redirect to home
+        // If logged in and trying to access login/signup, redirect based on pairing status
         if (isLoggedIn && isPublicRoute && currentPath != Routes.splashPath) {
+          return isPaired ? Routes.homePath : Routes.pairingPath;
+        }
+
+        // If logged in but NOT paired, and trying to access protected routes (not pairing), go to pairing
+        if (isLoggedIn && !isPaired && !isPublicRoute && !isPairingRoute) {
+          return Routes.pairingPath;
+        }
+
+        // If logged in and paired, but on pairing screen, go to home
+        if (isLoggedIn && isPaired && isPairingRoute) {
           return Routes.homePath;
         }
 

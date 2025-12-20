@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/firebase_collections.dart';
@@ -161,43 +162,95 @@ class CoupleService {
         .doc(user.uid)
         .get();
 
-    // Create couple document
-    final coupleRef = _firestore.collection(FirebaseCollections.couples).doc();
+    // Check for EXISTING couple document with these two users (preserves history!)
+    // They might have unpaired and are now re-pairing
+    QuerySnapshot? existingCouple = await _firestore
+        .collection(FirebaseCollections.couples)
+        .where(FirebaseCollections.coupleUser1Id, isEqualTo: creatorId)
+        .where(FirebaseCollections.coupleUser2Id, isEqualTo: user.uid)
+        .limit(1)
+        .get();
 
-    await _firestore.runTransaction((transaction) async {
-      // Create couple
-      transaction.set(coupleRef, {
-        FirebaseCollections.coupleUser1Id: creatorId,
-        FirebaseCollections.coupleUser2Id: user.uid,
-        FirebaseCollections.coupleUser1Email: creatorDoc
-            .data()?[FirebaseCollections.userEmail],
-        FirebaseCollections.coupleUser2Email: currentUserDoc
-            .data()?[FirebaseCollections.userEmail],
-        FirebaseCollections.couplePairedAt: FieldValue.serverTimestamp(),
-        FirebaseCollections.coupleAnniversaryDate: null,
-        FirebaseCollections.coupleSettings: {
-          'heartbeatEnabled': true,
-          'notificationsEnabled': true,
-          'soundEnabled': true,
-          'vibrationEnabled': true,
-        },
+    // Also check the reverse order (user1/user2 might be swapped)
+    if (existingCouple.docs.isEmpty) {
+      existingCouple = await _firestore
+          .collection(FirebaseCollections.couples)
+          .where(FirebaseCollections.coupleUser1Id, isEqualTo: user.uid)
+          .where(FirebaseCollections.coupleUser2Id, isEqualTo: creatorId)
+          .limit(1)
+          .get();
+    }
+
+    late final String coupleId;
+
+    if (existingCouple.docs.isNotEmpty) {
+      // REUSE existing couple document - preserves all shared data!
+      coupleId = existingCouple.docs.first.id;
+      debugPrint('♻️ Reusing existing couple document: $coupleId');
+
+      await _firestore.runTransaction((transaction) async {
+        // Update the couple document with new pairedAt time
+        transaction.update(
+          _firestore.collection(FirebaseCollections.couples).doc(coupleId),
+          {FirebaseCollections.couplePairedAt: FieldValue.serverTimestamp()},
+        );
+
+        // Update both users with couple ID
+        transaction.update(
+          _firestore.collection(FirebaseCollections.users).doc(creatorId),
+          {FirebaseCollections.userCoupleId: coupleId},
+        );
+        transaction.update(
+          _firestore.collection(FirebaseCollections.users).doc(user.uid),
+          {FirebaseCollections.userCoupleId: coupleId},
+        );
+
+        // Delete the pairing code
+        transaction.delete(codeDoc.reference);
       });
+    } else {
+      // Create NEW couple document
+      final coupleRef = _firestore
+          .collection(FirebaseCollections.couples)
+          .doc();
+      coupleId = coupleRef.id;
+      debugPrint('🆕 Creating new couple document: $coupleId');
 
-      // Update both users with couple ID
-      transaction.update(
-        _firestore.collection(FirebaseCollections.users).doc(creatorId),
-        {FirebaseCollections.userCoupleId: coupleRef.id},
-      );
-      transaction.update(
-        _firestore.collection(FirebaseCollections.users).doc(user.uid),
-        {FirebaseCollections.userCoupleId: coupleRef.id},
-      );
+      await _firestore.runTransaction((transaction) async {
+        // Create couple
+        transaction.set(coupleRef, {
+          FirebaseCollections.coupleUser1Id: creatorId,
+          FirebaseCollections.coupleUser2Id: user.uid,
+          FirebaseCollections.coupleUser1Email: creatorDoc
+              .data()?[FirebaseCollections.userEmail],
+          FirebaseCollections.coupleUser2Email: currentUserDoc
+              .data()?[FirebaseCollections.userEmail],
+          FirebaseCollections.couplePairedAt: FieldValue.serverTimestamp(),
+          FirebaseCollections.coupleAnniversaryDate: null,
+          FirebaseCollections.coupleSettings: {
+            'heartbeatEnabled': true,
+            'notificationsEnabled': true,
+            'soundEnabled': true,
+            'vibrationEnabled': true,
+          },
+        });
 
-      // Delete the pairing code
-      transaction.delete(codeDoc.reference);
-    });
+        // Update both users with couple ID
+        transaction.update(
+          _firestore.collection(FirebaseCollections.users).doc(creatorId),
+          {FirebaseCollections.userCoupleId: coupleRef.id},
+        );
+        transaction.update(
+          _firestore.collection(FirebaseCollections.users).doc(user.uid),
+          {FirebaseCollections.userCoupleId: coupleRef.id},
+        );
 
-    return coupleRef.id;
+        // Delete the pairing code
+        transaction.delete(codeDoc.reference);
+      });
+    }
+
+    return coupleId;
   }
 
   /// Update couple settings
@@ -248,9 +301,6 @@ class CoupleService {
         _firestore.collection(FirebaseCollections.users).doc(user2Id),
         {FirebaseCollections.userCoupleId: null},
       );
-
-      // Delete couple document
-      transaction.delete(coupleDoc.reference);
     });
   }
 }

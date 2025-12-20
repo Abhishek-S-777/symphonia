@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:record/record.dart';
@@ -11,19 +13,59 @@ import 'package:uuid/uuid.dart';
 import '../constants/firebase_collections.dart';
 import '../../features/voice_notes/domain/entities/voice_note.dart';
 import 'auth_service.dart';
-import 'fcm_service.dart';
+
+// =============================================================================
+// STATE NOTIFIERS (Modern Riverpod 2.x pattern)
+// =============================================================================
+
+/// Notifier for the currently playing voice note ID
+class CurrentlyPlayingIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void setPlaying(String? id) => state = id;
+  void clear() => state = null;
+}
+
+final currentlyPlayingIdProvider =
+    NotifierProvider<CurrentlyPlayingIdNotifier, String?>(() {
+      return CurrentlyPlayingIdNotifier();
+    });
+
+/// Notifier for pending (not yet synced) voice notes
+class PendingVoiceNotesNotifier extends Notifier<List<VoiceNote>> {
+  @override
+  List<VoiceNote> build() => [];
+
+  void add(VoiceNote note) => state = [...state, note];
+  void remove(String id) => state = state.where((n) => n.id != id).toList();
+  void removeMultiple(Set<String> ids) =>
+      state = state.where((n) => !ids.contains(n.id)).toList();
+  void clear() => state = [];
+}
+
+final pendingVoiceNotesProvider =
+    NotifierProvider<PendingVoiceNotesNotifier, List<VoiceNote>>(() {
+      return PendingVoiceNotesNotifier();
+    });
+
+// =============================================================================
+// AUDIO SERVICE
+// =============================================================================
 
 /// Audio Service Provider
 final audioServiceProvider = Provider<AudioService>((ref) {
-  return AudioService(ref);
+  final service = AudioService(ref);
+  ref.onDispose(() => service.dispose());
+  return service;
 });
 
-/// Voice Notes Stream Provider
-/// Uses select() to only rebuild when coupleId changes
-final voiceNotesStreamProvider = StreamProvider<List<VoiceNote>>((ref) {
+/// Firebase Voice Notes Stream Provider (internal)
+final _firebaseVoiceNotesProvider = StreamProvider<List<VoiceNote>>((ref) {
   final coupleId = ref.watch(
     currentAppUserProvider.select((asyncUser) => asyncUser.value?.coupleId),
   );
+
   if (coupleId == null) {
     return Stream.value([]);
   }
@@ -32,7 +74,7 @@ final voiceNotesStreamProvider = StreamProvider<List<VoiceNote>>((ref) {
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.voiceNotes)
-      .orderBy(FirebaseCollections.voiceNoteCreatedAt, descending: true)
+      .orderBy(FirebaseCollections.voiceNoteCreatedAt, descending: false)
       .limit(50)
       .snapshots()
       .map((snapshot) {
@@ -40,6 +82,72 @@ final voiceNotesStreamProvider = StreamProvider<List<VoiceNote>>((ref) {
             .map((doc) => _voiceNoteFromFirestore(doc))
             .toList();
       });
+});
+
+/// Combined Voice Notes Provider
+/// Reactively combines pending (local) notes with Firebase notes
+/// Pending notes appear IMMEDIATELY, no waiting for upload
+final voiceNotesStreamProvider = Provider<AsyncValue<List<VoiceNote>>>((ref) {
+  final firebaseNotesAsync = ref.watch(_firebaseVoiceNotesProvider);
+  final pendingNotes = ref.watch(pendingVoiceNotesProvider);
+
+  return firebaseNotesAsync.when(
+    data: (firebaseNotes) {
+      final firebaseIds = firebaseNotes.map((n) => n.id).toSet();
+
+      // Filter out notes that are now synced to Firebase
+      final stillPending = pendingNotes
+          .where((n) => !firebaseIds.contains(n.id))
+          .toList();
+
+      // Clean up synced notes from pending provider (single batch update)
+      if (stillPending.length != pendingNotes.length) {
+        final syncedIds = pendingNotes
+            .where((n) => firebaseIds.contains(n.id))
+            .map((n) => n.id)
+            .toSet();
+        if (syncedIds.isNotEmpty) {
+          Future.microtask(() {
+            ref
+                .read(pendingVoiceNotesProvider.notifier)
+                .removeMultiple(syncedIds);
+          });
+        }
+      }
+
+      // Combine: firebase first (oldest), then pending at the end (newest)
+      return AsyncValue.data([...firebaseNotes, ...stillPending]);
+    },
+    loading: () {
+      // While loading Firebase, still show pending notes
+      if (pendingNotes.isNotEmpty) {
+        return AsyncValue.data(pendingNotes);
+      }
+      return const AsyncValue.loading();
+    },
+    error: (e, st) => AsyncValue.error(e, st),
+  );
+});
+
+/// Unread Voice Notes Count Provider
+/// Counts voice notes that are not from the current user and haven't been played
+final unreadVoiceNotesCountProvider = Provider<int>((ref) {
+  final voiceNotesAsync = ref.watch(voiceNotesStreamProvider);
+  final currentUser = ref.watch(currentAppUserProvider).value;
+
+  if (currentUser == null) return 0;
+
+  return voiceNotesAsync.when(
+    data: (notes) {
+      return notes
+          .where(
+            (note) => note.senderId != currentUser.id && note.playedAt == null,
+          )
+          .length;
+    },
+    loading: () => 0,
+    error: (_, __) => 0,
+  );
 });
 
 VoiceNote _voiceNoteFromFirestore(DocumentSnapshot doc) {
@@ -72,12 +180,18 @@ class AudioService {
   bool _isRecording = false;
   String? _currentRecordingPath;
   DateTime? _recordingStartTime;
-  String? _currentlyPlayingId;
+  StreamSubscription<PlayerState>? _playerStateSubscription;
 
-  AudioService(this._ref);
+  AudioService(this._ref) {
+    // Set up a SINGLE listener for player state changes
+    _playerStateSubscription = _player.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed) {
+        _ref.read(currentlyPlayingIdProvider.notifier).clear();
+      }
+    });
+  }
 
   bool get isRecording => _isRecording;
-  String? get currentlyPlayingId => _currentlyPlayingId;
 
   /// Check if microphone permission is granted
   Future<bool> hasPermission() async {
@@ -99,16 +213,15 @@ class AudioService {
       await voiceNotesDir.create(recursive: true);
     }
 
-    final fileName = 'voice_note_${_uuid.v4()}.m4a';
+    final fileName = 'voice_${_uuid.v4()}.m4a';
     _currentRecordingPath = '${voiceNotesDir.path}/$fileName';
     _recordingStartTime = DateTime.now();
 
-    // Use AAC encoder for compression (smaller file size)
     await _recorder.start(
-      RecordConfig(
+      const RecordConfig(
         encoder: AudioEncoder.aacLc,
-        bitRate: 64000, // 64 kbps for good quality with compression
-        sampleRate: 22050, // Lower sample rate for voice
+        bitRate: 128000,
+        sampleRate: 44100,
       ),
       path: _currentRecordingPath!,
     );
@@ -117,6 +230,10 @@ class AudioService {
   }
 
   /// Stop recording and save the voice note
+  /// Uses OPTIMISTIC LOCAL-FIRST approach:
+  /// 1. Immediately creates a local voice note and shows it
+  /// 2. Uploads to Firebase in background
+  /// 3. Updates Firestore when upload completes
   Future<VoiceNote?> stopRecording() async {
     if (!_isRecording || _currentRecordingPath == null) return null;
 
@@ -129,7 +246,6 @@ class AudioService {
 
     // Minimum duration check
     if (duration < 1) {
-      // Delete the file if too short
       try {
         await File(recordPath).delete();
       } catch (_) {}
@@ -141,56 +257,98 @@ class AudioService {
       return null;
     }
 
-    // Upload to Firebase Storage
-    final file = File(recordPath);
-    final fileName = path.basename(recordPath);
-    final storageRef = _storage
-        .ref()
-        .child('couples')
-        .child(currentUser.coupleId!)
-        .child('voice_notes')
-        .child(fileName);
+    // Generate ID ahead of time
+    final voiceNoteId = _uuid.v4();
 
-    final uploadTask = await storageRef.putFile(
-      file,
-      SettableMetadata(contentType: 'audio/mp4'),
-    );
-    final downloadUrl = await uploadTask.ref.getDownloadURL();
-
-    // Create Firestore document
-    final voiceNoteRef = _firestore
-        .collection(FirebaseCollections.couples)
-        .doc(currentUser.coupleId)
-        .collection(FirebaseCollections.voiceNotes)
-        .doc();
-
-    final voiceNote = VoiceNote(
-      id: voiceNoteRef.id,
+    // STEP 1: Create LOCAL voice note immediately (optimistic)
+    final localVoiceNote = VoiceNote(
+      id: voiceNoteId,
       senderId: currentUser.id,
-      storageUrl: downloadUrl,
+      storageUrl: null, // Not uploaded yet
       localPath: recordPath,
       durationSeconds: duration,
       createdAt: DateTime.now(),
-      isSynced: true,
+      isSynced: false, // Mark as not synced
     );
 
-    await voiceNoteRef.set({
-      FirebaseCollections.voiceNoteSenderId: currentUser.id,
-      FirebaseCollections.voiceNoteStorageUrl: downloadUrl,
-      FirebaseCollections.voiceNoteLocalPath: recordPath,
-      FirebaseCollections.voiceNoteDuration: duration,
-      FirebaseCollections.voiceNoteCreatedAt: FieldValue.serverTimestamp(),
-      FirebaseCollections.voiceNotePlayedAt: null,
-      FirebaseCollections.voiceNoteIsSynced: true,
-    });
+    // Add to pending list for immediate display
+    _ref.read(pendingVoiceNotesProvider.notifier).add(localVoiceNote);
 
-    // Send notification to partner
-    _sendNotificationToPartner(duration);
+    // STEP 2: Upload to Firebase in BACKGROUND
+    _uploadVoiceNoteInBackground(
+      voiceNoteId: voiceNoteId,
+      recordPath: recordPath,
+      duration: duration,
+      coupleId: currentUser.coupleId!,
+      senderId: currentUser.id,
+    );
 
     _currentRecordingPath = null;
     _recordingStartTime = null;
 
-    return voiceNote;
+    return localVoiceNote;
+  }
+
+  /// Background upload task
+  Future<void> _uploadVoiceNoteInBackground({
+    required String voiceNoteId,
+    required String recordPath,
+    required int duration,
+    required String coupleId,
+    required String senderId,
+  }) async {
+    try {
+      // Get sender display name for notification
+      final currentUser = _ref.read(currentAppUserProvider).value;
+      final senderName = currentUser?.displayName ?? 'Your partner';
+
+      // Upload to Firebase Storage
+      final file = File(recordPath);
+      final fileName = path.basename(recordPath);
+      final storageRef = _storage
+          .ref()
+          .child('couples')
+          .child(coupleId)
+          .child('voice_notes')
+          .child(fileName);
+
+      final uploadTask = await storageRef.putFile(
+        file,
+        SettableMetadata(contentType: 'audio/mp4'),
+      );
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+
+      // Create Firestore document with the same ID
+      // Include notification fields for Cloud Function to use
+      final voiceNoteRef = _firestore
+          .collection(FirebaseCollections.couples)
+          .doc(coupleId)
+          .collection(FirebaseCollections.voiceNotes)
+          .doc(voiceNoteId);
+
+      await voiceNoteRef.set({
+        FirebaseCollections.voiceNoteSenderId: senderId,
+        FirebaseCollections.voiceNoteStorageUrl: downloadUrl,
+        FirebaseCollections.voiceNoteLocalPath: recordPath,
+        FirebaseCollections.voiceNoteDuration: duration,
+        FirebaseCollections.voiceNoteCreatedAt: FieldValue.serverTimestamp(),
+        FirebaseCollections.voiceNotePlayedAt: null,
+        FirebaseCollections.voiceNoteIsSynced: true,
+        // Notification fields for Cloud Function
+        'notificationTitle': senderName,
+        'notificationBody': 'Sent you a ${duration}s voice note 🎤',
+        'notificationChannelId': 'voice_note_channel',
+      });
+
+      // Remove from pending list (Firestore stream will add the synced version)
+      _ref.read(pendingVoiceNotesProvider.notifier).remove(voiceNoteId);
+
+      debugPrint('VoiceNote uploaded successfully: $voiceNoteId');
+    } catch (e) {
+      debugPrint('Failed to upload voice note: $e');
+      // Mark the pending note as failed (could show error UI)
+      // For now, we'll just leave it in pending
+    }
   }
 
   /// Cancel recording
@@ -200,7 +358,6 @@ class AudioService {
     await _recorder.stop();
     _isRecording = false;
 
-    // Delete the file
     if (_currentRecordingPath != null) {
       try {
         await File(_currentRecordingPath!).delete();
@@ -213,10 +370,11 @@ class AudioService {
 
   /// Play a voice note
   Future<void> playVoiceNote(VoiceNote voiceNote) async {
-    // Stop any currently playing audio
+    // Stop any currently playing audio first
     await stopPlaying();
 
-    _currentlyPlayingId = voiceNote.id;
+    // Update the state provider
+    _ref.read(currentlyPlayingIdProvider.notifier).setPlaying(voiceNote.id);
 
     try {
       // Try local path first, then URL
@@ -229,14 +387,16 @@ class AudioService {
         throw Exception('No audio source available');
       }
 
-      _player.play();
+      await _player.play();
 
       // Mark as played if not from current user
       final currentUser = _ref.read(currentAppUserProvider).value;
       if (currentUser != null &&
           voiceNote.senderId != currentUser.id &&
           voiceNote.playedAt == null &&
-          currentUser.coupleId != null) {
+          currentUser.coupleId != null &&
+          voiceNote.isSynced) {
+        // Only mark synced notes
         await _firestore
             .collection(FirebaseCollections.couples)
             .doc(currentUser.coupleId)
@@ -247,15 +407,8 @@ class AudioService {
                   FieldValue.serverTimestamp(),
             });
       }
-
-      // Listen for completion
-      _player.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
-          _currentlyPlayingId = null;
-        }
-      });
     } catch (e) {
-      _currentlyPlayingId = null;
+      _ref.read(currentlyPlayingIdProvider.notifier).clear();
       rethrow;
     }
   }
@@ -263,7 +416,7 @@ class AudioService {
   /// Stop playing
   Future<void> stopPlaying() async {
     await _player.stop();
-    _currentlyPlayingId = null;
+    _ref.read(currentlyPlayingIdProvider.notifier).clear();
   }
 
   /// Pause playing
@@ -276,9 +429,50 @@ class AudioService {
     await _player.play();
   }
 
-  /// Get player stream
+  /// Seek forward by specified duration (default 5 seconds)
+  Future<void> seekForward({
+    Duration duration = const Duration(seconds: 5),
+  }) async {
+    final currentPosition = _player.position;
+    final totalDuration = _player.duration;
+    if (totalDuration != null) {
+      final newPosition = currentPosition + duration;
+      if (newPosition < totalDuration) {
+        await _player.seek(newPosition);
+      } else {
+        await _player.seek(totalDuration);
+      }
+    }
+  }
+
+  /// Seek backward by specified duration (default 5 seconds)
+  Future<void> seekBackward({
+    Duration duration = const Duration(seconds: 5),
+  }) async {
+    final currentPosition = _player.position;
+    final newPosition = currentPosition - duration;
+    if (newPosition > Duration.zero) {
+      await _player.seek(newPosition);
+    } else {
+      await _player.seek(Duration.zero);
+    }
+  }
+
+  /// Seek to a specific position
+  Future<void> seekTo(Duration position) async {
+    await _player.seek(position);
+  }
+
+  /// Get player streams
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<PlayerState> get playerStateStream => _player.playerStateStream;
+  Stream<Duration?> get durationStream => _player.durationStream;
+
+  /// Get current position
+  Duration get position => _player.position;
+
+  /// Get total duration
+  Duration? get duration => _player.duration;
 
   /// Delete a voice note
   Future<void> deleteVoiceNote(VoiceNote voiceNote) async {
@@ -309,26 +503,9 @@ class AudioService {
         .delete();
   }
 
-  /// Send notification to partner
-  Future<void> _sendNotificationToPartner(int duration) async {
-    try {
-      final currentUser = _ref.read(currentAppUserProvider).value;
-      final partner = _ref.read(partnerUserProvider).value;
-      final fcmService = _ref.read(fcmServiceProvider);
-
-      if (partner?.fcmToken != null && currentUser != null) {
-        await fcmService.sendNotificationToToken(
-          token: partner!.fcmToken!,
-          title: currentUser.displayName,
-          body: '🎤 Sent you a ${duration}s voice note',
-          data: {'type': 'voice_note'},
-        );
-      }
-    } catch (_) {}
-  }
-
   /// Dispose resources
   void dispose() {
+    _playerStateSubscription?.cancel();
     _recorder.dispose();
     _player.dispose();
   }

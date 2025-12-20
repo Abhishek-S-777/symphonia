@@ -48,6 +48,7 @@ dependencies:
   # Audio Recording & Playback
   record: ^6.1.2
   just_audio: ^0.10.5
+  audio_video_progress_bar: ^2.0.3
 
   # Vibration & Haptics
   vibration: ^3.1.4

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/router/routes.dart';
+import '../../../../core/services/audio_service.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/message_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -251,9 +252,47 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               ],
             ),
           ),
-          IconButton(
-            onPressed: () => context.push(Routes.voiceNotesPath),
-            icon: const Icon(Icons.mic_outlined),
+          // Mic icon with badge
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              IconButton(
+                onPressed: () => context.push(Routes.voiceNotesPath),
+                icon: const Icon(Icons.mic_outlined),
+              ),
+              // Badge for unread voice notes
+              Consumer(
+                builder: (context, ref, _) {
+                  final unreadCount = ref.watch(unreadVoiceNotesCountProvider);
+                  if (unreadCount == 0) return const SizedBox.shrink();
+                  return Positioned(
+                    right: 4,
+                    top: 4,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.error,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

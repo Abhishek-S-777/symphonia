@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:symphonia/shared/widgets/app_snackbar.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/router/routes.dart';
@@ -90,18 +91,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       if (!mounted) return;
 
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.favorite, color: AppColors.white),
-              SizedBox(width: 12),
-              Text('Successfully paired! 💕'),
-            ],
-          ),
-          backgroundColor: AppColors.success,
-        ),
-      );
+      AppSnackbar.showSuccess(context, 'Successfully paired! 💕');
 
       context.go(Routes.permissionSetupPath);
     } catch (e) {
@@ -178,25 +168,15 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
+                    const SizedBox(height: 12),
+
                     // Animated heart icon
-                    Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: AppGradients.twilight,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.accent.withValues(alpha: 0.3),
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.favorite,
-                            size: 50,
-                            color: AppColors.white,
+                    Center(
+                          child: Image.asset(
+                            'assets/icons/app-icon-light-transparent.png',
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.contain,
                           ),
                         )
                         .animate(
@@ -236,34 +216,22 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 decoration: BoxDecoration(
-                  color: AppColors.grayLight,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicator: BoxDecoration(
-                    color: AppColors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.charcoal.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
+                child: GlassCard(
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorPadding: const EdgeInsets.all(4),
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.gray,
+                    dividerColor: Colors.transparent,
+                    tabs: const [
+                      Tab(text: 'Share Code'),
+                      Tab(text: 'Enter Code'),
                     ],
                   ),
-                  indicatorPadding: const EdgeInsets.all(4),
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.gray,
-                  dividerColor: Colors.transparent,
-                  tabs: const [
-                    Tab(text: 'Share Code'),
-                    Tab(text: 'Enter Code'),
-                  ],
                 ),
               ).animate().fadeIn(delay: 400.ms),
-
-              const SizedBox(height: 24),
 
               // Error message
               if (_errorMessage != null)

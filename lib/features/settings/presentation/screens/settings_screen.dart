@@ -84,93 +84,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                       const SizedBox(height: 32),
 
-                      // Notifications section
-                      _buildSectionTitle('Notifications'),
-                      const SizedBox(height: 12),
-                      _buildSettingsCard([
-                            _buildSwitchTile(
-                              icon: Icons.notifications_outlined,
-                              title: 'Push Notifications',
-                              subtitle: 'Receive alerts from your partner',
-                              value: _notificationsEnabled,
-                              onChanged: (value) {
-                                setState(() => _notificationsEnabled = value);
-                                _saveSettings();
-                              },
-                            ),
-                            _buildDivider(),
-                            _buildSwitchTile(
-                              icon: Icons.vibration,
-                              title: 'Vibration',
-                              subtitle: 'Haptic feedback for interactions',
-                              value: _vibrationEnabled,
-                              onChanged: (value) {
-                                setState(() => _vibrationEnabled = value);
-                                _saveSettings();
-                              },
-                            ),
-                            _buildDivider(),
-                            _buildSwitchTile(
-                              icon: Icons.volume_up_outlined,
-                              title: 'Sound',
-                              subtitle: 'Notification sounds',
-                              value: _soundEnabled,
-                              onChanged: (value) {
-                                setState(() => _soundEnabled = value);
-                                _saveSettings();
-                              },
-                            ),
-                          ])
-                          .animate()
-                          .fadeIn(delay: 200.ms)
-                          .slideY(begin: 0.1, end: 0),
-
-                      const SizedBox(height: 24),
-
-                      // Features section
-                      _buildSectionTitle('Features'),
-                      const SizedBox(height: 12),
-                      _buildSettingsCard([
-                            _buildSwitchTile(
-                              icon: Icons.favorite,
-                              title: 'Background Heartbeat',
-                              subtitle:
-                                  'Send heartbeats even when app is closed',
-                              value: _heartbeatEnabled,
-                              onChanged: (value) {
-                                setState(() => _heartbeatEnabled = value);
-                                _saveSettings();
-                              },
-                            ),
-                          ])
-                          .animate()
-                          .fadeIn(delay: 300.ms)
-                          .slideY(begin: 0.1, end: 0),
-
-                      const SizedBox(height: 24),
-
-                      // Appearance section
-                      _buildSectionTitle('Appearance'),
-                      const SizedBox(height: 12),
-                      _buildSettingsCard([
-                            _buildSwitchTile(
-                              icon: Icons.dark_mode_outlined,
-                              title: 'Dark Mode',
-                              subtitle: 'Switch to dark theme',
-                              value: _darkMode,
-                              onChanged: (value) {
-                                setState(() => _darkMode = value);
-                                _saveSettings();
-                                // TODO: Implement theme switching
-                              },
-                            ),
-                          ])
-                          .animate()
-                          .fadeIn(delay: 400.ms)
-                          .slideY(begin: 0.1, end: 0),
-
-                      const SizedBox(height: 24),
-
                       // Account section
                       _buildSectionTitle('Account'),
                       const SizedBox(height: 12),
@@ -543,19 +456,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryLight],
-                ),
-              ),
-              child: const Icon(
-                Icons.favorite,
-                color: AppColors.white,
-                size: 20,
+            Center(
+              child: Image.asset(
+                'assets/icons/app-icon-light-transparent.png',
+                width: 30,
+                height: 30,
+                fit: BoxFit.contain,
               ),
             ),
             const SizedBox(width: 12),
@@ -572,7 +478,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'An intimate companion app designed for couples to stay connected through heartbeats, messages, and shared memories.',
+              'An intimate companion app, built by Abhishek S with love, designed for couples to stay connected through heartbeats, messages, events, and shared memories.',
             ),
             const SizedBox(height: 16),
             Text(

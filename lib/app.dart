@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'core/router/app_router.dart';
+import 'core/router/routes.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/message_service.dart';
 import 'core/services/vibration_service.dart';
@@ -67,6 +69,7 @@ class _GlobalHeartbeatListenerState
   bool _isInitialized = false;
   bool _isInForeground = true;
   DateTime? _lastResumedAt;
+  String? _previousCoupleId; // Track previous coupleId to detect unpair
 
   @override
   void initState() {
@@ -158,11 +161,34 @@ class _GlobalHeartbeatListenerState
 
   @override
   Widget build(BuildContext context) {
+    // Watch current user to detect unpair
+    final currentUser = ref.watch(currentAppUserProvider).value;
+    final currentCoupleId = currentUser?.coupleId;
+
+    // Detect when user was paired but is now unpaired (partner unpaired them)
+    if (_isInitialized &&
+        _previousCoupleId != null &&
+        currentCoupleId == null &&
+        currentUser != null) {
+      // Partner unpaired! Navigate to pairing screen
+      debugPrint(
+        '⚠️ Partner unpaired! coupleId changed from $_previousCoupleId to null',
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final navigatorContext = rootNavigatorKey.currentContext;
+        if (navigatorContext != null) {
+          AppSnackbar.showInfo(navigatorContext, 'Your partner has unpaired');
+          GoRouter.of(navigatorContext).go(Routes.pairingPath);
+        }
+      });
+    }
+
+    // Update previous coupleId
+    _previousCoupleId = currentCoupleId;
+
     // Listen for incoming heartbeats globally
     // This is ONLY for foreground - background is handled by FCM
     ref.listen(latestReceivedHeartbeatProvider, (previous, next) {
-      final currentUser = ref.watch(currentAppUserProvider).value;
-
       debugPrint('💓 Heartbeat provider update: ${next.value?.id}');
 
       if (!_isInitialized) {
