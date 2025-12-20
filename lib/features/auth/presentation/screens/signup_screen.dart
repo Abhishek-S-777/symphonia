@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +6,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/profile_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/glass_card.dart';
@@ -28,6 +31,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   String? _errorMessage;
+  File? _selectedImage;
 
   @override
   void dispose() {
@@ -36,6 +40,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final profileService = ref.read(profileServiceProvider);
+    final pickedImage = await profileService.pickAndCropImage(context);
+    if (pickedImage != null && mounted) {
+      setState(() {
+        _selectedImage = pickedImage;
+      });
+    }
   }
 
   Future<void> _signup() async {
@@ -48,11 +62,25 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
     try {
       final authService = ref.read(authServiceProvider);
-      await authService.signUp(
+      final credential = await authService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         displayName: _nameController.text.trim(),
       );
+
+      // Upload profile image if selected
+      if (_selectedImage != null && credential.user != null) {
+        final profileService = ref.read(profileServiceProvider);
+        final photoUrl = await profileService.uploadProfileImage(
+          imageFile: _selectedImage!,
+          userId: credential.user!.uid,
+        );
+
+        // Update profile with photo URL
+        if (photoUrl != null) {
+          await authService.updateProfile(photoUrl: photoUrl);
+        }
+      }
 
       if (!mounted) return;
       context.go(Routes.pairingPath);
@@ -199,6 +227,82 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // Profile Photo Picker
+                          Center(
+                            child: GestureDetector(
+                              onTap: _pickImage,
+                              child: Column(
+                                children: [
+                                  Stack(
+                                    children: [
+                                      Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: AppGradients.heartNormal,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withValues(alpha: 0.2),
+                                              blurRadius: 15,
+                                              spreadRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipOval(
+                                          child: _selectedImage != null
+                                              ? Image.file(
+                                                  _selectedImage!,
+                                                  fit: BoxFit.cover,
+                                                  width: 80,
+                                                  height: 80,
+                                                )
+                                              : const Icon(
+                                                  Icons.person,
+                                                  color: AppColors.white,
+                                                  size: 40,
+                                                ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.accent,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Theme.of(
+                                                context,
+                                              ).scaffoldBackgroundColor,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.add_a_photo,
+                                            size: 14,
+                                            color: AppColors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    _selectedImage != null
+                                        ? 'Tap to change'
+                                        : 'Add profile photo',
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(color: AppColors.gray),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
                           // Name field
                           TextFormField(
                             controller: _nameController,

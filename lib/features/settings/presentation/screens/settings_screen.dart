@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/couple_service.dart';
+import '../../../../core/services/profile_service.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
 import '../../../../shared/widgets/glass_card.dart';
 
@@ -174,7 +177,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             _buildActionTile(
                               icon: Icons.person_outline,
                               title: 'Edit Profile',
-                              onTap: () => _showEditProfileDialog(currentUser),
+                              onTap: () =>
+                                  _showEditProfileBottomSheet(currentUser),
                             ),
                             _buildDivider(),
                             _buildActionTile(
@@ -346,7 +350,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
           IconButton(
-            onPressed: () => _showEditProfileDialog(user),
+            onPressed: () => _showEditProfileBottomSheet(user),
             icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
           ),
         ],
@@ -415,93 +419,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Divider(height: 1, indent: 56, color: AppColors.grayLight);
   }
 
-  void _showEditProfileDialog(dynamic user) {
-    final nameController = TextEditingController(text: user?.displayName ?? '');
-    bool isLoading = false;
-
-    showDialog(
+  void _showEditProfileBottomSheet(dynamic user) {
+    showModalBottomSheet(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: const Text('Edit Profile'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Display Name',
-                  hintText: 'Enter your name',
-                ),
+      isScrollControlled: true,
+      enableDrag: false,
+      builder: (sheetContext) => _EditProfileBottomSheet(
+        user: user,
+        onProfileUpdated: () {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Profile updated!'),
+                backgroundColor: AppColors.success,
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      if (nameController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          const SnackBar(content: Text('Please enter a name')),
-                        );
-                        return;
-                      }
-
-                      setDialogState(() => isLoading = true);
-
-                      try {
-                        final authService = ref.read(authServiceProvider);
-                        await authService.updateProfile(
-                          displayName: nameController.text.trim(),
-                        );
-
-                        if (dialogContext.mounted) {
-                          Navigator.pop(dialogContext);
-                        }
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Profile updated!'),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error: $e'),
-                              backgroundColor: AppColors.error,
-                            ),
-                          );
-                        }
-                      } finally {
-                        if (dialogContext.mounted) {
-                          setDialogState(() => isLoading = false);
-                        }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-              ),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.white,
-                      ),
-                    )
-                  : const Text('Save'),
-            ),
-          ],
-        ),
+            );
+          }
+        },
       ),
     );
   }
@@ -675,6 +609,341 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Edit Profile Bottom Sheet Widget
+class _EditProfileBottomSheet extends ConsumerStatefulWidget {
+  final dynamic user;
+  final VoidCallback onProfileUpdated;
+
+  const _EditProfileBottomSheet({
+    required this.user,
+    required this.onProfileUpdated,
+  });
+
+  @override
+  ConsumerState<_EditProfileBottomSheet> createState() =>
+      _EditProfileBottomSheetState();
+}
+
+class _EditProfileBottomSheetState
+    extends ConsumerState<_EditProfileBottomSheet> {
+  late TextEditingController _nameController;
+  File? _selectedImage;
+  String? _currentPhotoUrl;
+  bool _isLoading = false;
+  double _uploadProgress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+      text: widget.user?.displayName ?? '',
+    );
+    _currentPhotoUrl = widget.user?.photoUrl;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    debugPrint('EditProfile: Starting image pick');
+    final profileService = ref.read(profileServiceProvider);
+    final pickedImage = await profileService.pickAndCropImage(context);
+
+    debugPrint('EditProfile: Picked image: ${pickedImage?.path}');
+
+    if (pickedImage != null && mounted) {
+      setState(() {
+        _selectedImage = pickedImage;
+      });
+      debugPrint('EditProfile: State updated with new image');
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter a name')));
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _uploadProgress = 0;
+    });
+
+    try {
+      String? newPhotoUrl;
+
+      // Upload new image if selected
+      if (_selectedImage != null) {
+        final profileService = ref.read(profileServiceProvider);
+        final userId = widget.user?.id;
+
+        if (userId != null) {
+          newPhotoUrl = await profileService.uploadProfileImage(
+            imageFile: _selectedImage!,
+            userId: userId,
+            onProgress: (progress) {
+              setState(() {
+                _uploadProgress = progress;
+              });
+            },
+          );
+
+          // Delete old image if upload successful
+          if (newPhotoUrl != null && _currentPhotoUrl != null) {
+            await profileService.deleteProfileImage(_currentPhotoUrl);
+          }
+
+          // Invalidate cache so fresh image is fetched
+          if (newPhotoUrl != null && userId != null) {
+            final imageCache = ref.read(profileImageCacheProvider);
+            await imageCache.invalidateCache(userId);
+          }
+        }
+      }
+
+      // Update profile in Firestore
+      final authService = ref.read(authServiceProvider);
+      await authService.updateProfile(
+        displayName: _nameController.text.trim(),
+        photoUrl: newPhotoUrl,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onProfileUpdated();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Row(
+              children: [
+                Text(
+                  'Edit Profile',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+
+          // Content
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                // Profile Photo
+                GestureDetector(
+                  onTap: _isLoading ? null : _pickImage,
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: AppGradients.heartNormal,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child: _selectedImage != null
+                              ? Image.file(
+                                  _selectedImage!,
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                )
+                              : _currentPhotoUrl != null
+                              ? Image.network(
+                                  _currentPhotoUrl!,
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.person,
+                                    color: AppColors.white,
+                                    size: 48,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  color: AppColors.white,
+                                  size: 48,
+                                ),
+                        ),
+                      ),
+                      // Camera badge
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).scaffoldBackgroundColor,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 16,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ),
+                      // Upload progress overlay
+                      if (_isLoading && _uploadProgress > 0)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black.withValues(alpha: 0.5),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${(_uploadProgress * 100).toInt()}%',
+                                style: const TextStyle(
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap to change photo',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
+                ),
+                const SizedBox(height: 24),
+
+                // Display Name Field
+                TextField(
+                  maxLength: 50,
+                  controller: _nameController,
+                  enabled: !_isLoading,
+                  decoration: InputDecoration(
+                    labelText: 'Display Name',
+                    labelStyle: const TextStyle(color: AppColors.white),
+                    hintText: 'Enter your name',
+                    prefixIcon: const Icon(
+                      Icons.person_outline,
+                      color: AppColors.white,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.gray),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.white,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Save Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: AppColors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Save Changes',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ],
       ),

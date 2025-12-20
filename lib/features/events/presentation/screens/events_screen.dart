@@ -475,6 +475,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             maxLength: 50,
                             decoration: InputDecoration(
                               labelText: 'Event Name',
+                              labelStyle: const TextStyle(
+                                color: AppColors.white,
+                              ),
                               hintText: "e.g., Partner's Birthday",
                               prefixIcon: const Icon(
                                 Icons.event,
@@ -492,7 +495,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(
-                                  color: AppColors.primary,
+                                  color: AppColors.white,
                                   width: 2,
                                 ),
                               ),
@@ -506,6 +509,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             maxLength: 100,
                             decoration: InputDecoration(
                               labelText: 'Description (optional)',
+                              labelStyle: const TextStyle(
+                                color: AppColors.white,
+                              ),
                               hintText: 'Add a note...',
                               prefixIcon: const Icon(
                                 Icons.notes,
@@ -523,7 +529,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(
-                                  color: AppColors.primary,
+                                  color: AppColors.white,
                                   width: 2,
                                 ),
                               ),

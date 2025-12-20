@@ -460,10 +460,14 @@ class _DailyMessageCardWidgetState
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: AppColors.romanticRed.withValues(alpha: 0.1),
+                        color: AppColors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.close, size: 18, color: AppColors.gray),
+                      child: Icon(
+                        Icons.close,
+                        size: 18,
+                        color: AppColors.white,
+                      ),
                     ),
                   ),
 

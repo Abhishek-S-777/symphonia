@@ -63,6 +63,12 @@
             </intent-filter>
         </activity>
         
+        <!-- UCrop Activity for image cropping -->
+        <activity
+            android:name="com.yalantis.ucrop.UCropActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+        
         <!-- TODO: Foreground service for heartbeat feature (to be implemented) -->
         
         <!-- Receiver for scheduled notifications -->
