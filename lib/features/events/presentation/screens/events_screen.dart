@@ -51,7 +51,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       floatingActionButton: FloatingActionButton(
         shape: const CircleBorder(),
         onPressed: () => _showAddEventDialog(context),
-        backgroundColor: AppColors.primary,
+        backgroundColor: AppColors.primary.withValues(alpha: 0.6),
         child: const Icon(Icons.add, color: AppColors.white),
       ).animate().scale(delay: 300.ms, curve: Curves.elasticOut),
     );

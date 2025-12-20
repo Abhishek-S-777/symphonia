@@ -43,6 +43,7 @@ dependencies:
   shimmer: ^3.0.0
   cached_network_image: ^3.4.1
   flutter_svg: ^2.0.17
+  confetti: ^0.8.0
 
   # Audio Recording & Playback
   record: ^6.1.2

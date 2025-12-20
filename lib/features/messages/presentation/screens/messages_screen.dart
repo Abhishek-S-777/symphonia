@@ -319,8 +319,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                gradient: isMe ? AppGradients.messageSent : null,
-                color: isMe ? null : AppColors.white,
+                gradient: isMe
+                    ? AppGradients.messageSent.withOpacity(0.6)
+                    : null,
+                color: isMe
+                    ? null
+                    : AppColors.darkElevated.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(20),
                   topRight: const Radius.circular(20),
@@ -337,9 +341,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               ),
               child: Text(
                 message.content,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isMe ? AppColors.white : AppColors.charcoal,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
               ),
             ),
             const SizedBox(height: 4),
@@ -442,7 +446,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: AppGradients.primary,
+                gradient: AppGradients.messageSent.withOpacity(0.6),
               ),
               child: _isSending
                   ? const Center(

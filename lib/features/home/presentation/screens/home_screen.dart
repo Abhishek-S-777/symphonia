@@ -14,6 +14,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
+import '../../../../shared/widgets/celebration_overlay.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../widgets/heart_button.dart';
 
@@ -265,26 +266,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
 
-          // Days together badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.white),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.favorite, size: 14, color: AppColors.primary),
-                const SizedBox(width: 4),
-                Text(
-                  daysTogetherFormatted,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.bold,
+          // Days together badge - tappable for celebration!
+          GestureDetector(
+            onTap: () => showCelebration(context, daysTogetherFormatted),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.white),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.favorite,
+                    size: 14,
+                    color: AppColors.primary,
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Text(
+                    daysTogetherFormatted,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

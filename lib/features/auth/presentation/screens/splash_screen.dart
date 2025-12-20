@@ -8,7 +8,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
 
 /// Splash screen with animated logo
@@ -61,27 +60,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Animated heart logo
-              Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AppGradients.heartNormal,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.4),
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/icons/app-icon-light-transparent.png',
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.contain,
-                      ),
+              Center(
+                    child: Image.asset(
+                      'assets/icons/app-icon-light-transparent.png',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.contain,
                     ),
                   )
                   .animate(
@@ -93,8 +77,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     duration: 800.ms,
                     curve: Curves.easeInOut,
                   ),
-
-              const SizedBox(height: 32),
 
               // App name
               Text(
