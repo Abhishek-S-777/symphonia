@@ -198,7 +198,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Use the actual isOnline field from Firestore
     final isOnline = partner?.isOnline ?? false;
 
-    final daysTogether = couple?.daysTogether ?? 0;
+    final daysTogetherFormatted = couple?.daysTogetherFormatted ?? '0 days';
     final partnerName = partner?.displayName ?? 'Your Partner';
 
     return GlassCard(
@@ -278,7 +278,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const Icon(Icons.favorite, size: 14, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
-                  '$daysTogether days',
+                  daysTogetherFormatted,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: AppColors.white,
                     fontWeight: FontWeight.bold,

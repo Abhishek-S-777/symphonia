@@ -37,9 +37,29 @@ class Couple extends Equatable {
     return myUserId == user1Id ? user2Email : user1Email;
   }
 
-  /// Days since pairing
+  /// Days since pairing (calculated from midnight to midnight)
   int get daysTogether {
-    return DateTime.now().difference(pairedAt).inDays;
+    // Normalize both dates to midnight for consistent day calculation
+    final now = DateTime.now();
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final pairedMidnight = DateTime(
+      pairedAt.year,
+      pairedAt.month,
+      pairedAt.day,
+    );
+    return todayMidnight.difference(pairedMidnight).inDays;
+  }
+
+  /// Formatted days together string (shows years if > 365 days)
+  String get daysTogetherFormatted {
+    final days = daysTogether;
+    if (days >= 365) {
+      final years = days / 365;
+
+      return '${years.toStringAsFixed(1)} years';
+    }
+
+    return '$days days';
   }
 
   /// Days until anniversary (if set)
