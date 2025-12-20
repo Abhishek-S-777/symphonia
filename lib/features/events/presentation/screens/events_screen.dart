@@ -9,6 +9,7 @@ import '../../../../core/services/event_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
+import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../domain/entities/event.dart';
 
@@ -661,14 +662,9 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                 ? null
                                 : () async {
                                     if (titleController.text.trim().isEmpty) {
-                                      ScaffoldMessenger.of(
+                                      AppSnackbar.showWarning(
                                         context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Please enter an event name',
-                                          ),
-                                        ),
+                                        'Please enter an event name',
                                       );
                                       return;
                                     }
@@ -727,28 +723,18 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                         Navigator.pop(sheetContext);
                                       }
                                       if (mounted) {
-                                        ScaffoldMessenger.of(
+                                        AppSnackbar.showSuccess(
                                           context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              isEditing
-                                                  ? 'Event updated!'
-                                                  : 'Event created! 🎉',
-                                            ),
-                                            backgroundColor: AppColors.success,
-                                          ),
+                                          isEditing
+                                              ? 'Event updated! ✨'
+                                              : 'Event created! 🎉',
                                         );
                                       }
                                     } catch (e) {
                                       if (mounted) {
-                                        ScaffoldMessenger.of(
+                                        AppSnackbar.showError(
                                           context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Error: $e'),
-                                            backgroundColor: AppColors.error,
-                                          ),
+                                          'Error creating event: $e',
                                         );
                                       }
                                     } finally {
@@ -1100,21 +1086,11 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         await eventService.deleteEvent(event.id);
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Event deleted'),
-              backgroundColor: AppColors.grayDark,
-            ),
-          );
+          AppSnackbar.showInfo(context, 'Event deleted');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: $e'),
-              backgroundColor: AppColors.error,
-            ),
-          );
+          AppSnackbar.showError(context, 'Error deleting event: $e');
         }
       }
     }

@@ -13,6 +13,7 @@ import '../../../../core/services/vibration_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
+import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../widgets/heart_button.dart';
 
@@ -47,30 +48,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       await messageService.sendHeartbeat();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Row(
-            children: [
-              Icon(Icons.favorite, color: AppColors.white),
-              SizedBox(width: 12),
-              Text('Heartbeat sent!'),
-            ],
-          ),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+      AppSnackbar.showSuccess(context, 'You sent love! ❤️');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to send heartbeat: ${e.toString()}'),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      AppSnackbar.showError(context, 'Failed to send heartbeat');
     }
   }
 

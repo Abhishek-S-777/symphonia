@@ -7,6 +7,7 @@ import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
+import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../../shared/widgets/custom_button.dart';
 import '../../../../shared/widgets/glass_card.dart';
 
@@ -93,9 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _forgotPassword() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email address first')),
-      );
+      AppSnackbar.showWarning(context, 'Please enter your email address first');
       return;
     }
 
@@ -104,21 +103,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await authService.sendPasswordResetEmail(email);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Password reset email sent to $email'),
-          backgroundColor: AppColors.success,
-        ),
+      AppSnackbar.showSuccess(
+        context,
+        'Password reset email sent to $email 📧',
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Failed to send reset email: ${_getErrorMessage(e.toString())}',
-          ),
-          backgroundColor: AppColors.error,
-        ),
+      AppSnackbar.showError(
+        context,
+        'Failed to send reset email: ${_getErrorMessage(e.toString())}',
       );
     }
   }

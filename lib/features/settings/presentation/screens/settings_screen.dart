@@ -12,6 +12,7 @@ import '../../../../core/services/profile_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
+import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../../shared/widgets/glass_card.dart';
 
 /// Settings screen for app configuration
@@ -215,10 +216,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               title: 'Privacy Policy',
                               onTap: () {
                                 // TODO: Open privacy policy
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Privacy Policy coming soon'),
-                                  ),
+                                AppSnackbar.showInfo(
+                                  context,
+                                  'Privacy Policy coming soon',
                                 );
                               },
                             ),
@@ -228,12 +228,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               title: 'Terms of Service',
                               onTap: () {
                                 // TODO: Open terms
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Terms of Service coming soon',
-                                    ),
-                                  ),
+                                AppSnackbar.showInfo(
+                                  context,
+                                  'Terms of Service coming soon',
                                 );
                               },
                             ),
@@ -428,12 +425,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         user: user,
         onProfileUpdated: () {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Profile updated!'),
-                backgroundColor: AppColors.success,
-              ),
-            );
+            AppSnackbar.showSuccess(context, 'Profile updated! ✨');
           }
         },
       ),
@@ -441,11 +433,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showChangePasswordDialog() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Password change link sent to your email'),
-        backgroundColor: AppColors.success,
-      ),
+    AppSnackbar.showSuccess(
+      context,
+      'Password reset link sent to your email 📧',
     );
 
     // Send password reset email
@@ -458,9 +448,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   void _showUnpairDialog(String? coupleId) {
     if (coupleId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You are not currently paired')),
-      );
+      AppSnackbar.showInfo(context, 'You are not currently paired');
       return;
     }
 
@@ -492,12 +480,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               } catch (e) {
                 if (mounted) {
                   setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: $e'),
-                      backgroundColor: AppColors.error,
-                    ),
-                  );
+                  AppSnackbar.showError(context, 'Error unparing: $e');
                 }
               }
             },
@@ -540,12 +523,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               } catch (e) {
                 if (mounted) {
                   setState(() => _isLoading = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: $e'),
-                      backgroundColor: AppColors.error,
-                    ),
-                  );
+                  AppSnackbar.showError(context, 'Error signing out: $e');
                 }
               }
             },
@@ -671,9 +649,7 @@ class _EditProfileBottomSheetState
 
   Future<void> _saveProfile() async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Please enter a name')));
+      AppSnackbar.showWarning(context, 'Please enter your name');
       return;
     }
 
@@ -727,12 +703,7 @@ class _EditProfileBottomSheetState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        AppSnackbar.showError(context, 'Failed to update profile: $e');
       }
     } finally {
       if (mounted) {

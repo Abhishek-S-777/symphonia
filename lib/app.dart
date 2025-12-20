@@ -7,8 +7,8 @@ import 'core/router/app_router.dart';
 import 'core/services/auth_service.dart';
 import 'core/services/message_service.dart';
 import 'core/services/vibration_service.dart';
-import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'shared/widgets/app_snackbar.dart';
 
 /// Global navigator key for accessing root context
 /// Use this to show bottom sheets that appear over the navigation bar
@@ -161,6 +161,8 @@ class _GlobalHeartbeatListenerState
     // Listen for incoming heartbeats globally
     // This is ONLY for foreground - background is handled by FCM
     ref.listen(latestReceivedHeartbeatProvider, (previous, next) {
+      final currentUser = ref.watch(currentAppUserProvider).value;
+
       debugPrint('💓 Heartbeat provider update: ${next.value?.id}');
 
       if (!_isInitialized) {
@@ -209,22 +211,9 @@ class _GlobalHeartbeatListenerState
       // Show a snackbar notification if we have a valid context
       final navigatorContext = rootNavigatorKey.currentContext;
       if (navigatorContext != null) {
-        ScaffoldMessenger.of(navigatorContext).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.favorite, color: AppColors.white),
-                SizedBox(width: 12),
-                Text('Your partner sent you a heartbeat!'),
-              ],
-            ),
-            backgroundColor: AppColors.secondary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
+        AppSnackbar.showSuccess(
+          navigatorContext,
+          '${currentUser?.displayName} sent you love! ❤️',
         );
       }
     });
