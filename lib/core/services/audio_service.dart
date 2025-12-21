@@ -336,7 +336,7 @@ class AudioService {
         FirebaseCollections.voiceNoteIsSynced: true,
         // Notification fields for Cloud Function
         'notificationTitle': senderName,
-        'notificationBody': 'Sent you a ${duration}s voice note 🎤',
+        'notificationBody': '🎤 Sent you a ${duration}s voice note',
         'notificationChannelId': 'voice_note_channel',
       });
 

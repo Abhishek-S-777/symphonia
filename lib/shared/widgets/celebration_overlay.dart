@@ -182,7 +182,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay> {
                         curve: Curves.easeOutBack,
                       ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 54),
 
                   Text(
                         'Tap anywhere to close!',

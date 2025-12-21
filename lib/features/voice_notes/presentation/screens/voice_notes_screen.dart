@@ -30,6 +30,8 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
   late AnimationController _pulseController;
+  final ScrollController _scrollController = ScrollController();
+  bool _hasScrolledToUnread = false;
 
   @override
   void initState() {
@@ -44,6 +46,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
   void dispose() {
     _recordingTimer?.cancel();
     _pulseController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -271,7 +274,17 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
     List<VoiceNote> voiceNotes,
     String? currentUserId,
   ) {
+    // Auto-scroll to first unread message after build
+    if (!_hasScrolledToUnread &&
+        voiceNotes.isNotEmpty &&
+        currentUserId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToFirstUnread(voiceNotes, currentUserId);
+      });
+    }
+
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       itemCount: voiceNotes.length,
       itemBuilder: (context, index) {
@@ -287,6 +300,43 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
             .slideX(begin: isMe ? 0.1 : -0.1, end: 0);
       },
     );
+  }
+
+  void _scrollToFirstUnread(List<VoiceNote> voiceNotes, String currentUserId) {
+    if (_hasScrolledToUnread) return;
+    _hasScrolledToUnread = true;
+
+    // Find first unread message (not from me and not played)
+    int firstUnreadIndex = -1;
+    for (int i = 0; i < voiceNotes.length; i++) {
+      final note = voiceNotes[i];
+      if (note.senderId != currentUserId && note.playedAt == null) {
+        firstUnreadIndex = i;
+        break;
+      }
+    }
+
+    // If no unread, scroll to bottom (latest)
+    if (firstUnreadIndex == -1) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+      return;
+    }
+
+    // Scroll to first unread (approximate position based on item height ~100)
+    final estimatedOffset = firstUnreadIndex * 100.0;
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        estimatedOffset.clamp(0, _scrollController.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   Widget _buildVoiceNoteItem(VoiceNote note, bool isMe) {

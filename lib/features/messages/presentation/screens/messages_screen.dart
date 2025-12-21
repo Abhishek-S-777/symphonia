@@ -25,6 +25,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
   bool _isSending = false;
+  bool _hasScrolledToUnread = false;
 
   @override
   void initState() {
@@ -41,6 +42,39 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     } catch (e) {
       // Ignore errors when marking as read
     }
+  }
+
+  void _scrollToFirstUnread(List<Message> messages, String currentUserId) {
+    if (_hasScrolledToUnread) return;
+    _hasScrolledToUnread = true;
+
+    // Messages are ordered newest first (reverse: true in ListView)
+    // Find first unread message from partner (searching from oldest to newest)
+    int firstUnreadIndex = -1;
+    for (int i = messages.length - 1; i >= 0; i--) {
+      final message = messages[i];
+      if (message.senderId != currentUserId && message.readAt == null) {
+        firstUnreadIndex = i;
+        break;
+      }
+    }
+
+    // If no unread, stay at bottom (default with reverse: true)
+    if (firstUnreadIndex == -1) return;
+
+    // With reverse: true, index 0 is at bottom
+    // Scroll to show the first unread message
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        // Estimate position (each message ~80px height)
+        final estimatedOffset = firstUnreadIndex * 80.0;
+        _scrollController.animateTo(
+          estimatedOffset.clamp(0, _scrollController.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
@@ -102,6 +136,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 data: (messages) {
                   if (messages.isEmpty) {
                     return _buildEmptyState();
+                  }
+                  // Scroll to first unread after build
+                  if (!_hasScrolledToUnread && currentUser != null) {
+                    _scrollToFirstUnread(messages, currentUser.id);
                   }
                   return ListView.builder(
                     controller: _scrollController,
