@@ -229,6 +229,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                 ),
                               Expanded(
                                 child: Text(
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
                                   event.title,
                                   style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(fontWeight: FontWeight.bold),
@@ -283,37 +285,54 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   }
 
   Widget _buildPastEventCard(Event event) {
-    return Opacity(
-      opacity: 0.6,
-      child: GlassCard(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(Icons.event_busy, color: AppColors.gray),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                event.title,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColors.grayDark),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _showEventSummary(event),
+      child: Opacity(
+        opacity: 0.6,
+        child: GlassCard(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.event_busy, color: AppColors.gray, size: 28),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width * 0.6,
+                        child: Text(
+                          event.title,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: AppColors.gray),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        DateFormat('MMMM d, yyyy').format(event.eventDate),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.grayDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            Text(
-              DateFormat('MMM d').format(event.eventDate),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
-            ),
-            IconButton(
-              onPressed: () => _deleteEvent(event),
-              icon: const Icon(
-                Icons.delete_outline,
-                color: AppColors.gray,
-                size: 20,
+              IconButton(
+                onPressed: () => _deleteEvent(event),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.error,
+                  size: 24,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -871,6 +890,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           ? '🎉 Today!'
                           : event.daysUntil == 1
                           ? '1 day'
+                          : event.daysUntil < 1
+                          ? '${event.daysUntil.abs()} days past'
                           : '${event.daysUntil} days to go',
                       style: const TextStyle(
                         color: AppColors.white,

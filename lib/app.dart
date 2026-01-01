@@ -101,6 +101,10 @@ class _GlobalHeartbeatListenerState
     // Set online status immediately when app starts
     _setOnline();
 
+    if (!mounted) {
+      return;
+    }
+
     setState(() => _isInitialized = true);
     debugPrint('✅ GlobalHeartbeatListener initialized - Set ONLINE');
   }

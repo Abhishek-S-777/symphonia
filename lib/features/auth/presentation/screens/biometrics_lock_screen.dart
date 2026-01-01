@@ -1,13 +1,14 @@
-import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/services/biometrics_service.dart';
 import '../../../../core/theme/app_colors.dart';
 
-/// Biometrics lock screen - shows when returning from background
-/// Does NOT show on initial app launch to avoid interfering with auth flow
+/// Biometrics lock screen - shows on cold start AND when returning from background
 class BiometricsLockScreen extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -22,8 +23,9 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     with WidgetsBindingObserver {
   bool _isLocked = false;
   bool _isAuthenticating = false;
-  bool _wasInBackground = false; // Track if we went to background
-  bool _justUnlocked = false; // Prevent immediate re-lock after unlock
+  bool _wasInBackground = false;
+  bool _justUnlocked = false;
+  bool _initialCheckDone = false;
   String _biometricType = 'Biometrics';
 
   @override
@@ -31,6 +33,10 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadBiometricType();
+    // Check biometrics on cold start after a small delay to let the app initialize
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkInitialLock();
+    });
   }
 
   Future<void> _loadBiometricType() async {
@@ -41,6 +47,46 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
         _biometricType = typeName;
       });
     }
+  }
+
+  /// Check if we should lock on cold start
+  Future<void> _checkInitialLock() async {
+    if (_initialCheckDone) return;
+    _initialCheckDone = true;
+
+    debugPrint('BiometricsLock: Checking initial lock...');
+
+    // Check if user is authenticated (using SharedPreferences since Firebase might not be ready)
+    final prefs = await SharedPreferences.getInstance();
+    final isAuthenticated = prefs.getBool(StorageKeys.isAuthenticated) ?? false;
+
+    if (!isAuthenticated) {
+      debugPrint('BiometricsLock: Not authenticated, skipping initial lock');
+      return;
+    }
+
+    // Check if biometrics is enabled
+    final biometricsService = ref.read(biometricsServiceProvider);
+    final isEnabled = await biometricsService.isBiometricsEnabled();
+
+    if (!isEnabled) {
+      debugPrint(
+        'BiometricsLock: Biometrics not enabled, skipping initial lock',
+      );
+      return;
+    }
+
+    debugPrint('BiometricsLock: Locking on cold start');
+
+    if (mounted) {
+      setState(() {
+        _isLocked = true;
+      });
+    }
+
+    // Small delay then authenticate
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _authenticate();
   }
 
   @override
@@ -58,7 +104,7 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     if (state == AppLifecycleState.paused) {
       // Going to background
       _wasInBackground = true;
-      _justUnlocked = false; // Reset the unlock flag when going to background
+      _justUnlocked = false;
     } else if (state == AppLifecycleState.resumed) {
       // Coming back from background
       if (_wasInBackground && !_justUnlocked) {
@@ -69,12 +115,14 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
   }
 
   Future<void> _checkAndLock() async {
-    debugPrint('BiometricsLock: Checking if should lock...');
+    debugPrint('BiometricsLock: Checking if should lock on resume...');
 
-    // Check if user is logged in
-    final firebaseUser = fb.FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) {
-      debugPrint('BiometricsLock: No user, skipping');
+    // Check if user is authenticated
+    final prefs = await SharedPreferences.getInstance();
+    final isAuthenticated = prefs.getBool(StorageKeys.isAuthenticated) ?? false;
+
+    if (!isAuthenticated) {
+      debugPrint('BiometricsLock: Not authenticated, skipping');
       return;
     }
 
@@ -122,7 +170,7 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
           _isLocked = !authenticated;
           _isAuthenticating = false;
           if (authenticated) {
-            _justUnlocked = true; // Prevent immediate re-lock
+            _justUnlocked = true;
           }
         });
       }
@@ -163,13 +211,12 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
                   curve: Curves.easeOutBack,
                 ),
 
-                const SizedBox(height: 32),
-
                 Text(
                   'Symphonia',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  style: GoogleFonts.lavishlyYours(
+                    fontSize: 42,
+                    fontWeight: FontWeight.normal,
+                    color: AppColors.white,
                   ),
                 ).animate().fadeIn(delay: 200.ms),
 
