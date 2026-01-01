@@ -18,6 +18,7 @@ import '../../../../shared/widgets/app_snackbar.dart';
 import '../../../../shared/widgets/celebration_overlay.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../widgets/heart_button.dart';
+import '../widgets/hugs_button.dart';
 
 /// Home screen with the Big Heart Button as central CTA
 class HomeScreen extends ConsumerStatefulWidget {
@@ -28,6 +29,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _showHugsButton = false;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +57,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     } catch (e) {
       if (!mounted) return;
       AppSnackbar.showError(context, 'Failed to send heartbeat');
+    }
+  }
+
+  Future<void> _onHugsSent(int seconds) async {
+    try {
+      final messageService = ref.read(messageServiceProvider);
+      await messageService.sendHugs(seconds);
+
+      if (!mounted) return;
+      AppSnackbar.showSuccess(context, 'You sent ${seconds}s of hugs! 🤗');
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, 'Failed to send hugs');
+    }
+  }
+
+  void _toggleButton(DragEndDetails details) {
+    // Swipe up or down to toggle
+    if (details.primaryVelocity != null) {
+      if (details.primaryVelocity!.abs() > 100) {
+        setState(() {
+          _showHugsButton = !_showHugsButton;
+        });
+      }
     }
   }
 
@@ -88,10 +115,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     const SizedBox(height: 40),
 
-                    // Big Heart Button
-                    HeartButton(
-                      onPressed: _onHeartPressed,
-                      size: 180,
+                    // Swipeable Heart/Hugs Button
+                    GestureDetector(
+                      onVerticalDragEnd: _toggleButton,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        transitionBuilder: (child, animation) {
+                          return SlideTransition(
+                            position: Tween<Offset>(
+                              begin: _showHugsButton
+                                  ? const Offset(0, 0.3)
+                                  : const Offset(0, -0.3),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: _showHugsButton
+                            ? HugsButton(
+                                key: const ValueKey('hugs'),
+                                onHugsSent: _onHugsSent,
+                                size: 180,
+                              )
+                            : HeartButton(
+                                key: const ValueKey('heart'),
+                                onPressed: _onHeartPressed,
+                                size: 180,
+                              ),
+                      ),
                     ).animate().scale(
                       delay: 400.ms,
                       duration: 600.ms,
@@ -100,12 +156,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Instruction text
-                    Text(
-                      'Tap to send a heartbeat',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.gray,
-                        fontStyle: FontStyle.italic,
+                    // Instruction text - changes based on mode
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: Text(
+                        _showHugsButton
+                            ? 'Hold to send hugs & kisses \u2022 Swipe to switch'
+                            : 'Tap to send a heartbeat \u2022 Swipe for hugs',
+                        key: ValueKey(
+                          _showHugsButton ? 'hugs_text' : 'heart_text',
+                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.gray,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ).animate().fadeIn(delay: 600.ms),
 
@@ -439,8 +504,8 @@ class _DailyMessageCardWidgetState
       return;
     }
 
-    final notifier = ref.read(dailyQuoteProvider.notifier);
-    await notifier.setCustomQuote(_textController.text.trim());
+    final quoteService = ref.read(quoteServiceProvider);
+    await quoteService.setCustomQuote(_textController.text.trim());
 
     setState(() {
       _isEditing = false;
@@ -449,8 +514,8 @@ class _DailyMessageCardWidgetState
   }
 
   Future<void> _clearCustomQuote() async {
-    final notifier = ref.read(dailyQuoteProvider.notifier);
-    await notifier.clearCustomQuote();
+    final quoteService = ref.read(quoteServiceProvider);
+    await quoteService.clearCustomQuote();
   }
 
   @override

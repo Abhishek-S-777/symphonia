@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 /// Message types
-enum MessageType { text, predefined, scheduled, heartbeat }
+enum MessageType { text, predefined, scheduled, heartbeat, hugs }
 
 /// Message entity for love messages
 class Message extends Equatable {

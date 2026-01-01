@@ -70,6 +70,7 @@ class _GlobalHeartbeatListenerState
     extends ConsumerState<_GlobalHeartbeatListener>
     with WidgetsBindingObserver {
   String? _lastProcessedHeartbeatId;
+  String? _lastProcessedHugsId;
   bool _isInitialized = false;
   bool _isInForeground = true;
   DateTime? _lastResumedAt;
@@ -248,6 +249,42 @@ class _GlobalHeartbeatListenerState
         AppSnackbar.showSuccess(
           navigatorContext,
           '${currentUser?.displayName} sent you love! ❤️',
+        );
+      }
+    });
+
+    // Listen for incoming hugs globally
+    ref.listen(latestReceivedHugsProvider, (previous, next) {
+      debugPrint('🤗 Hugs provider update: ${next.value?.id}');
+
+      if (!_isInitialized || !_isInForeground) return;
+
+      final hugs = next.value;
+      if (hugs == null) return;
+
+      // Only process if this is a new hug we haven't seen
+      if (hugs.id == _lastProcessedHugsId) return;
+
+      // Only process hugs that arrived AFTER app resumed
+      if (_lastResumedAt != null && hugs.sentAt.isBefore(_lastResumedAt!)) {
+        _lastProcessedHugsId = hugs.id;
+        return;
+      }
+
+      _lastProcessedHugsId = hugs.id;
+
+      debugPrint('🎉 NEW HUGS! Playing vibration...');
+
+      // Play the hugs vibration pattern!
+      final vibrationService = ref.read(vibrationServiceProvider);
+      vibrationService.playHugs();
+
+      // Show a snackbar notification
+      final navigatorContext = rootNavigatorKey.currentContext;
+      if (navigatorContext != null) {
+        AppSnackbar.showSuccess(
+          navigatorContext,
+          '${currentUser?.displayName} sent you 🤗 hugs and kisses! 😘',
         );
       }
     });

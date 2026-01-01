@@ -70,6 +70,41 @@ final latestReceivedHeartbeatProvider = StreamProvider<Message?>((ref) {
       });
 });
 
+/// Latest Received Hugs Provider - listens for new hugs from partner
+/// This triggers hugs vibration on the receiver's device
+final latestReceivedHugsProvider = StreamProvider<Message?>((ref) {
+  final coupleId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.coupleId),
+  );
+  final userId = ref.watch(
+    currentAppUserProvider.select((asyncUser) => asyncUser.value?.id),
+  );
+  if (coupleId == null || userId == null) {
+    return Stream.value(null);
+  }
+
+  return FirebaseFirestore.instance
+      .collection(FirebaseCollections.couples)
+      .doc(coupleId)
+      .collection(FirebaseCollections.messages)
+      .where(FirebaseCollections.messageType, isEqualTo: 'hugs')
+      .where(FirebaseCollections.messageSenderId, isNotEqualTo: userId)
+      .orderBy(FirebaseCollections.messageSenderId)
+      .orderBy(FirebaseCollections.messageSentAt, descending: true)
+      .limit(1)
+      .snapshots()
+      .map((snapshot) {
+        if (snapshot.docs.isEmpty) return null;
+        final message = _messageFromFirestore(snapshot.docs.first);
+        final now = DateTime.now();
+        final thirtySecondsAgo = now.subtract(const Duration(seconds: 30));
+        if (message.sentAt.isAfter(thirtySecondsAgo)) {
+          return message;
+        }
+        return null;
+      });
+});
+
 /// Unread Messages Count Provider
 /// Uses select() to only rebuild when coupleId or userId changes
 final unreadMessagesCountProvider = StreamProvider<int>((ref) {
@@ -148,6 +183,12 @@ class MessageService {
       notificationBody = '${currentUser.displayName} sent you love!';
       notificationChannelId = 'heartbeat_channel';
       notificationType = 'heartbeat';
+    } else if (type == MessageType.hugs) {
+      notificationTitle = '🤗 Hugs & Kisses! 😘';
+      notificationBody =
+          '${currentUser.displayName} is sending you warm hugs and kisses!';
+      notificationChannelId = 'heartbeat_channel';
+      notificationType = 'hugs';
     } else {
       notificationTitle = currentUser.displayName;
       notificationBody = content.length > 100
@@ -175,6 +216,14 @@ class MessageService {
   /// Send a heartbeat
   Future<void> sendHeartbeat() async {
     await sendMessage(content: '💓', type: MessageType.heartbeat);
+  }
+
+  /// Send hugs & kisses with duration
+  Future<void> sendHugs(int seconds) async {
+    await sendMessage(
+      content: '${seconds}s hugs & kisses',
+      type: MessageType.hugs,
+    );
   }
 
   /// Mark message as read

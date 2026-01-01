@@ -75,6 +75,25 @@ class VibrationService {
     }
   }
 
+  /// Play hugs & kisses vibration pattern
+  /// One long vibration (hug) + one short vibration (kiss)
+  Future<void> playHugs() async {
+    if (!_hasVibrator) return;
+
+    if (_hasCustomVibration) {
+      // Long hug vibration + pause + short kiss vibration
+      await Vibration.vibrate(
+        pattern: [0, 600, 200, 100], // wait, long hug, pause, short kiss
+        intensities: [0, 200, 0, 255],
+      );
+    } else {
+      // Fallback: long vibration then short
+      await Vibration.vibrate(duration: 600);
+      await Future.delayed(const Duration(milliseconds: 200));
+      await Vibration.vibrate(duration: 100);
+    }
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // NOTIFICATION VIBRATIONS
   // ═══════════════════════════════════════════════════════════════════════════

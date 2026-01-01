@@ -339,6 +339,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   Widget _buildMessageBubble(Message message, String partnerName, bool isMe) {
     final isHeartbeat = message.type == MessageType.heartbeat;
+    final isHugsAndKisses = message.type == MessageType.hugs;
 
     if (isHeartbeat) {
       return Padding(
@@ -370,6 +371,45 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   isMe
                       ? 'You sent a heartbeat'
                       : '$partnerName sent you a heartbeat',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } else if (isHugsAndKisses) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.hugAmber.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.hugAmberGlow.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('🤗😘', style: TextStyle(fontSize: 12))
+                    .animate(
+                      onPlay: (controller) => controller.repeat(reverse: true),
+                    )
+                    .scale(
+                      begin: const Offset(1.0, 1.0),
+                      end: const Offset(1.2, 1.2),
+                      duration: 600.ms,
+                    ),
+                const SizedBox(width: 8),
+                Text(
+                  isMe
+                      ? 'You sent hugs and kisses'
+                      : '$partnerName sent you ${message.content}',
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
