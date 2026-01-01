@@ -121,6 +121,41 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     return 'Pairing failed. Please try again.';
   }
 
+  Future<void> _showLogoutConfirmation() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true && mounted) {
+      try {
+        final authService = ref.read(authServiceProvider);
+        await authService.signOut();
+        if (mounted) {
+          context.go(Routes.loginPath);
+        }
+      } catch (e) {
+        if (mounted) {
+          AppSnackbar.showError(context, 'Failed to sign out');
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Listen for when the current user gets paired
@@ -170,25 +205,46 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                   children: [
                     const SizedBox(height: 12),
 
-                    // Animated heart icon
-                    Center(
-                          child: Image.asset(
-                            'assets/icons/app-icon-light-transparent.png',
-                            width: 60,
-                            height: 60,
-                            fit: BoxFit.contain,
+                    // Logo with logout button
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Animated app icon
+                        Center(
+                              child: Image.asset(
+                                'assets/icons/app-icon-light-transparent.png',
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.contain,
+                              ),
+                            )
+                            .animate(
+                              onPlay: (controller) =>
+                                  controller.repeat(reverse: true),
+                            )
+                            .scale(
+                              begin: const Offset(1.0, 1.0),
+                              end: const Offset(1.1, 1.1),
+                              duration: 1000.ms,
+                              curve: Curves.easeInOut,
+                            ),
+
+                        // Logout button on top right
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: IconButton(
+                            onPressed: _showLogoutConfirmation,
+                            icon: Icon(
+                              Icons.logout_rounded,
+                              color: AppColors.error,
+                              size: 24,
+                            ),
+                            tooltip: 'Sign out',
                           ),
-                        )
-                        .animate(
-                          onPlay: (controller) =>
-                              controller.repeat(reverse: true),
-                        )
-                        .scale(
-                          begin: const Offset(1.0, 1.0),
-                          end: const Offset(1.1, 1.1),
-                          duration: 1000.ms,
-                          curve: Curves.easeInOut,
                         ),
+                      ],
+                    ),
 
                     const SizedBox(height: 24),
 

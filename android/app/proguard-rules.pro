@@ -4,6 +4,10 @@
 -keep class com.google.firebase.** { *; }
 -keep class com.google.android.gms.** { *; }
 
+# Keep Google Play Core classes (required for deferred components)
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
+
 # Keep Flutter classes
 -keep class io.flutter.** { *; }
 -keep class io.flutter.plugins.** { *; }
@@ -25,3 +29,4 @@
 
 # Keep model classes
 -keep class com.symphonia.app.** { *; }
+
