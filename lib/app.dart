@@ -10,6 +10,7 @@ import 'core/services/auth_service.dart';
 import 'core/services/message_service.dart';
 import 'core/services/vibration_service.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/presentation/screens/biometrics_lock_screen.dart';
 import 'shared/widgets/app_snackbar.dart';
 
 /// Global navigator key for accessing root context
@@ -43,7 +44,10 @@ class SymphoniaApp extends ConsumerWidget {
           data: MediaQuery.of(
             context,
           ).copyWith(textScaler: TextScaler.noScaling),
-          child: _GlobalHeartbeatListener(child: child!),
+          // Biometrics lock for returning from background
+          child: BiometricsLockScreen(
+            child: _GlobalHeartbeatListener(child: child!),
+          ),
         );
       },
     );

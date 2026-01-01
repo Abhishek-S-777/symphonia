@@ -33,6 +33,7 @@ class FirebaseCollections {
   static const String userCreatedAt = 'createdAt';
   static const String userLastActive = 'lastActive';
   static const String userIsOnline = 'isOnline';
+  static const String userBiometricsEnabled = 'biometricsEnabled';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // COUPLE FIELDS

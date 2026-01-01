@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/biometrics_service.dart';
 import '../../../../core/services/couple_service.dart';
 import '../../../../core/services/profile_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -30,6 +31,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _heartbeatEnabled = true;
   bool _darkMode = false;
   bool _isLoading = false;
+  bool _biometricsEnabled = false;
+  bool _biometricsAvailable = false;
+  String _biometricTypeName = 'Biometrics';
 
   @override
   void initState() {
@@ -39,22 +43,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Load biometrics settings
+    final biometricsService = ref.read(biometricsServiceProvider);
+    final isAvailable = await biometricsService.hasBiometricsEnrolled();
+    final isEnabled = await biometricsService.isBiometricsEnabled();
+    final typeName = await biometricsService.getBiometricTypeName();
+
+    if (!mounted) return;
+
     setState(() {
       _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
       _vibrationEnabled = prefs.getBool('vibrationEnabled') ?? true;
       _soundEnabled = prefs.getBool('soundEnabled') ?? true;
       _heartbeatEnabled = prefs.getBool('heartbeatEnabled') ?? true;
       _darkMode = prefs.getBool('darkMode') ?? false;
+      _biometricsAvailable = isAvailable;
+      _biometricsEnabled = isEnabled;
+      _biometricTypeName = typeName;
     });
   }
 
-  Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notificationsEnabled', _notificationsEnabled);
-    await prefs.setBool('vibrationEnabled', _vibrationEnabled);
-    await prefs.setBool('soundEnabled', _soundEnabled);
-    await prefs.setBool('heartbeatEnabled', _heartbeatEnabled);
-    await prefs.setBool('darkMode', _darkMode);
+
+  Future<void> _toggleBiometrics(bool enabled) async {
+    final biometricsService = ref.read(biometricsServiceProvider);
+
+    if (enabled) {
+      // Try to enable - will authenticate first
+      final success = await biometricsService.setBiometricsEnabled(true);
+      if (!mounted) return;
+
+      if (success) {
+        setState(() {
+          _biometricsEnabled = true;
+        });
+        AppSnackbar.showSuccess(context, '$_biometricTypeName lock enabled');
+      } else {
+        AppSnackbar.showError(
+          context,
+          'Failed to enable $_biometricTypeName lock',
+        );
+      }
+    } else {
+      // Disable
+      await biometricsService.setBiometricsEnabled(false);
+      if (!mounted) return;
+
+      setState(() {
+        _biometricsEnabled = false;
+      });
+      AppSnackbar.showInfo(context, '$_biometricTypeName lock disabled');
+    }
   }
 
   @override
@@ -110,6 +149,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ])
                           .animate()
                           .fadeIn(delay: 500.ms)
+                          .slideY(begin: 0.1, end: 0),
+
+                      const SizedBox(height: 24),
+
+                      // Security section
+                      _buildSectionTitle('Security'),
+                      const SizedBox(height: 12),
+                      _buildSettingsCard([
+                            _buildSwitchTile(
+                              icon: _biometricTypeName.contains('Face')
+                                  ? Icons.face
+                                  : Icons.fingerprint,
+                              title: _biometricTypeName,
+                              subtitle: _biometricsAvailable
+                                  ? 'Require $_biometricTypeName to open app'
+                                  : 'No biometrics set up on this device',
+                              value: _biometricsEnabled,
+                              enabled: _biometricsAvailable,
+                              onChanged: _biometricsAvailable
+                                  ? (value) => _toggleBiometrics(value)
+                                  : null,
+                            ),
+                          ])
+                          .animate()
+                          .fadeIn(delay: 550.ms)
                           .slideY(begin: 0.1, end: 0),
 
                       const SizedBox(height: 24),
@@ -289,11 +353,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     required String title,
     required String subtitle,
     required bool value,
-    required ValueChanged<bool> onChanged,
+    ValueChanged<bool>? onChanged,
+    bool enabled = true,
   }) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.primary),
-      title: Text(title),
+      leading: Icon(icon, color: enabled ? AppColors.primary : AppColors.gray),
+      title: Text(
+        title,
+        style: TextStyle(color: enabled ? null : AppColors.gray),
+      ),
       subtitle: Text(
         subtitle,
         style: Theme.of(
@@ -302,7 +370,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       trailing: Switch(
         value: value,
-        onChanged: onChanged,
+        onChanged: enabled ? onChanged : null,
         activeThumbColor: AppColors.primary,
       ),
     );

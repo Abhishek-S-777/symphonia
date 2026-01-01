@@ -6,12 +6,14 @@ class StorageKeys {
   // USER & AUTH
   // ═══════════════════════════════════════════════════════════════════════════
 
+  static const String isAuthenticated = 'is_authenticated';
   static const String userId = 'user_id';
   static const String userEmail = 'user_email';
   static const String userName = 'user_name';
   static const String userPhotoUrl = 'user_photo_url';
   static const String deviceId = 'device_id';
   static const String fcmToken = 'fcm_token';
+  static const String biometricsEnabled = 'biometrics_enabled';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PAIRING

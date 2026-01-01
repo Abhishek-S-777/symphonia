@@ -56,6 +56,9 @@ dependencies:
   # Permissions
   permission_handler: ^12.0.1
 
+  # Biometric Authentication
+  local_auth: ^2.3.0
+
   # Image Handling
   image_picker: ^1.1.2
   image_cropper: ^8.0.2
