@@ -303,7 +303,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.6,
+                        width: MediaQuery.of(context).size.width * 0.45,
                         child: Text(
                           event.title,
                           overflow: TextOverflow.ellipsis,
