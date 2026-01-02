@@ -26,25 +26,29 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _initializeAndNavigate() async {
-    // Simulate initialization (loading preferences, checking auth, etc.)
-    await Future.delayed(const Duration(milliseconds: 2500));
-
     if (!mounted) return;
 
-    // Check if onboarding is complete
+    // Check SharedPreferences for auth state
     final prefs = await SharedPreferences.getInstance();
     final onboardingComplete =
         prefs.getBool(StorageKeys.onboardingComplete) ?? false;
+    final isAuthenticated = prefs.getBool(StorageKeys.isAuthenticated) ?? false;
     final isPaired = prefs.getBool(StorageKeys.isPaired) ?? false;
 
     if (!mounted) return;
 
+    // Navigation flow:
+    // 1. Not onboarded → Onboarding
+    // 2. Not authenticated → Login
+    // 3. Authenticated but not paired → Pairing
+    // 4. Authenticated and paired → Wait for Firebase then Home
+
     if (!onboardingComplete) {
       context.go(Routes.onboardingPath);
-    } else if (!isPaired) {
-      // TODO: Check if user is logged in
-      // For now, go to login
+    } else if (!isAuthenticated) {
       context.go(Routes.loginPath);
+    } else if (!isPaired) {
+      context.go(Routes.pairingPath);
     } else {
       context.go(Routes.homePath);
     }

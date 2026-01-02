@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/couple_service.dart';
@@ -89,6 +91,10 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       await coupleService.usePairingCode(code);
 
       if (!mounted) return;
+
+      // Save paired status to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(StorageKeys.isPaired, true);
 
       // Show success message
       AppSnackbar.showSuccess(context, 'Successfully paired! 💕');
@@ -293,7 +299,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
               if (_errorMessage != null)
                 Container(
                   padding: const EdgeInsets.all(12),
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
+                  margin: const EdgeInsets.only(left: 24, right: 24, top: 12),
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),

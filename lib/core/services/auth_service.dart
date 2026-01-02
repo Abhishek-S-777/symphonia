@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../constants/firebase_collections.dart';
+import '../constants/storage_keys.dart';
 import '../../features/auth/domain/entities/user.dart' as app;
 
 /// Auth Service Provider
@@ -18,25 +20,52 @@ final authStateChangesProvider = StreamProvider<fb.User?>((ref) {
 });
 
 /// Current App User Provider
+/// Falls back to SharedPreferences userId if Firebase Auth is null (debug mode workaround)
 final currentAppUserProvider = StreamProvider<app.User?>((ref) {
   final authState = ref.watch(authStateChangesProvider);
 
   return authState.when(
     data: (fbUser) {
-      if (fbUser == null) return Stream.value(null);
-      return FirebaseFirestore.instance
-          .collection(FirebaseCollections.users)
-          .doc(fbUser.uid)
-          .snapshots()
-          .map((doc) {
-            if (!doc.exists) return null;
-            return _userFromFirestore(doc);
-          });
+      if (fbUser != null) {
+        // Firebase Auth has the user - use it
+        return FirebaseFirestore.instance
+            .collection(FirebaseCollections.users)
+            .doc(fbUser.uid)
+            .snapshots()
+            .map((doc) {
+              if (!doc.exists) return null;
+              return _userFromFirestore(doc);
+            });
+      }
+
+      // Firebase Auth is null - try SharedPreferences fallback
+      return _getUserFromSharedPrefs();
     },
     loading: () => Stream.value(null),
     error: (_, __) => Stream.value(null),
   );
 });
+
+/// Fallback: Get user from Firestore using userId stored in SharedPreferences
+Stream<app.User?> _getUserFromSharedPrefs() async* {
+  final prefs = await SharedPreferences.getInstance();
+  final userId = prefs.getString(StorageKeys.userId);
+
+  if (userId == null || userId.isEmpty) {
+    yield null;
+    return;
+  }
+
+  // Stream user data from Firestore using stored userId
+  yield* FirebaseFirestore.instance
+      .collection(FirebaseCollections.users)
+      .doc(userId)
+      .snapshots()
+      .map((doc) {
+        if (!doc.exists) return null;
+        return _userFromFirestore(doc);
+      });
+}
 
 /// Partner User Provider - streams partner data in real-time
 final partnerUserProvider = StreamProvider<app.User?>((ref) {
@@ -182,6 +211,13 @@ class AuthService {
             .update({FirebaseCollections.userFcmToken: null});
       } catch (_) {}
     }
+
+    // Clear auth flags from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(StorageKeys.isAuthenticated);
+    await prefs.remove(StorageKeys.isPaired);
+    await prefs.remove(StorageKeys.biometricsEnabled);
+
     await _auth.signOut();
   }
 

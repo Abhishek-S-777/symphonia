@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/profile_service.dart';
@@ -81,6 +83,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           await authService.updateProfile(photoUrl: photoUrl);
         }
       }
+
+      // Save authenticated status (not paired yet)
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(StorageKeys.isAuthenticated, true);
 
       if (!mounted) return;
       context.go(Routes.pairingPath);

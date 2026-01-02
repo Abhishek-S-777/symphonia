@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../../core/constants/storage_keys.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -49,8 +51,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         password: _passwordController.text,
       );
 
+      // Save authenticated status and user info
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(StorageKeys.isAuthenticated, true);
+
+      // Store user info for when Firebase Auth doesn't persist (debug mode issue)
+      final user = authService.currentUser;
+      if (user != null) {
+        await prefs.setString(StorageKeys.userId, user.uid);
+        await prefs.setString(StorageKeys.userEmail, user.email ?? '');
+      }
+
       // Check if user is paired
       final isPaired = await authService.isPaired();
+
+      // Save paired status
+      await prefs.setBool(StorageKeys.isPaired, isPaired);
 
       if (!mounted) return;
       if (isPaired) {
