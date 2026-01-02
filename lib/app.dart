@@ -198,46 +198,22 @@ class _GlobalHeartbeatListenerState
     // Listen for incoming heartbeats globally
     // This is ONLY for foreground - background is handled by FCM
     ref.listen(latestReceivedHeartbeatProvider, (previous, next) {
-      debugPrint('💓 Heartbeat provider update: ${next.value?.id}');
-
-      if (!_isInitialized) {
-        debugPrint('⚠️ Not initialized yet');
-        return;
-      }
-
-      // Only process if app is in foreground
-      if (!_isInForeground) {
-        debugPrint(
-          '⚠️ App not in foreground, skipping (FCM handles background)',
-        );
-        return;
-      }
+      if (!_isInitialized || !_isInForeground) return;
 
       final heartbeat = next.value;
-      if (heartbeat == null) {
-        debugPrint('⚠️ Heartbeat is null');
-        return;
-      }
+      if (heartbeat == null) return;
 
       // Only process if this is a new heartbeat we haven't seen
-      if (heartbeat.id == _lastProcessedHeartbeatId) {
-        debugPrint('⚠️ Already processed this heartbeat');
-        return;
-      }
+      if (heartbeat.id == _lastProcessedHeartbeatId) return;
 
       // Only process heartbeats that arrived AFTER app resumed
-      // This prevents cached/stale heartbeats from triggering
       if (_lastResumedAt != null &&
           heartbeat.sentAt.isBefore(_lastResumedAt!)) {
-        debugPrint('⚠️ Heartbeat is older than last resume time, skipping');
-        _lastProcessedHeartbeatId =
-            heartbeat.id; // Mark as processed to avoid future checks
+        _lastProcessedHeartbeatId = heartbeat.id;
         return;
       }
 
       _lastProcessedHeartbeatId = heartbeat.id;
-
-      debugPrint('🎉 NEW HEARTBEAT! Playing vibration...');
 
       // Play the heartbeat vibration pattern!
       final vibrationService = ref.read(vibrationServiceProvider);
@@ -255,8 +231,6 @@ class _GlobalHeartbeatListenerState
 
     // Listen for incoming hugs globally
     ref.listen(latestReceivedHugsProvider, (previous, next) {
-      debugPrint('🤗 Hugs provider update: ${next.value?.id}');
-
       if (!_isInitialized || !_isInForeground) return;
 
       final hugs = next.value;
@@ -272,8 +246,6 @@ class _GlobalHeartbeatListenerState
       }
 
       _lastProcessedHugsId = hugs.id;
-
-      debugPrint('🎉 NEW HUGS! Playing vibration...');
 
       // Play the hugs vibration pattern!
       final vibrationService = ref.read(vibrationServiceProvider);

@@ -38,11 +38,8 @@ final dailyQuoteProvider = StreamProvider<DailyQuote>((ref) {
   );
 
   if (coupleId == null) {
-    debugPrint('Quote: coupleId is null, returning default');
     return Stream.value(DailyQuote.defaultQuote);
   }
-
-  debugPrint('Quote: Streaming from Firestore for couple: $coupleId');
 
   return FirebaseFirestore.instance
       .collection(FirebaseCollections.couples)
@@ -60,7 +57,6 @@ final dailyQuoteProvider = StreamProvider<DailyQuote>((ref) {
           return DailyQuote.defaultQuote;
         }
 
-        debugPrint('Quote: Got custom quote from Firestore');
         return DailyQuote(
           quote: customQuoteData['quote'] ?? '',
           author: customQuoteData['author'] ?? 'Your Partner',
@@ -92,10 +88,7 @@ class QuoteService {
     );
     final currentUser = _ref.read(currentAppUserProvider).value;
 
-    if (coupleId == null || currentUser == null) {
-      debugPrint('Quote: Cannot set - coupleId or user is null');
-      return;
-    }
+    if (coupleId == null || currentUser == null) return;
 
     try {
       final now = DateTime.now();
@@ -111,10 +104,8 @@ class QuoteService {
               'setAt': Timestamp.fromDate(now),
             },
           });
-
-      debugPrint('Quote: Saved to Firestore');
     } catch (e) {
-      debugPrint('Quote: Error saving: $e');
+      debugPrint('Quote error: $e');
       rethrow;
     }
   }
@@ -132,10 +123,8 @@ class QuoteService {
           .collection(FirebaseCollections.couples)
           .doc(coupleId)
           .update({'customQuote': FieldValue.delete()});
-
-      debugPrint('Quote: Cleared from Firestore');
     } catch (e) {
-      debugPrint('Quote: Error clearing: $e');
+      debugPrint('Quote error: $e');
       rethrow;
     }
   }
