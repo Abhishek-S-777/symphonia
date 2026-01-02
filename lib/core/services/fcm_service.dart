@@ -89,6 +89,11 @@ class FCMService {
         // DON'T play vibration here - Firestore listener in app.dart handles it
         // This prevents double vibration
         enableVibration = false; // Also disable notification vibration
+      } else if (data['type'] == 'hugs') {
+        channelId = 'heartbeat_channel';
+        channelName = 'Hugs & Kisses';
+        // DON'T play vibration here - Firestore listener in app.dart handles it
+        enableVibration = false;
       } else if (data['type'] == 'message') {
         channelId = 'message_channel';
         channelName = 'Messages';
@@ -217,9 +222,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // This is called when app is in background or terminated
 
   final data = message.data;
+  final messageType = data['type'];
 
   // If it's a heartbeat, trigger vibration and show notification
-  if (data['type'] == 'heartbeat') {
+  if (messageType == 'heartbeat') {
     // Play heartbeat vibration pattern
     final hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator == true) {
@@ -240,28 +246,76 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     final notificationBody =
         data['notificationBody'] ?? 'You received a heartbeat!';
 
-    final localNotifications = FlutterLocalNotificationsPlugin();
-    await localNotifications.initialize(
-      const InitializationSettings(
-        android: AndroidInitializationSettings('@drawable/ic_notification'),
-      ),
-    );
-
-    await localNotifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      notificationTitle,
-      notificationBody,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'heartbeat_channel',
-          'Heartbeat',
-          channelDescription: 'Heartbeat notifications',
-          importance: Importance.high,
-          priority: Priority.high,
-          icon: '@drawable/ic_notification',
-          enableVibration: false, // We already vibrated manually
-        ),
-      ),
+    await _showLocalNotification(
+      title: notificationTitle,
+      body: notificationBody,
+      channelId: 'heartbeat_channel',
+      channelName: 'Heartbeat',
     );
   }
+
+  // If it's hugs, trigger hugs vibration and show notification
+  if (messageType == 'hugs') {
+    // Play hugs vibration pattern: long + short (hug + kiss)
+    final hasVibrator = await Vibration.hasVibrator();
+    if (hasVibrator == true) {
+      final hasCustom = await Vibration.hasCustomVibrationsSupport();
+      if (hasCustom == true) {
+        // Long hug + pause + short kiss
+        await Vibration.vibrate(
+          pattern: [0, 600, 200, 100],
+          intensities: [0, 200, 0, 255],
+        );
+      } else {
+        // Fallback: long vibration then short
+        await Vibration.vibrate(duration: 600);
+        await Future.delayed(const Duration(milliseconds: 200));
+        await Vibration.vibrate(duration: 100);
+      }
+    }
+
+    // Show local notification
+    final notificationTitle = data['notificationTitle'] ?? '🤗 Hugs & Kisses!';
+    final notificationBody =
+        data['notificationBody'] ?? 'You received hugs and kisses!';
+
+    await _showLocalNotification(
+      title: notificationTitle,
+      body: notificationBody,
+      channelId: 'heartbeat_channel',
+      channelName: 'Hugs & Kisses',
+    );
+  }
+}
+
+/// Helper to show local notification in background
+Future<void> _showLocalNotification({
+  required String title,
+  required String body,
+  required String channelId,
+  required String channelName,
+}) async {
+  final localNotifications = FlutterLocalNotificationsPlugin();
+  await localNotifications.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings('@drawable/ic_notification'),
+    ),
+  );
+
+  await localNotifications.show(
+    DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    title,
+    body,
+    NotificationDetails(
+      android: AndroidNotificationDetails(
+        channelId,
+        channelName,
+        channelDescription: '$channelName notifications',
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@drawable/ic_notification',
+        enableVibration: false, // We already vibrated manually
+      ),
+    ),
+  );
 }
