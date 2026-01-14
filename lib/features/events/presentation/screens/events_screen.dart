@@ -177,12 +177,14 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: isToday
-                            ? AppGradients.primary.withOpacity(0.7)
+                            ? AppGradients.glassOverlay
                             : AppGradients.aurora.withOpacity(0.7),
                         boxShadow: [
                           BoxShadow(
                             color:
-                                (isToday ? AppColors.primary : AppColors.accent)
+                                (isToday
+                                        ? AppColors.darkBackground
+                                        : AppColors.accent)
                                     .withValues(alpha: 0.3),
                             blurRadius: 12,
                             spreadRadius: 2,
@@ -241,7 +243,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           const SizedBox(height: 4),
                           Text(
                             isToday
-                                ? 'Today! 🎊'
+                                ? 'Finally, today is the day! 🎊'
                                 : isTomorrow
                                 ? 'Tomorrow!'
                                 : DateFormat(
@@ -250,7 +252,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: isToday
-                                      ? AppColors.primary
+                                      ? AppColors.accent
                                       : AppColors.grayDark,
                                   fontWeight: isToday
                                       ? FontWeight.bold
@@ -526,9 +528,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           // Description
                           TextField(
                             controller: descriptionController,
-                            maxLength: 100,
                             decoration: InputDecoration(
-                              labelText: 'Description (optional)',
+                              labelText: 'What\'s the plan babe?',
                               labelStyle: const TextStyle(
                                 color: AppColors.white,
                               ),
@@ -933,7 +934,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                       _buildSummaryField(
                         icon: Icons.notes,
                         iconColor: AppColors.gray,
-                        label: 'Description',
+                        label: 'The Plan',
                         value: event.description!,
                       ),
                       const SizedBox(height: 16),

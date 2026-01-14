@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
 
 import '../constants/firebase_collections.dart';
 import '../../features/events/domain/entities/event.dart';
@@ -81,9 +79,7 @@ class EventService {
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
-  EventService(this._ref) {
-    tz.initializeTimeZones();
-  }
+  EventService(this._ref);
 
   /// Create a new event
   Future<Event> createEvent({
@@ -199,57 +195,23 @@ class EventService {
   }
 
   /// Schedule notifications for an event
+  ///
+  /// NOTE: Event countdown notifications are now handled by Cloud Functions
+  /// to ensure BOTH partners receive notifications (not just the creator).
+  /// The Cloud Function runs hourly and checks if the current hour matches
+  /// each event's notification time, then sends push notifications to both
+  /// user1 and user2 in the couple.
+  ///
+  /// Local notifications were previously scheduled only on the device of the
+  /// user who created/updated the event, meaning the partner never received them.
   Future<void> _scheduleEventNotifications(Event event) async {
-    if (!event.notificationsEnabled || event.notificationTime == null) return;
-
-    final now = DateTime.now();
-    final nextOccurrence = event.nextOccurrence;
-
-    // Schedule daily countdown notifications
-    for (int i = 0; i <= event.daysUntil && i <= 30; i++) {
-      final notificationDate = nextOccurrence.subtract(Duration(days: i));
-      final scheduledTime = DateTime(
-        notificationDate.year,
-        notificationDate.month,
-        notificationDate.day,
-        event.notificationTime!.hour,
-        event.notificationTime!.minute,
-      );
-
-      if (scheduledTime.isAfter(now)) {
-        final daysLeft = i;
-        String body;
-        if (daysLeft == 0) {
-          body = '🎉 Today is ${event.title}!';
-        } else if (daysLeft == 1) {
-          body = '⏰ Tomorrow is ${event.title}!';
-        } else {
-          body = '📅 $daysLeft days until ${event.title}!';
-        }
-
-        await _notifications.zonedSchedule(
-          event.id.hashCode + i,
-          'Symphonia Countdown',
-          body,
-          tz.TZDateTime.from(scheduledTime, tz.local),
-          const NotificationDetails(
-            android: AndroidNotificationDetails(
-              'events',
-              'Events',
-              channelDescription: 'Event countdown notifications',
-              importance: Importance.high,
-              priority: Priority.high,
-            ),
-            iOS: DarwinNotificationDetails(
-              presentAlert: true,
-              presentBadge: true,
-              presentSound: true,
-            ),
-          ),
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        );
-      }
-    }
+    // Cloud Functions now handle event notifications to both partners.
+    // The notification time is stored in Firestore and the Cloud Function
+    // respects it when sending countdown reminders (1, 3, 7, 14, 30 days before)
+    // and "today" notifications.
+    //
+    // See: symphonia-functions/index.js -> sendEventReminders
+    return;
   }
 
   /// Cancel notifications for an event
