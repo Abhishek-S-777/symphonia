@@ -99,6 +99,11 @@ class _GlobalHeartbeatListenerState
     final vibrationService = ref.read(vibrationServiceProvider);
     await vibrationService.initialize();
 
+    // Refresh FCM token on every app launch
+    // This ensures notifications work even after reinstall
+    final authService = ref.read(authServiceProvider);
+    await authService.refreshFcmToken();
+
     // Set online status immediately when app starts
     _setOnline();
 
@@ -107,7 +112,9 @@ class _GlobalHeartbeatListenerState
     }
 
     setState(() => _isInitialized = true);
-    debugPrint('✅ GlobalHeartbeatListener initialized - Set ONLINE');
+    debugPrint(
+      '✅ GlobalHeartbeatListener initialized - Set ONLINE, FCM token refreshed',
+    );
   }
 
   @override

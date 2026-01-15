@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
@@ -130,6 +131,40 @@ class AuthService {
   final _uuid = const Uuid();
 
   fb.User? get currentUser => _auth.currentUser;
+
+  /// Refresh FCM token in Firestore (only if changed)
+  /// Compares with stored token to avoid unnecessary writes
+  Future<void> refreshFcmToken() async {
+    if (currentUser == null) return;
+
+    try {
+      final newToken = await _messaging.getToken();
+      if (newToken == null) return;
+
+      // Get current stored token from Firestore
+      final userDoc = await _firestore
+          .collection(FirebaseCollections.users)
+          .doc(currentUser!.uid)
+          .get();
+
+      final storedToken = userDoc.data()?[FirebaseCollections.userFcmToken];
+
+      // Only update if token has changed
+      if (storedToken != newToken) {
+        await _firestore
+            .collection(FirebaseCollections.users)
+            .doc(currentUser!.uid)
+            .set({
+              FirebaseCollections.userFcmToken: newToken,
+            }, SetOptions(merge: true));
+        debugPrint('✅ FCM token updated (was different)');
+      } else {
+        debugPrint('✅ FCM token unchanged, skipping write');
+      }
+    } catch (e) {
+      debugPrint('Error refreshing FCM token: $e');
+    }
+  }
 
   /// Sign up with email and password
   Future<fb.UserCredential> signUp({
