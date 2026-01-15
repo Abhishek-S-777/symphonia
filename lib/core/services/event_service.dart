@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
 
 import '../constants/firebase_collections.dart';
 import '../../features/events/domain/entities/event.dart';
@@ -196,22 +198,85 @@ class EventService {
 
   /// Schedule notifications for an event
   ///
-  /// NOTE: Event countdown notifications are now handled by Cloud Functions
-  /// to ensure BOTH partners receive notifications (not just the creator).
-  /// The Cloud Function runs hourly and checks if the current hour matches
-  /// each event's notification time, then sends push notifications to both
-  /// user1 and user2 in the couple.
-  ///
-  /// Local notifications were previously scheduled only on the device of the
-  /// user who created/updated the event, meaning the partner never received them.
+  /// Schedules local notifications on the creator's device for countdown reminders.
+  /// Note: Cloud Functions also send push notifications to BOTH partners,
+  /// so the partner will receive cloud-based notifications while the creator
+  /// receives both local and cloud notifications.
   Future<void> _scheduleEventNotifications(Event event) async {
-    // Cloud Functions now handle event notifications to both partners.
-    // The notification time is stored in Firestore and the Cloud Function
-    // respects it when sending countdown reminders (1, 3, 7, 14, 30 days before)
-    // and "today" notifications.
-    //
-    // See: symphonia-functions/index.js -> sendEventReminders
-    return;
+    // Initialize timezone data
+    tz_data.initializeTimeZones();
+    final location = tz.getLocation('Asia/Kolkata');
+
+    // Cancel existing notifications for this event
+    await _cancelEventNotifications(event.id);
+
+    if (!event.notificationsEnabled) return;
+
+    // Schedule notifications at countdown milestones: 30, 14, 7, 3, 1, 0 days before
+    final milestones = [30, 14, 7, 3, 1, 0];
+    final now = DateTime.now();
+
+    for (final daysBeforeEvent in milestones) {
+      // Calculate the notification date
+      final notificationDate = event.nextOccurrence.subtract(
+        Duration(days: daysBeforeEvent),
+      );
+
+      // Set the time for notification (use event's notification time or default to 9 AM)
+      final notificationTime =
+          event.notificationTime ?? const TimeOfDay(hour: 9, minute: 0);
+      final scheduledDateTime = DateTime(
+        notificationDate.year,
+        notificationDate.month,
+        notificationDate.day,
+        notificationTime.hour,
+        notificationTime.minute,
+      );
+
+      // Skip if the notification time is in the past
+      if (scheduledDateTime.isBefore(now)) continue;
+
+      // Convert to TZDateTime
+      final tzScheduledDate = tz.TZDateTime.from(scheduledDateTime, location);
+
+      // Generate notification content
+      String title;
+      String body;
+      if (daysBeforeEvent == 0) {
+        title = '🎉 Today is the day!';
+        body = '${event.title} is happening today!';
+      } else if (daysBeforeEvent == 1) {
+        title = '⏰ Tomorrow!';
+        body = '${event.title} is tomorrow!';
+      } else {
+        title = '📅 $daysBeforeEvent days to go!';
+        body = '${event.title} is coming up!';
+      }
+
+      // Schedule the notification
+      await _notifications.zonedSchedule(
+        event.id.hashCode + daysBeforeEvent,
+        title,
+        body,
+        tzScheduledDate,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'reminder_channel',
+            'Reminders',
+            channelDescription: 'Event countdown reminders',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: null,
+      );
+    }
   }
 
   /// Cancel notifications for an event
