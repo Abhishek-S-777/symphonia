@@ -290,7 +290,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 focusNode: _editorFocusNode,
                 config: QuillEditorConfig(
                   placeholder: 'Start writing your note...',
-                  padding: EdgeInsets.zero,
+                  padding: const EdgeInsets.all(16),
                   scrollable: true,
                   autoFocus: false,
                   expands: true,
@@ -364,11 +364,22 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                       color: AppColors.accent,
                       decoration: TextDecoration.underline,
                     ),
+                    leading: DefaultTextBlockStyle(
+                      const TextStyle(
+                        color: AppColors.white,
+                        fontSize: 16,
+                        height: 1.15,
+                      ),
+                      const HorizontalSpacing(0, 0),
+                      const VerticalSpacing(0, 0),
+                      const VerticalSpacing(0, 0),
+                      null,
+                    ),
                     lists: DefaultListBlockStyle(
                       const TextStyle(
                         color: AppColors.white,
                         fontSize: 16,
-                        height: 1.5,
+                        height: 1.15,
                       ),
                       const HorizontalSpacing(0, 0),
                       const VerticalSpacing(6, 0),

@@ -113,12 +113,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   }) async {
     if (content.trim().isEmpty) return;
 
-    setState(() => _isSending = true);
+    // setState(() => _isSending = true);
 
     try {
+      _messageController.clear();
       final messageService = ref.read(messageServiceProvider);
       await messageService.sendMessage(content: content.trim(), type: type);
-      _messageController.clear();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

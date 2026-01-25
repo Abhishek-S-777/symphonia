@@ -534,7 +534,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
           showCursor: false,
           autoFocus: false,
           expands: false,
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.all(16),
           customStyles: DefaultStyles(
             paragraph: DefaultTextBlockStyle(
               const TextStyle(
@@ -593,11 +593,22 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               color: AppColors.accent,
               decoration: TextDecoration.underline,
             ),
+            leading: DefaultTextBlockStyle(
+              const TextStyle(
+                color: AppColors.white,
+                fontSize: 16,
+                height: 1.15,
+              ),
+              const HorizontalSpacing(0, 0),
+              const VerticalSpacing(0, 0),
+              const VerticalSpacing(0, 0),
+              null,
+            ),
             lists: DefaultListBlockStyle(
               const TextStyle(
                 color: AppColors.white,
                 fontSize: 16,
-                height: 1.5,
+                height: 1.15,
               ),
               const HorizontalSpacing(0, 0),
               const VerticalSpacing(6, 0),

@@ -589,7 +589,7 @@ class _DailyMessageCardWidgetState
             TextField(
               controller: _textController,
               focusNode: _focusNode,
-              maxLines: 3,
+              maxLines: 6,
               maxLength: 200,
               decoration: InputDecoration(
                 hintText: 'Write a love note for your partner...',

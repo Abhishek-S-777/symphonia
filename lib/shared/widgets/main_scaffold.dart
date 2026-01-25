@@ -33,19 +33,38 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   }
 
   void _onItemTapped(int index) {
+    final currentIndex = _getSelectedIndex();
+
+    // If tapping current tab, do nothing (or could scroll to top)
+    if (index == currentIndex) return;
+
+    // Get target path
+    String targetPath;
     switch (index) {
       case 0:
-        context.go(Routes.homePath);
+        targetPath = Routes.homePath;
         break;
       case 1:
-        context.go(Routes.messagesPath);
+        targetPath = Routes.messagesPath;
         break;
       case 2:
-        context.go(Routes.galleryPath);
+        targetPath = Routes.galleryPath;
         break;
       case 3:
-        context.go(Routes.eventsPath);
+        targetPath = Routes.eventsPath;
         break;
+      default:
+        targetPath = Routes.homePath;
+    }
+
+    // If going to home, use go() to clear stack and go to home
+    // Otherwise use push() to add to stack so back button works
+    if (index == 0) {
+      // Going to home - clear everything and go to home
+      context.go(targetPath);
+    } else {
+      // Going to other tabs - push so back button works
+      context.push(targetPath);
     }
   }
 
@@ -54,6 +73,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     final selectedIndex = _getSelectedIndex();
     final unreadCount = ref.watch(unreadMessagesCountProvider).value ?? 0;
 
+    // Back button handling is done at app level (app.dart - didPopRoute)
     return GradientBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,

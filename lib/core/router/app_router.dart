@@ -36,7 +36,7 @@ class AppRouter {
 
   /// Create router with authentication guard
   static GoRouter createRouter(Ref ref) {
-    return GoRouter(
+    final router = GoRouter(
       navigatorKey: rootNavigatorKey, // Use global key from app.dart
       initialLocation: Routes.splashPath,
       debugLogDiagnostics: true,
@@ -192,5 +192,7 @@ class AppRouter {
         ),
       ),
     );
+
+    return router;
   }
 }
