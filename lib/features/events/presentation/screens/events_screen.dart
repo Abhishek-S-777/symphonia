@@ -1,16 +1,24 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter/material.dart' as material show TimeOfDay;
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../app.dart';
+import '../../../../core/router/routes.dart';
 import '../../../../core/services/event_service.dart';
+import '../../../../core/services/note_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_gradients.dart';
 import '../../../../shared/widgets/animated_gradient_background.dart';
 import '../../../../shared/widgets/app_snackbar.dart';
+import '../../../../shared/widgets/expandable_fab.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../notes/domain/entities/note.dart';
 import '../../domain/entities/event.dart';
 
 /// Events screen for managing countdowns and special dates
@@ -27,6 +35,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     final eventsAsync = ref.watch(eventsStreamProvider);
+    final notesAsync = ref.watch(notesStreamProvider);
 
     return Scaffold(
       body: GradientBackground(
@@ -34,26 +43,35 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
           child: Column(
             children: [
               _buildAppBar(),
-              Expanded(
-                child: eventsAsync.when(
-                  data: (events) => events.isEmpty
-                      ? _buildEmptyState()
-                      : _buildEventsList(events),
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Center(child: Text('Error: $e')),
-                ),
-              ),
+              Expanded(child: _buildContent(eventsAsync, notesAsync)),
             ],
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        shape: const CircleBorder(),
-        onPressed: () => _showAddEventDialog(context),
-        backgroundColor: AppColors.primary.withValues(alpha: 0.6),
-        child: const Icon(Icons.add, color: AppColors.white),
-      ).animate().scale(delay: 300.ms, curve: Curves.elasticOut),
+      floatingActionButton: ExpandableFab(
+        onNotePressed: () => context.push(Routes.noteEditorPath),
+        onEventPressed: () => _showAddEventDialog(context),
+      ),
+    );
+  }
+
+  Widget _buildContent(
+    AsyncValue<List<Event>> eventsAsync,
+    AsyncValue<List<Note>> notesAsync,
+  ) {
+    return eventsAsync.when(
+      data: (events) => notesAsync.when(
+        data: (notes) {
+          if (events.isEmpty && notes.isEmpty) {
+            return _buildEmptyState();
+          }
+          return _buildCombinedList(notes, events);
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
 
@@ -63,7 +81,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       child: Row(
         children: [
           Text(
-            'Events & Countdowns',
+            'Notes & Events',
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -88,18 +106,22 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.white),
               ),
-              child: const Icon(Icons.event, size: 60, color: AppColors.white),
+              child: const Icon(
+                Icons.note_add,
+                size: 60,
+                color: AppColors.white,
+              ),
             ).animate().scale(curve: Curves.elasticOut),
             const SizedBox(height: 24),
             Text(
-              'No Events Yet',
+              'No Notes or Events Yet',
               style: Theme.of(
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Add birthdays, anniversaries, and other special dates to count down together!',
+              'Add notes to share thoughts, or create events to count down together!',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppColors.grayDark),
@@ -111,7 +133,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     );
   }
 
-  Widget _buildEventsList(List<Event> events) {
+  Widget _buildCombinedList(List<Note> notes, List<Event> events) {
     // Separate events into upcoming and past
     final upcoming = events.where((e) => e.daysUntil >= 0).toList()
       ..sort((a, b) => a.daysUntil.compareTo(b.daysUntil));
@@ -122,12 +144,42 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       children: [
+        // Notes section first
+        if (notes.isNotEmpty) ...[
+          Row(
+            children: [
+              Icon(Icons.note_alt_outlined, size: 18, color: AppColors.accent),
+              const SizedBox(width: 8),
+              Text(
+                'Notes',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: AppColors.grayDark),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...notes.asMap().entries.map(
+            (entry) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildNoteCard(entry.value, entry.key),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+        // Upcoming events section
         if (upcoming.isNotEmpty) ...[
-          Text(
-            'Upcoming',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: AppColors.grayDark),
+          Row(
+            children: [
+              Icon(Icons.event, size: 18, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Upcoming Events',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: AppColors.grayDark),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           ...upcoming.asMap().entries.map(
@@ -137,13 +189,20 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             ),
           ),
         ],
+        // Past events section
         if (past.isNotEmpty) ...[
           const SizedBox(height: 24),
-          Text(
-            'Past Events',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(color: AppColors.grayDark),
+          Row(
+            children: [
+              Icon(Icons.history, size: 18, color: AppColors.gray),
+              const SizedBox(width: 8),
+              Text(
+                'Past Events',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(color: AppColors.grayDark),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           ...past.map(
@@ -156,6 +215,479 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         const SizedBox(height: 80),
       ],
     );
+  }
+
+  Widget _buildNoteCard(Note note, int index) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _showNoteSummary(note),
+      child:
+          GlassCard(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    // Note icon
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.accent.withValues(alpha: 0.6),
+                            AppColors.accentDark.withValues(alpha: 0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.note_alt_outlined,
+                        color: AppColors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            note.title,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            note.plainTextPreview.isEmpty
+                                ? 'No preview available'
+                                : note.plainTextPreview,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: AppColors.gray),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatNoteDate(note.updatedAt),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.grayDark),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => _showNoteOptions(note),
+                      icon: const Icon(Icons.more_vert, color: AppColors.gray),
+                    ),
+                  ],
+                ),
+              )
+              .animate(delay: Duration(milliseconds: 100 * index))
+              .fadeIn()
+              .slideX(begin: 0.1, end: 0),
+    );
+  }
+
+  String _formatNoteDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes} min ago';
+      }
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return DateFormat('MMM d').format(date);
+    }
+  }
+
+  void _showNoteOptions(Note note) {
+    if (rootContext == null) return;
+    showModalBottomSheet(
+      context: rootContext!,
+      useRootNavigator: true,
+      enableDrag: false,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      note.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: AppColors.gray),
+                  ),
+                ],
+              ),
+            ),
+
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.visibility, color: AppColors.accent),
+              title: const Text('View Note'),
+              onTap: () {
+                Navigator.pop(context);
+                _showNoteSummary(note);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.blueAccent),
+              title: const Text('Edit Note'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push(Routes.noteEditorPath, extra: note);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: AppColors.error),
+              title: const Text('Delete Note'),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteNote(note);
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNoteSummary(Note note) {
+    if (rootContext == null) return;
+
+    showModalBottomSheet(
+      context: rootContext!,
+      isDismissible: true,
+      enableDrag: true,
+      isScrollControlled: true,
+      showDragHandle: false,
+      useRootNavigator: true,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Title bar
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 24,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.note_alt_outlined,
+                        color: AppColors.accent,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            note.title,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            _formatNoteDate(note.updatedAt),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.gray),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: AppColors.gray),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Note content
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(20),
+                  child: _buildNoteContent(note),
+                ),
+              ),
+              // Action buttons
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          context.push(Routes.noteEditorPath, extra: note);
+                        },
+                        icon: const Icon(Icons.edit, size: 18),
+                        label: const Text('Edit'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(color: Colors.blueAccent),
+                          foregroundColor: Colors.blueAccent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _deleteNote(note);
+                        },
+                        icon: const Icon(Icons.delete_outline, size: 18),
+                        label: const Text('Delete'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(color: AppColors.error),
+                          foregroundColor: AppColors.error,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoteContent(Note note) {
+    // Use QuillEditor in read-only mode to display the rich text content
+    try {
+      final deltaJson = jsonDecode(note.content);
+      final doc = Document.fromJson(deltaJson);
+      final controller = QuillController(
+        document: doc,
+        selection: const TextSelection.collapsed(offset: 0),
+        readOnly: true,
+      );
+
+      return QuillEditor.basic(
+        controller: controller,
+        config: QuillEditorConfig(
+          showCursor: false,
+          autoFocus: false,
+          expands: false,
+          padding: EdgeInsets.zero,
+          customStyles: DefaultStyles(
+            paragraph: DefaultTextBlockStyle(
+              const TextStyle(
+                color: AppColors.white,
+                fontSize: 16,
+                height: 1.5,
+              ),
+              const HorizontalSpacing(0, 0),
+              const VerticalSpacing(6, 0),
+              const VerticalSpacing(0, 6),
+              null,
+            ),
+            h1: DefaultTextBlockStyle(
+              const TextStyle(
+                color: AppColors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                height: 1.4,
+              ),
+              const HorizontalSpacing(0, 0),
+              const VerticalSpacing(12, 0),
+              const VerticalSpacing(0, 12),
+              null,
+            ),
+            h2: DefaultTextBlockStyle(
+              const TextStyle(
+                color: AppColors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                height: 1.4,
+              ),
+              const HorizontalSpacing(0, 0),
+              const VerticalSpacing(10, 0),
+              const VerticalSpacing(0, 10),
+              null,
+            ),
+            h3: DefaultTextBlockStyle(
+              const TextStyle(
+                color: AppColors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                height: 1.4,
+              ),
+              const HorizontalSpacing(0, 0),
+              const VerticalSpacing(8, 0),
+              const VerticalSpacing(0, 8),
+              null,
+            ),
+            bold: const TextStyle(fontWeight: FontWeight.bold),
+            italic: const TextStyle(fontStyle: FontStyle.italic),
+            underline: const TextStyle(decoration: TextDecoration.underline),
+            strikeThrough: const TextStyle(
+              decoration: TextDecoration.lineThrough,
+            ),
+            link: TextStyle(
+              color: AppColors.accent,
+              decoration: TextDecoration.underline,
+            ),
+            lists: DefaultListBlockStyle(
+              const TextStyle(
+                color: AppColors.white,
+                fontSize: 16,
+                height: 1.5,
+              ),
+              const HorizontalSpacing(0, 0),
+              const VerticalSpacing(6, 0),
+              const VerticalSpacing(0, 6),
+              null,
+              null,
+            ),
+            quote: DefaultTextBlockStyle(
+              TextStyle(
+                color: AppColors.gray,
+                fontSize: 16,
+                fontStyle: FontStyle.italic,
+                height: 1.5,
+              ),
+              const HorizontalSpacing(16, 0),
+              const VerticalSpacing(8, 0),
+              const VerticalSpacing(0, 8),
+              BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: AppColors.accent, width: 3),
+                ),
+              ),
+            ),
+            code: DefaultTextBlockStyle(
+              TextStyle(
+                color: AppColors.primaryLight,
+                fontFamily: 'monospace',
+                fontSize: 14,
+                height: 1.6,
+              ),
+              const HorizontalSpacing(8, 8),
+              const VerticalSpacing(8, 0),
+              const VerticalSpacing(0, 8),
+              BoxDecoration(
+                color: AppColors.darkElevated.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+      );
+    } catch (_) {
+      // Fallback to plain text display
+      return Text(
+        note.plainTextPreview,
+        style: const TextStyle(
+          fontSize: 16,
+          height: 1.6,
+          color: AppColors.white,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteNote(Note note) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Note?'),
+        content: Text('Are you sure you want to delete "${note.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final noteService = ref.read(noteServiceProvider);
+        await noteService.deleteNote(note.id);
+
+        if (mounted) {
+          AppSnackbar.showInfo(context, 'Note deleted');
+        }
+      } catch (e) {
+        if (mounted) {
+          AppSnackbar.showError(context, 'Error deleting note: $e');
+        }
+      }
+    }
   }
 
   Widget _buildEventCard(Event event, int index) {

@@ -1,3 +1,5 @@
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,13 +26,32 @@ class MessagesScreen extends ConsumerStatefulWidget {
 class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _messageFocusNode = FocusNode();
   bool _isSending = false;
   bool _hasScrolledToUnread = false;
+  bool _showEmojiPicker = false;
 
   @override
   void initState() {
     super.initState();
     _markMessagesAsRead();
+    _messageFocusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (_messageFocusNode.hasFocus && _showEmojiPicker) {
+      setState(() => _showEmojiPicker = false);
+    }
+  }
+
+  void _toggleEmojiPicker() {
+    if (_showEmojiPicker) {
+      setState(() => _showEmojiPicker = false);
+      _messageFocusNode.requestFocus();
+    } else {
+      _messageFocusNode.unfocus();
+      setState(() => _showEmojiPicker = true);
+    }
   }
 
   Future<void> _markMessagesAsRead() async {
@@ -81,6 +102,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   void dispose() {
     _scrollController.dispose();
     _messageController.dispose();
+    _messageFocusNode.removeListener(_onFocusChange);
+    _messageFocusNode.dispose();
     super.dispose();
   }
 
@@ -184,6 +207,82 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
             // Input area
             _buildInputArea(),
+
+            // Emoji Picker (WhatsApp style - appears from bottom)
+            if (_showEmojiPicker)
+              SizedBox(
+                height: 280,
+                child: EmojiPicker(
+                  onEmojiSelected: (category, emoji) {
+                    final text = _messageController.text;
+                    final selection = _messageController.selection;
+                    final newText = text.replaceRange(
+                      selection.start,
+                      selection.end,
+                      emoji.emoji,
+                    );
+                    final newOffset = selection.start + emoji.emoji.length;
+                    _messageController.text = newText;
+                    _messageController.selection = TextSelection.collapsed(
+                      offset: newOffset,
+                    );
+                  },
+                  onBackspacePressed: () {
+                    final text = _messageController.text;
+                    final selection = _messageController.selection;
+                    if (text.isNotEmpty && selection.start > 0) {
+                      final newText = text.replaceRange(
+                        selection.start - 1,
+                        selection.start,
+                        '',
+                      );
+                      _messageController.text = newText;
+                      _messageController.selection = TextSelection.collapsed(
+                        offset: selection.start - 1,
+                      );
+                    }
+                  },
+                  textEditingController: _messageController,
+                  config: Config(
+                    height: 280,
+                    checkPlatformCompatibility: false,
+                    emojiViewConfig: EmojiViewConfig(
+                      emojiSizeMax:
+                          28 *
+                          (foundation.defaultTargetPlatform ==
+                                  TargetPlatform.iOS
+                              ? 1.20
+                              : 1.0),
+                      backgroundColor: AppColors.darkCard,
+                      columns: 8,
+                    ),
+                    viewOrderConfig: const ViewOrderConfig(
+                      top: EmojiPickerItem.categoryBar,
+                      middle: EmojiPickerItem.emojiView,
+                      bottom: EmojiPickerItem.searchBar,
+                    ),
+                    categoryViewConfig: CategoryViewConfig(
+                      backgroundColor: AppColors.darkCard,
+                      indicatorColor: AppColors.primary,
+                      iconColor: AppColors.gray,
+                      iconColorSelected: AppColors.primary,
+                      dividerColor: AppColors.gray.withValues(alpha: 0.2),
+                    ),
+                    bottomActionBarConfig: BottomActionBarConfig(
+                      backgroundColor: AppColors.darkCard,
+                      buttonIconColor: AppColors.white,
+                      buttonColor: Colors.transparent,
+                      showBackspaceButton: true,
+                      showSearchViewButton: true,
+                    ),
+                    searchViewConfig: SearchViewConfig(
+                      backgroundColor: AppColors.darkCard,
+                      buttonIconColor: AppColors.white,
+                      hintText: 'Search emoji...',
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -532,13 +631,30 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   Widget _buildInputArea() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: SafeArea(
+        top: false,
         child: Row(
           children: [
+            // Emoji toggle button (left side like WhatsApp)
+            IconButton(
+              onPressed: _toggleEmojiPicker,
+              icon: Icon(
+                _showEmojiPicker
+                    ? Icons.keyboard_alt_outlined
+                    : Icons.emoji_emotions_outlined,
+                color: _showEmojiPicker
+                    ? AppColors.primary.withValues(alpha: 0.6)
+                    : AppColors.gray,
+                size: 26,
+              ),
+              tooltip: _showEmojiPicker ? 'Show keyboard' : 'Show emojis',
+            ),
+            // Text field
             Expanded(
               child: TextField(
                 controller: _messageController,
+                focusNode: _messageFocusNode,
                 textCapitalization: TextCapitalization.sentences,
                 maxLength: AppConstants.messageMaxLength,
                 maxLines: null,
@@ -548,16 +664,21 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.gray),
                   border: InputBorder.none,
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide(color: Colors.transparent),
+                  ),
                   counterText: '',
                   contentPadding: const EdgeInsets.symmetric(
                     vertical: 12,
-                    horizontal: 12,
+                    horizontal: 8,
                   ),
                 ),
                 onSubmitted: (value) => _sendMessage(value),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
+            // Send button
             Container(
               width: 48,
               height: 48,

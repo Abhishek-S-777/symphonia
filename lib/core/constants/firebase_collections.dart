@@ -19,6 +19,7 @@ class FirebaseCollections {
   static const String memories = 'memories';
   static const String journal = 'journal';
   static const String events = 'events';
+  static const String notes = 'notes';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // USER FIELDS
@@ -111,4 +112,14 @@ class FirebaseCollections {
   static const String pairingCodeCreatorId = 'creatorId';
   static const String pairingCodeCreatedAt = 'createdAt';
   static const String pairingCodeExpiresAt = 'expiresAt';
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // NOTE FIELDS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  static const String noteCreatorId = 'creatorId';
+  static const String noteTitle = 'title';
+  static const String noteContent = 'content';
+  static const String noteCreatedAt = 'createdAt';
+  static const String noteUpdatedAt = 'updatedAt';
 }

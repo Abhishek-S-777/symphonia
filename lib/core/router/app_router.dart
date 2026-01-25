@@ -18,6 +18,8 @@ import '../../features/gallery/presentation/screens/gallery_screen.dart';
 import '../../features/gallery/presentation/screens/add_memory_screen.dart';
 import '../../features/gallery/presentation/screens/slideshow_screen.dart';
 import '../../features/events/presentation/screens/events_screen.dart';
+import '../../features/notes/domain/entities/note.dart';
+import '../../features/notes/presentation/screens/note_editor_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../shared/widgets/main_scaffold.dart';
 
@@ -146,6 +148,14 @@ class AppRouter {
           builder: (context, state) {
             final startIndex = state.extra as int? ?? 0;
             return SlideshowScreen(startIndex: startIndex);
+          },
+        ),
+        GoRoute(
+          path: Routes.noteEditorPath,
+          name: Routes.noteEditor,
+          builder: (context, state) {
+            final note = state.extra as Note?;
+            return NoteEditorScreen(note: note);
           },
         ),
         GoRoute(

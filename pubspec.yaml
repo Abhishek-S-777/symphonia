@@ -1,7 +1,7 @@
 name: symphonia
 description: "An intimate companion app for couples - Symphonia"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: ^3.8.0
@@ -92,6 +92,8 @@ dependencies:
   # Google Fonts
   google_fonts: ^6.2.1
   flutter_launcher_icons: ^0.14.4
+  flutter_quill: ^11.5.0
+  emoji_picker_flutter: ^4.4.0
 
 dev_dependencies:
   flutter_test:

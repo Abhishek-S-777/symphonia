@@ -24,6 +24,7 @@ class Routes {
   static const String addJournalEntry = 'add-journal-entry';
   static const String events = 'events';
   static const String addEvent = 'add-event';
+  static const String noteEditor = 'note-editor';
   static const String settings = 'settings';
   static const String permissionSetup = 'permission-setup';
 
@@ -49,6 +50,7 @@ class Routes {
   static const String addJournalEntryPath = '/journal/add';
   static const String eventsPath = '/events';
   static const String addEventPath = '/events/add';
+  static const String noteEditorPath = '/notes/editor';
   static const String settingsPath = '/settings';
   static const String permissionSetupPath = '/permissions';
 }
