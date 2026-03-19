@@ -624,21 +624,6 @@ class _DailyMessageCardWidgetState
                     maxLines: 6,
                     maxLength: 200,
                     decoration: InputDecoration(
-                      prefixIcon: IconButton(
-                        onPressed: _toggleEmojiPicker,
-                        icon: Icon(
-                          _showEmojiPicker
-                              ? Icons.keyboard_alt_outlined
-                              : Icons.emoji_emotions_outlined,
-                          color: AppColors.gray,
-                          size: 24,
-                        ),
-                        tooltip: _showEmojiPicker
-                            ? 'Show keyboard'
-                            : 'Show emojis',
-                        constraints: const BoxConstraints(),
-                        padding: const EdgeInsets.all(8),
-                      ),
                       hintText: 'Write a love note for your partner...',
                       hintStyle: TextStyle(
                         color: AppColors.gray.withValues(alpha: 0.6),

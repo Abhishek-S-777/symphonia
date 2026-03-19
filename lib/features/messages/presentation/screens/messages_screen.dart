@@ -307,6 +307,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         color: AppColors.gray.withValues(alpha: 0.6),
                         fontSize: 14,
                       ),
+                      customSearchView: _buildMessagesEmojiSearchView,
                     ),
                   ),
                 ),
@@ -580,7 +581,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 : CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   gradient: isMe
                       ? AppGradients.messageSent.withOpacity(0.6)
@@ -624,22 +628,25 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              message.replyToSenderId == ref.read(currentAppUserProvider).value?.id
+                              message.replyToSenderId ==
+                                      ref.read(currentAppUserProvider).value?.id
                                   ? 'You'
                                   : partnerName,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               message.replyToContent ?? '',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.gray,
-                                fontSize: 12,
-                              ),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.gray,
+                                    fontSize: 12,
+                                  ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -734,12 +741,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       decoration: BoxDecoration(
         color: AppColors.darkElevated.withValues(alpha: 0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-        border: Border(
-          left: BorderSide(
-            color: AppColors.primary,
-            width: 3,
-          ),
-        ),
+        border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
       ),
       child: Row(
         children: [
@@ -758,9 +760,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 const SizedBox(height: 2),
                 Text(
                   reply.content,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.gray,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.gray),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -769,11 +771,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           ),
           IconButton(
             onPressed: _cancelReply,
-            icon: Icon(
-              Icons.close,
-              color: AppColors.gray,
-              size: 18,
-            ),
+            icon: Icon(Icons.close, color: AppColors.gray, size: 18),
             constraints: const BoxConstraints(),
             padding: EdgeInsets.zero,
           ),
@@ -872,5 +870,104 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     } else {
       return '${diff.inDays}d ago';
     }
+  }
+}
+
+Widget _buildMessagesEmojiSearchView(
+  Config config,
+  EmojiViewState state,
+  VoidCallback showEmojiView,
+) {
+  return _MessagesEmojiSearchView(config, state, showEmojiView);
+}
+
+class _MessagesEmojiSearchView extends SearchView {
+  const _MessagesEmojiSearchView(
+    super.config,
+    super.state,
+    super.showEmojiView,
+  );
+
+  @override
+  _MessagesEmojiSearchViewState createState() =>
+      _MessagesEmojiSearchViewState();
+}
+
+class _MessagesEmojiSearchViewState
+    extends SearchViewState<_MessagesEmojiSearchView> {
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final emojiSize = widget.config.emojiViewConfig.getEmojiSize(
+          constraints.maxWidth,
+        );
+        final emojiBoxSize = widget.config.emojiViewConfig.getEmojiBoxSize(
+          constraints.maxWidth,
+        );
+
+        return Container(
+          color: widget.config.searchViewConfig.backgroundColor,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: SizedBox(
+                  height: emojiBoxSize + 8.0,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: results.length,
+                    itemBuilder: (context, index) {
+                      return buildEmoji(
+                        results[index],
+                        emojiSize,
+                        emojiBoxSize,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: widget.showEmojiView,
+                      color: widget.config.searchViewConfig.buttonIconColor,
+                      icon: const Icon(Icons.arrow_back),
+                    ),
+                    Expanded(
+                      child: SizedBox(
+                        height: 44,
+                        child: TextField(
+                          onChanged: onTextInputChanged,
+                          focusNode: focusNode,
+                          style: widget.config.searchViewConfig.inputTextStyle,
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            hintText: widget.config.searchViewConfig.hintText,
+                            hintStyle:
+                                widget.config.searchViewConfig.hintTextStyle,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
