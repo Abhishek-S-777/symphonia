@@ -88,6 +88,10 @@ class NoteService {
       FirebaseCollections.noteContent: content,
       FirebaseCollections.noteCreatedAt: FieldValue.serverTimestamp(),
       FirebaseCollections.noteUpdatedAt: FieldValue.serverTimestamp(),
+      // Notification fields - Cloud Function will read and forward these
+      'notificationTitle': '\u{1F4DD} New Love Note',
+      'notificationBody': '${currentUser.displayName} wrote: $title',
+      'notificationChannelId': 'note_channel',
     });
 
     return note;

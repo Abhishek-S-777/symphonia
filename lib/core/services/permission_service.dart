@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:geolocator/geolocator.dart';
 
 /// Permission Service Provider
 final permissionServiceProvider = Provider<PermissionService>((ref) {
@@ -59,6 +60,24 @@ class PermissionService {
     return status.isGranted;
   }
 
+  /// Request location permission
+  Future<bool> requestLocationPermission() async {
+    // Check if location services are enabled
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return false;
+    }
+
+    // Check current permission
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
   /// Check notification permission status
   Future<PermissionStatus> getNotificationStatus() async {
     return await Permission.notification.status;
@@ -84,6 +103,13 @@ class PermissionService {
     return await Permission.camera.status;
   }
 
+  /// Check location permission status
+  Future<bool> getLocationStatus() async {
+    final permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
   /// Request all essential permissions at once
   Future<Map<Permission, PermissionStatus>> requestAllPermissions() async {
     final statuses = await [
@@ -91,6 +117,7 @@ class PermissionService {
       Permission.microphone,
       Permission.camera,
       Permission.photos,
+      Permission.location,
     ].request();
 
     // Also request FCM permission

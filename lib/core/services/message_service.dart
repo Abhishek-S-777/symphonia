@@ -146,6 +146,9 @@ Message _messageFromFirestore(DocumentSnapshot doc) {
     readAt: (data[FirebaseCollections.messageReadAt] as Timestamp?)?.toDate(),
     isDelivered: data[FirebaseCollections.messageIsDelivered] ?? true,
     isSynced: true,
+    replyToMessageId: data[FirebaseCollections.messageReplyToId] as String?,
+    replyToContent: data[FirebaseCollections.messageReplyToContent] as String?,
+    replyToSenderId: data[FirebaseCollections.messageReplyToSenderId] as String?,
   );
 }
 
@@ -160,6 +163,9 @@ class MessageService {
   Future<void> sendMessage({
     required String content,
     MessageType type = MessageType.text,
+    String? replyToMessageId,
+    String? replyToContent,
+    String? replyToSenderId,
   }) async {
     final currentUser = _ref.read(currentAppUserProvider).value;
     if (currentUser == null || currentUser.coupleId == null) {
@@ -179,12 +185,12 @@ class MessageService {
     String notificationType;
 
     if (type == MessageType.heartbeat) {
-      notificationTitle = 'My 💓 beats for you';
+      notificationTitle = 'My \u{1F493} beats for you';
       notificationBody = '${currentUser.displayName} sent you love!';
       notificationChannelId = 'heartbeat_channel';
       notificationType = 'heartbeat';
     } else if (type == MessageType.hugs) {
-      notificationTitle = '🤗 Hugs & Kisses! 😘';
+      notificationTitle = '\u{1F917} Hugs & Kisses! \u{1F618}';
       notificationBody =
           '${currentUser.displayName} is sending you warm hugs and kisses!';
       notificationChannelId = 'heartbeat_channel';
@@ -198,7 +204,7 @@ class MessageService {
       notificationType = 'message';
     }
 
-    await messageRef.set({
+    final messageData = <String, dynamic>{
       FirebaseCollections.messageSenderId: currentUser.id,
       FirebaseCollections.messageContent: content,
       FirebaseCollections.messageType: type.name,
@@ -210,7 +216,16 @@ class MessageService {
       'notificationBody': notificationBody,
       'notificationChannelId': notificationChannelId,
       'notificationType': notificationType,
-    });
+    };
+
+    // Add reply fields if replying
+    if (replyToMessageId != null) {
+      messageData[FirebaseCollections.messageReplyToId] = replyToMessageId;
+      messageData[FirebaseCollections.messageReplyToContent] = replyToContent;
+      messageData[FirebaseCollections.messageReplyToSenderId] = replyToSenderId;
+    }
+
+    await messageRef.set(messageData);
   }
 
   /// Send a heartbeat

@@ -87,6 +87,9 @@ class _GlobalHeartbeatListenerState
   DateTime? _lastResumedAt;
   String? _previousCoupleId; // Track previous coupleId to detect unpair
 
+  // Store reference to authService for use in dispose
+  AuthService? _authService;
+
   @override
   void initState() {
     super.initState();
@@ -98,10 +101,10 @@ class _GlobalHeartbeatListenerState
 
   @override
   void dispose() {
-    // Unregister lifecycle observer
-    WidgetsBinding.instance.removeObserver(this);
     // Set offline when widget is disposed
     _setOffline();
+    // Unregister lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -110,13 +113,17 @@ class _GlobalHeartbeatListenerState
     final vibrationService = ref.read(vibrationServiceProvider);
     await vibrationService.initialize();
 
-    // Refresh FCM token on every app launch
-    // This ensures notifications work even after reinstall
-    final authService = ref.read(authServiceProvider);
-    await authService.refreshFcmToken();
-
     // Set online status immediately when app starts
     _setOnline();
+
+    if (!mounted) {
+      return;
+    }
+
+    // Refresh FCM token on every app launch
+    // This ensures notifications work even after reinstall
+    _authService = ref.read(authServiceProvider);
+    await _authService!.refreshFcmToken();
 
     if (!mounted) {
       return;
@@ -240,9 +247,11 @@ class _GlobalHeartbeatListenerState
       // Show a snackbar notification if we have a valid context
       final navigatorContext = rootNavigatorKey.currentContext;
       if (navigatorContext != null) {
-        AppSnackbar.showSuccess(
+        AppSnackbar.show(
           navigatorContext,
-          '${currentUser?.displayName} sent you love! ❤️',
+          message: 'Your partner sent you love! ❤️',
+          type: SnackBarType.success,
+          duration: const Duration(milliseconds: 1500),
         );
       }
     });
@@ -272,9 +281,11 @@ class _GlobalHeartbeatListenerState
       // Show a snackbar notification
       final navigatorContext = rootNavigatorKey.currentContext;
       if (navigatorContext != null) {
-        AppSnackbar.showSuccess(
+        AppSnackbar.show(
           navigatorContext,
-          '${currentUser?.displayName} sent you 🤗 hugs and kisses! 😘',
+          message: 'Your partner sent you 🤗 hugs and kisses! 😘',
+          type: SnackBarType.success,
+          duration: const Duration(milliseconds: 1500),
         );
       }
     });

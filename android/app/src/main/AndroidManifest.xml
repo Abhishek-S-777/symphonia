@@ -36,6 +36,9 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     
+    <!-- Full screen intent for ring phone (shows even when locked) -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+    
     <!-- Biometric authentication -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
     
@@ -94,6 +97,12 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notification" />
+        
+        <!-- Google Maps API Key -->
+        <!-- TODO: Replace with your actual Google Maps API key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDOa1gcPfBcMkeLmVOleLoaPbef397lK7g"/>
             
         <!-- Flutter embedding metadata -->
         <meta-data

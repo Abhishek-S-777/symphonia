@@ -15,6 +15,11 @@ class Message extends Equatable {
   final bool isDelivered;
   final bool isSynced;
 
+  // Reply fields
+  final String? replyToMessageId;
+  final String? replyToContent;
+  final String? replyToSenderId;
+
   const Message({
     required this.id,
     required this.senderId,
@@ -25,6 +30,9 @@ class Message extends Equatable {
     this.readAt,
     this.isDelivered = false,
     this.isSynced = false,
+    this.replyToMessageId,
+    this.replyToContent,
+    this.replyToSenderId,
   });
 
   /// Check if message is from me
@@ -40,6 +48,9 @@ class Message extends Equatable {
   /// Check if message is a heartbeat
   bool get isHeartbeat => type == MessageType.heartbeat;
 
+  /// Check if this message is a reply to another message
+  bool get isReply => replyToMessageId != null;
+
   Message copyWith({
     String? id,
     String? senderId,
@@ -50,6 +61,9 @@ class Message extends Equatable {
     DateTime? readAt,
     bool? isDelivered,
     bool? isSynced,
+    String? replyToMessageId,
+    String? replyToContent,
+    String? replyToSenderId,
   }) {
     return Message(
       id: id ?? this.id,
@@ -61,6 +75,9 @@ class Message extends Equatable {
       readAt: readAt ?? this.readAt,
       isDelivered: isDelivered ?? this.isDelivered,
       isSynced: isSynced ?? this.isSynced,
+      replyToMessageId: replyToMessageId ?? this.replyToMessageId,
+      replyToContent: replyToContent ?? this.replyToContent,
+      replyToSenderId: replyToSenderId ?? this.replyToSenderId,
     );
   }
 
@@ -75,5 +92,8 @@ class Message extends Equatable {
     readAt,
     isDelivered,
     isSynced,
+    replyToMessageId,
+    replyToContent,
+    replyToSenderId,
   ];
 }

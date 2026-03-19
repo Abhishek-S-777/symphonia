@@ -1,8 +1,10 @@
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:google_fonts/google_fonts.dart' hide Config;
 
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/audio_service.dart';
@@ -467,14 +469,38 @@ class _DailyMessageCardWidget extends ConsumerStatefulWidget {
 class _DailyMessageCardWidgetState
     extends ConsumerState<_DailyMessageCardWidget> {
   bool _isEditing = false;
+  bool _showEmojiPicker = false;
   final _textController = TextEditingController();
   final _focusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus && _showEmojiPicker) {
+      setState(() => _showEmojiPicker = false);
+    }
+  }
+
+  @override
   void dispose() {
     _textController.dispose();
+    _focusNode.removeListener(_onFocusChange);
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _toggleEmojiPicker() {
+    if (_showEmojiPicker) {
+      setState(() => _showEmojiPicker = false);
+      _focusNode.requestFocus();
+    } else {
+      _focusNode.unfocus();
+      setState(() => _showEmojiPicker = true);
+    }
   }
 
   void _startEditing() {
@@ -494,6 +520,7 @@ class _DailyMessageCardWidgetState
   void _cancelEditing() {
     setState(() {
       _isEditing = false;
+      _showEmojiPicker = false;
     });
     _textController.clear();
   }
@@ -586,39 +613,62 @@ class _DailyMessageCardWidgetState
           // Content: either editing or displaying
           if (_isEditing) ...[
             // Editing mode
-            TextField(
-              controller: _textController,
-              focusNode: _focusNode,
-              maxLines: 6,
-              maxLength: 200,
-              decoration: InputDecoration(
-                hintText: 'Write a love note for your partner...',
-                hintStyle: TextStyle(
-                  color: AppColors.gray.withValues(alpha: 0.6),
-                  fontStyle: FontStyle.italic,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: AppColors.accent.withValues(alpha: 0.3),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    textCapitalization: TextCapitalization.sentences,
+                    controller: _textController,
+                    focusNode: _focusNode,
+                    maxLines: 6,
+                    maxLength: 200,
+                    decoration: InputDecoration(
+                      prefixIcon: IconButton(
+                        onPressed: _toggleEmojiPicker,
+                        icon: Icon(
+                          _showEmojiPicker
+                              ? Icons.keyboard_alt_outlined
+                              : Icons.emoji_emotions_outlined,
+                          color: AppColors.gray,
+                          size: 24,
+                        ),
+                        tooltip: _showEmojiPicker
+                            ? 'Show keyboard'
+                            : 'Show emojis',
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                      ),
+                      hintText: 'Write a love note for your partner...',
+                      hintStyle: TextStyle(
+                        color: AppColors.gray.withValues(alpha: 0.6),
+                        fontStyle: FontStyle.italic,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.accent.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.accent.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(
+                          color: AppColors.accent,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.all(12),
+                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: AppColors.accent.withValues(alpha: 0.3),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: AppColors.accent,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.all(12),
-              ),
-              style: Theme.of(context).textTheme.bodyMedium,
+              ],
             ),
             const SizedBox(height: 12),
             Row(
@@ -649,6 +699,50 @@ class _DailyMessageCardWidgetState
                 ),
               ],
             ),
+            // Emoji Picker (same as messages screen)
+            if (_showEmojiPicker)
+              SizedBox(
+                height: 250,
+                child: EmojiPicker(
+                  textEditingController: _textController,
+                  onEmojiSelected: (category, emoji) {
+                    // EmojiPicker handles insertion automatically
+                  },
+                  config: Config(
+                    height: 250,
+                    checkPlatformCompatibility: true,
+                    emojiViewConfig: EmojiViewConfig(
+                      emojiSizeMax:
+                          28 *
+                          (foundation.defaultTargetPlatform ==
+                                  TargetPlatform.iOS
+                              ? 1.2
+                              : 1.0),
+                      backgroundColor: AppColors.darkBackground,
+                    ),
+                    categoryViewConfig: const CategoryViewConfig(
+                      backgroundColor: AppColors.darkBackground,
+                      indicatorColor: AppColors.primary,
+                      iconColorSelected: AppColors.primary,
+                      iconColor: AppColors.gray,
+                    ),
+                    bottomActionBarConfig: const BottomActionBarConfig(
+                      backgroundColor: AppColors.darkBackground,
+                      buttonColor: AppColors.darkBackground,
+                      buttonIconColor: AppColors.gray,
+                    ),
+                    searchViewConfig: SearchViewConfig(
+                      backgroundColor: AppColors.darkBackground,
+                      buttonIconColor: AppColors.gray,
+                      inputTextStyle: const TextStyle(color: AppColors.white),
+                      hintText: 'Search emoji...',
+                      hintTextStyle: TextStyle(
+                        color: AppColors.gray.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ] else ...[
             // Display mode
             widget.quoteAsync.when(

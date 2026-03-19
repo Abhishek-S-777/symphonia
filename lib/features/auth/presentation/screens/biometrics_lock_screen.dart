@@ -28,6 +28,9 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
   bool _initialCheckDone = false;
   String _biometricType = 'Biometrics';
 
+  // Store service reference to avoid using ref after unmount
+  BiometricsService? _biometricsService;
+
   @override
   void initState() {
     super.initState();
@@ -40,8 +43,9 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
   }
 
   Future<void> _loadBiometricType() async {
-    final biometricsService = ref.read(biometricsServiceProvider);
-    final typeName = await biometricsService.getBiometricTypeName();
+    if (!mounted) return;
+    _biometricsService ??= ref.read(biometricsServiceProvider);
+    final typeName = await _biometricsService!.getBiometricTypeName();
     if (mounted) {
       setState(() {
         _biometricType = typeName;
@@ -66,8 +70,9 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     }
 
     // Check if biometrics is enabled
-    final biometricsService = ref.read(biometricsServiceProvider);
-    final isEnabled = await biometricsService.isBiometricsEnabled();
+    if (!mounted) return;
+    _biometricsService ??= ref.read(biometricsServiceProvider);
+    final isEnabled = await _biometricsService!.isBiometricsEnabled();
 
     if (!isEnabled) {
       debugPrint(
@@ -127,8 +132,9 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     }
 
     // Check if biometrics is enabled
-    final biometricsService = ref.read(biometricsServiceProvider);
-    final isEnabled = await biometricsService.isBiometricsEnabled();
+    if (!mounted) return;
+    _biometricsService ??= ref.read(biometricsServiceProvider);
+    final isEnabled = await _biometricsService!.isBiometricsEnabled();
 
     if (!isEnabled) {
       debugPrint('BiometricsLock: Biometrics not enabled');
@@ -158,8 +164,9 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     }
 
     try {
-      final biometricsService = ref.read(biometricsServiceProvider);
-      final authenticated = await biometricsService.authenticate(
+      if (!mounted) return;
+      _biometricsService ??= ref.read(biometricsServiceProvider);
+      final authenticated = await _biometricsService!.authenticate(
         reason: 'Authenticate to access Symphonia',
       );
 

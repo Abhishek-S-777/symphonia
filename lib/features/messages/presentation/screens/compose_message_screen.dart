@@ -139,9 +139,7 @@ class _ComposeMessageScreenState extends ConsumerState<ComposeMessageScreen> {
                                   _showEmojiPicker
                                       ? Icons.keyboard_alt_outlined
                                       : Icons.emoji_emotions_outlined,
-                                  color: _showEmojiPicker
-                                      ? AppColors.primary
-                                      : AppColors.gray,
+                                  color: AppColors.gray,
                                   size: 26,
                                 ),
                                 tooltip: _showEmojiPicker
@@ -152,6 +150,9 @@ class _ComposeMessageScreenState extends ConsumerState<ComposeMessageScreen> {
                             // Text field (expanded)
                             Expanded(
                               child: TextField(
+                                textCapitalization:
+                                    TextCapitalization.sentences,
+
                                 controller: _messageController,
                                 focusNode: _messageFocusNode,
                                 maxLines: 6,
@@ -339,6 +340,14 @@ class _ComposeMessageScreenState extends ConsumerState<ComposeMessageScreen> {
                         backgroundColor: AppColors.darkCard,
                         buttonIconColor: AppColors.white,
                         hintText: 'Search emoji...',
+                        inputTextStyle: const TextStyle(
+                          color: AppColors.white,
+                          fontSize: 14,
+                        ),
+                        hintTextStyle: TextStyle(
+                          color: AppColors.gray.withValues(alpha: 0.6),
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),

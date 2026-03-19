@@ -337,7 +337,7 @@ class AudioService {
         // Notification fields for Cloud Function
         'notificationTitle': senderName,
         'notificationBody': '🎤 Sent you a ${duration}s voice note',
-        'notificationChannelId': 'voice_note_channel',
+        'notificationChannelId': 'symphonia_voice_notes',
       });
 
       // Remove from pending list (Firestore stream will add the synced version)

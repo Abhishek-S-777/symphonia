@@ -64,7 +64,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
-
   Future<void> _toggleBiometrics(bool enabled) async {
     final biometricsService = ref.read(biometricsServiceProvider);
 
@@ -826,6 +825,7 @@ class _EditProfileBottomSheetState
 
                 // Display Name Field
                 TextField(
+                  textCapitalization: TextCapitalization.sentences,
                   maxLength: 50,
                   controller: _nameController,
                   enabled: !_isLoading,

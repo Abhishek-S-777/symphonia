@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+import 'dart:ui';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -132,6 +135,54 @@ class NotificationService {
         enableVibration: false,
       );
 
+  /// Ring channel - for ring phone feature (must match Cloud Functions)
+  /// Uses max importance + long vibration pattern to act like an alarm
+  /// Sound is played via the notification system's default alarm
+  static final AndroidNotificationChannel _ringChannel =
+      AndroidNotificationChannel(
+        'ring_channel',
+        'Ring Phone',
+        description: 'Notifications when your partner is trying to find you',
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList([
+          0,
+          1000,
+          500,
+          1000,
+          500,
+          1000,
+          500,
+          1000,
+          500,
+          1000,
+          500,
+          1000,
+          500,
+          1000,
+          500,
+          1000,
+          500,
+          1000,
+          500,
+          1000,
+        ]),
+        enableLights: true,
+        ledColor: const Color(0xFFFF0000),
+      );
+
+  /// Location channel - for location request feature (must match Cloud Functions)
+  static const AndroidNotificationChannel _locationChannel =
+      AndroidNotificationChannel(
+        'location_channel',
+        'Location Requests',
+        description: 'Notifications when your partner requests your location',
+        importance: Importance.high,
+        playSound: true,
+        enableVibration: true,
+      );
+
   /// Create notification channels (Android 8+)
   Future<void> createChannels() async {
     final androidPlugin = _localNotifications
@@ -151,6 +202,8 @@ class NotificationService {
       await androidPlugin.createNotificationChannel(_messageChannel);
       await androidPlugin.createNotificationChannel(_eventChannel);
       await androidPlugin.createNotificationChannel(_reminderChannel);
+      await androidPlugin.createNotificationChannel(_ringChannel);
+      await androidPlugin.createNotificationChannel(_locationChannel);
 
       // Local notification channels
       await androidPlugin.createNotificationChannel(_voiceNotesChannel);

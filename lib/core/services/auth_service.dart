@@ -131,6 +131,7 @@ class AuthService {
   final _uuid = const Uuid();
 
   fb.User? get currentUser => _auth.currentUser;
+  String? _cachedUserId;
 
   /// Refresh FCM token in Firestore (only if changed)
   /// Compares with stored token to avoid unnecessary writes
@@ -300,21 +301,56 @@ class AuthService {
   /// Set user online/offline status
   /// Uses fire-and-forget approach - doesn't wait for completion
   /// Firestore's offline persistence will queue the write if app is backgrounded
+  ///
+  /// Falls back to cached userId when Firebase Auth's currentUser is null
+  /// (can happen during background transitions)
   void setOnlineStatus(bool isOnline) {
-    if (currentUser == null) return;
+    final uid = currentUser?.uid ?? _cachedUserId;
+
+    if (uid == null) {
+      debugPrint('⚠️ setOnlineStatus: no userId available, skipping');
+      // Try to load from SharedPreferences as a last resort
+      _loadCachedUserIdAndSetStatus(isOnline);
+      return;
+    }
+
+    // Cache the uid for future use
+    _cachedUserId = uid;
+
+    debugPrint(
+      '🔄 Setting online status to: $isOnline for user: $uid',
+    );
 
     // Fire and forget - don't await
     // This ensures we don't block when app goes to background
     _firestore
         .collection(FirebaseCollections.users)
-        .doc(currentUser!.uid)
+        .doc(uid)
         .set({
           FirebaseCollections.userIsOnline: isOnline,
           FirebaseCollections.userLastActive: FieldValue.serverTimestamp(),
         }, SetOptions(merge: true))
-        .catchError((_) {
+        .then((_) {
+          debugPrint('✅ Online status set to $isOnline successfully');
+        })
+        .catchError((e) {
+          debugPrint('❌ Error setting online status: $e');
           // Silently ignore errors - Firestore will retry with offline persistence
         });
+  }
+
+  /// Fallback: load userId from SharedPreferences and set status
+  void _loadCachedUserIdAndSetStatus(bool isOnline) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(StorageKeys.userId);
+      if (userId != null && userId.isNotEmpty) {
+        _cachedUserId = userId;
+        setOnlineStatus(isOnline);
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading cached userId: $e');
+    }
   }
 
   /// Check if user is paired

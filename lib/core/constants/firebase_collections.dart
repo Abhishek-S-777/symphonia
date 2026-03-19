@@ -59,6 +59,9 @@ class FirebaseCollections {
   static const String messageSentAt = 'sentAt';
   static const String messageReadAt = 'readAt';
   static const String messageIsDelivered = 'isDelivered';
+  static const String messageReplyToId = 'replyToMessageId';
+  static const String messageReplyToContent = 'replyToContent';
+  static const String messageReplyToSenderId = 'replyToSenderId';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // VOICE NOTE FIELDS

@@ -30,6 +30,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
   bool _isSending = false;
   bool _hasScrolledToUnread = false;
   bool _showEmojiPicker = false;
+  Message? _replyToMessage;
 
   @override
   void initState() {
@@ -118,7 +119,17 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     try {
       _messageController.clear();
       final messageService = ref.read(messageServiceProvider);
-      await messageService.sendMessage(content: content.trim(), type: type);
+      await messageService.sendMessage(
+        content: content.trim(),
+        type: type,
+        replyToMessageId: _replyToMessage?.id,
+        replyToContent: _replyToMessage?.content,
+        replyToSenderId: _replyToMessage?.senderId,
+      );
+      // Clear reply state after sending
+      if (mounted) {
+        setState(() => _replyToMessage = null);
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -133,6 +144,15 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
         setState(() => _isSending = false);
       }
     }
+  }
+
+  void _setReplyTo(Message message) {
+    setState(() => _replyToMessage = message);
+    _messageFocusNode.requestFocus();
+  }
+
+  void _cancelReply() {
+    setState(() => _replyToMessage = null);
   }
 
   @override
@@ -205,6 +225,10 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             // Quick messages
             _buildQuickMessages(),
 
+            // Reply preview (above input area)
+            if (_replyToMessage != null)
+              _buildReplyPreview(partnerName, currentUser?.id),
+
             // Input area
             _buildInputArea(),
 
@@ -214,33 +238,29 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 height: 280,
                 child: EmojiPicker(
                   onEmojiSelected: (category, emoji) {
+                    // The textEditingController handles insertion automatically
+                    // Just ensure cursor is at the end if no valid selection
                     final text = _messageController.text;
                     final selection = _messageController.selection;
-                    final newText = text.replaceRange(
-                      selection.start,
-                      selection.end,
-                      emoji.emoji,
-                    );
-                    final newOffset = selection.start + emoji.emoji.length;
-                    _messageController.text = newText;
-                    _messageController.selection = TextSelection.collapsed(
-                      offset: newOffset,
-                    );
+                    if (selection.start < 0 || selection.end < 0) {
+                      _messageController.selection = TextSelection.collapsed(
+                        offset: text.length,
+                      );
+                    }
                   },
                   onBackspacePressed: () {
                     final text = _messageController.text;
                     final selection = _messageController.selection;
-                    if (text.isNotEmpty && selection.start > 0) {
-                      final newText = text.replaceRange(
-                        selection.start - 1,
-                        selection.start,
-                        '',
-                      );
-                      _messageController.text = newText;
-                      _messageController.selection = TextSelection.collapsed(
-                        offset: selection.start - 1,
-                      );
-                    }
+                    // Guard against invalid selection or empty text
+                    if (text.isEmpty) return;
+                    final start = selection.start;
+                    if (start <= 0) return;
+
+                    final newText = text.replaceRange(start - 1, start, '');
+                    _messageController.text = newText;
+                    _messageController.selection = TextSelection.collapsed(
+                      offset: start - 1,
+                    );
                   },
                   textEditingController: _messageController,
                   config: Config(
@@ -279,6 +299,14 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                       backgroundColor: AppColors.darkCard,
                       buttonIconColor: AppColors.white,
                       hintText: 'Search emoji...',
+                      inputTextStyle: const TextStyle(
+                        color: AppColors.white,
+                        fontSize: 14,
+                      ),
+                      hintTextStyle: TextStyle(
+                        color: AppColors.gray.withValues(alpha: 0.6),
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -495,7 +523,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('🤗😘', style: TextStyle(fontSize: 12))
+                Text('\u{1F917}\u{1F618}', style: TextStyle(fontSize: 12))
                     .animate(
                       onPlay: (controller) => controller.repeat(reverse: true),
                     )
@@ -520,72 +548,139 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       );
     }
 
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+    // Swipe to reply gesture
+    return Dismissible(
+      key: Key('msg_${message.id}'),
+      direction: DismissDirection.startToEnd,
+      confirmDismiss: (_) async {
+        _setReplyTo(message);
+        return false; // Don't dismiss, just trigger reply
+      },
+      background: Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 16),
+          child: Icon(
+            Icons.reply,
+            color: AppColors.primary.withValues(alpha: 0.6),
+            size: 24,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: isMe
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: isMe
-                    ? AppGradients.messageSent.withOpacity(0.6)
-                    : null,
-                color: isMe
-                    ? null
-                    : AppColors.darkElevated.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft: Radius.circular(isMe ? 20 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 20),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.charcoal.withValues(alpha: 0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+      ),
+      child: Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          child: Column(
+            crossAxisAlignment: isMe
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: isMe
+                      ? AppGradients.messageSent.withOpacity(0.6)
+                      : null,
+                  color: isMe
+                      ? null
+                      : AppColors.darkElevated.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(isMe ? 20 : 4),
+                    bottomRight: Radius.circular(isMe ? 4 : 20),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.charcoal.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Reply context (if this is a reply)
+                    if (message.isReply) ...[
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border(
+                            left: BorderSide(
+                              color: AppColors.primary.withValues(alpha: 0.6),
+                              width: 3,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              message.replyToSenderId == ref.read(currentAppUserProvider).value?.id
+                                  ? 'You'
+                                  : partnerName,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              message.replyToContent ?? '',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.gray,
+                                fontSize: 12,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    Text(
+                      message.content,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatTime(message.sentAt),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.gray,
+                      fontSize: 11,
+                    ),
+                  ),
+                  if (isMe) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      message.readAt != null ? Icons.done_all : Icons.done,
+                      size: 14,
+                      color: message.readAt != null
+                          ? AppColors.primary
+                          : AppColors.gray,
+                    ),
+                  ],
                 ],
               ),
-              child: Text(
-                message.content,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: AppColors.white),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _formatTime(message.sentAt),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.gray,
-                    fontSize: 11,
-                  ),
-                ),
-                if (isMe) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    message.readAt != null ? Icons.done_all : Icons.done,
-                    size: 14,
-                    color: message.readAt != null
-                        ? AppColors.primary
-                        : AppColors.gray,
-                  ),
-                ],
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -629,6 +724,64 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     );
   }
 
+  Widget _buildReplyPreview(String partnerName, String? currentUserId) {
+    final reply = _replyToMessage!;
+    final isReplyToMe = reply.senderId == currentUserId;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.darkElevated.withValues(alpha: 0.8),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        border: Border(
+          left: BorderSide(
+            color: AppColors.primary,
+            width: 3,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isReplyToMe ? 'You' : partnerName,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  reply.content,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.gray,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: _cancelReply,
+            icon: Icon(
+              Icons.close,
+              color: AppColors.gray,
+              size: 18,
+            ),
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInputArea() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -643,9 +796,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 _showEmojiPicker
                     ? Icons.keyboard_alt_outlined
                     : Icons.emoji_emotions_outlined,
-                color: _showEmojiPicker
-                    ? AppColors.primary.withValues(alpha: 0.6)
-                    : AppColors.gray,
+                color: AppColors.gray,
                 size: 26,
               ),
               tooltip: _showEmojiPicker ? 'Show keyboard' : 'Show emojis',

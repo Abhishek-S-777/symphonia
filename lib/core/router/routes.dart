@@ -17,6 +17,7 @@ class Routes {
   static const String messages = 'messages';
   static const String composeMessage = 'compose-message';
   static const String voiceNotes = 'voice-notes';
+  static const String findPartner = 'find-partner';
   static const String gallery = 'gallery';
   static const String addMemory = 'add-memory';
   static const String slideshow = 'slideshow';
@@ -43,6 +44,7 @@ class Routes {
   static const String messagesPath = '/messages';
   static const String composeMessagePath = '/messages/compose';
   static const String voiceNotesPath = '/voice-notes';
+  static const String findPartnerPath = '/find-partner';
   static const String galleryPath = '/gallery';
   static const String addMemoryPath = '/gallery/add';
   static const String slideshowPath = '/gallery/slideshow';

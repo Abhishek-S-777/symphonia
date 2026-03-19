@@ -18,6 +18,9 @@
 # Keep vibration plugin
 -keep class com.benjamindean.** { *; }
 
+# Keep ringtone player
+-keep class io.inway.ringtone.player.** { *; }
+
 # Keep Kotlin metadata
 -keepattributes *Annotation*
 -keepattributes Signature

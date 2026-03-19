@@ -27,12 +27,15 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   int _getSelectedIndex() {
     if (widget.currentPath.startsWith(Routes.homePath)) return 0;
     if (widget.currentPath.startsWith(Routes.messagesPath)) return 1;
-    if (widget.currentPath.startsWith(Routes.galleryPath)) return 2;
+    if (widget.currentPath.startsWith(Routes.findPartnerPath)) return 2;
     if (widget.currentPath.startsWith(Routes.eventsPath)) return 3;
     return 0;
   }
 
   void _onItemTapped(int index) {
+    // Dismiss any active snackbars when switching tabs
+    ScaffoldMessenger.of(context).clearSnackBars();
+
     final currentIndex = _getSelectedIndex();
 
     // If tapping current tab, do nothing (or could scroll to top)
@@ -48,7 +51,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
         targetPath = Routes.messagesPath;
         break;
       case 2:
-        targetPath = Routes.galleryPath;
+        targetPath = Routes.findPartnerPath;
         break;
       case 3:
         targetPath = Routes.eventsPath;
@@ -98,12 +101,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                   isSelected: selectedIndex == 1,
                   badge: unreadCount,
                 ),
-                // _buildNavItem(
-                //   icon: Icons.photo_library_outlined,
-                //   activeIcon: Icons.photo_library_rounded,
-                //   index: 2,
-                //   isSelected: selectedIndex == 2,
-                // ),
+                _buildNavItem(
+                  icon: Icons.location_on_outlined,
+                  activeIcon: Icons.location_on,
+                  index: 2,
+                  isSelected: selectedIndex == 2,
+                ),
                 _buildNavItem(
                   icon: Icons.event_outlined,
                   activeIcon: Icons.event_rounded,

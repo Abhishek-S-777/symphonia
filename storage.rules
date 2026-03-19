@@ -1,0 +1,46 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocPath(uid) {
+      return /databases/(default)/documents/users/$(uid);
+    }
+
+    function isCoupleMember(coupleId) {
+      return signedIn() &&
+        firestore.exists(userDocPath(request.auth.uid)) &&
+        firestore.get(userDocPath(request.auth.uid)).data.coupleId == coupleId;
+    }
+
+    // Profile photos
+    match /profile_images/{userId}/{fileName} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    // Voice notes: couples/{coupleId}/voice_notes/*
+    match /couples/{coupleId}/voice_notes/{fileName} {
+      allow read: if isCoupleMember(coupleId);
+      allow write: if isCoupleMember(coupleId)
+        && request.resource != null
+        && request.resource.size < 20 * 1024 * 1024
+        && request.resource.contentType.matches('audio/.*');
+    }
+
+    // Gallery memories: couples/{coupleId}/memories/*
+    match /couples/{coupleId}/memories/{fileName} {
+      allow read: if isCoupleMember(coupleId);
+      allow write: if isCoupleMember(coupleId)
+        && request.resource != null
+        && request.resource.size < 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Default deny for everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

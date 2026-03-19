@@ -14,6 +14,7 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/messages/presentation/screens/compose_message_screen.dart';
 import '../../features/voice_notes/presentation/screens/voice_notes_screen.dart';
+import '../../features/find_partner/presentation/screens/find_partner_screen.dart';
 import '../../features/gallery/presentation/screens/gallery_screen.dart';
 import '../../features/gallery/presentation/screens/add_memory_screen.dart';
 import '../../features/gallery/presentation/screens/slideshow_screen.dart';
@@ -104,6 +105,14 @@ class AppRouter {
               name: Routes.messages,
               pageBuilder: (context, state) =>
                   NoTransitionPage(child: const MessagesScreen()),
+            ),
+
+            // Find Partner route
+            GoRoute(
+              path: Routes.findPartnerPath,
+              name: Routes.findPartner,
+              pageBuilder: (context, state) =>
+                  NoTransitionPage(child: const FindPartnerScreen()),
             ),
 
             // Gallery routes

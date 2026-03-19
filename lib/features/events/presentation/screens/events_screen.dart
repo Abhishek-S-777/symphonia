@@ -1040,6 +1040,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         children: [
                           // Event Name
                           TextField(
+                            textCapitalization: TextCapitalization.sentences,
+
                             controller: titleController,
                             maxLength: 50,
                             decoration: InputDecoration(
@@ -1074,6 +1076,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
                           // Description
                           TextField(
+                            textCapitalization: TextCapitalization.sentences,
                             controller: descriptionController,
                             decoration: InputDecoration(
                               labelText: 'What\'s the plan babe?',
