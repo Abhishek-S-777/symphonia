@@ -1,12 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/timezone.dart' as tz;
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/features/events/domain/entities/event.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
-
-import '../constants/firebase_collections.dart';
-import '../../features/events/domain/entities/event.dart';
-import 'auth_service.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// Event Service Provider
 final eventServiceProvider = Provider<EventService>((ref) {
@@ -33,7 +32,7 @@ final eventsStreamProvider = StreamProvider<List<Event>>((ref) {
       .orderBy(FirebaseCollections.eventDate)
       .snapshots()
       .map((snapshot) {
-        return snapshot.docs.map((doc) => _eventFromFirestore(doc)).toList();
+        return snapshot.docs.map(_eventFromFirestore).toList();
       });
 });
 
@@ -45,18 +44,18 @@ final upcomingEventsProvider = Provider<List<Event>>((ref) {
 });
 
 Event _eventFromFirestore(DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+  final data = doc.data()! as Map<String, dynamic>;
   final notifTimeData = data['notificationTime'] as Map<String, dynamic>?;
 
   return Event(
     id: doc.id,
-    creatorId: data[FirebaseCollections.eventCreatorId] ?? '',
-    title: data[FirebaseCollections.eventTitle] ?? '',
-    description: data[FirebaseCollections.eventDescription],
+    creatorId: data[FirebaseCollections.eventCreatorId] as String? ?? '',
+    title: data[FirebaseCollections.eventTitle] as String? ?? '',
+    description: data[FirebaseCollections.eventDescription] as String?,
     eventDate:
         (data[FirebaseCollections.eventDate] as Timestamp?)?.toDate() ??
         DateTime.now(),
-    isRecurring: data[FirebaseCollections.eventIsRecurring] ?? false,
+    isRecurring: data[FirebaseCollections.eventIsRecurring] as bool? ?? false,
     recurringType: RecurringType.values.firstWhere(
       (e) => e.name == data[FirebaseCollections.eventRecurringType],
       orElse: () => RecurringType.none,
@@ -66,28 +65,27 @@ Event _eventFromFirestore(DocumentSnapshot doc) {
         DateTime.now(),
     notificationTime: notifTimeData != null
         ? TimeOfDay(
-            hour: notifTimeData['hour'] ?? 9,
-            minute: notifTimeData['minute'] ?? 0,
+            hour: notifTimeData['hour'] as int? ?? 9,
+            minute: notifTimeData['minute'] as int? ?? 0,
           )
         : const TimeOfDay(hour: 9, minute: 0),
-    notificationsEnabled: data['notificationsEnabled'] ?? true,
+    notificationsEnabled: data['notificationsEnabled'] as bool? ?? true,
   );
 }
 
 /// Event Service for managing events and countdowns
 class EventService {
+  EventService(this._ref);
   final Ref _ref;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
-  EventService(this._ref);
-
   /// Create a new event
   Future<Event> createEvent({
     required String title,
-    String? description,
     required DateTime eventDate,
+    String? description,
     bool isRecurring = false,
     RecurringType recurringType = RecurringType.none,
     TimeOfDay notificationTime = const TimeOfDay(hour: 9, minute: 0),
@@ -118,7 +116,7 @@ class EventService {
     );
 
     // Prepare notification data for partner notification
-    final notificationTitle = '📅 New Event Added';
+    const notificationTitle = '📅 New Event Added';
     final notificationBody = '${currentUser.displayName} added: $title';
 
     await eventRef.set({
@@ -274,7 +272,6 @@ class EventService {
           ),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        matchDateTimeComponents: null,
       );
     }
   }
@@ -282,7 +279,7 @@ class EventService {
   /// Cancel notifications for an event
   Future<void> _cancelEventNotifications(String eventId) async {
     // Cancel all potential notifications for this event
-    for (int i = 0; i <= 30; i++) {
+    for (var i = 0; i <= 30; i++) {
       await _notifications.cancel(eventId.hashCode + i);
     }
   }

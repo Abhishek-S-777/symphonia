@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
 
 /// Expandable FAB that shows options around itself
 ///
 /// When tapped, shows options (note/event) in a radial pattern around the FAB
 class ExpandableFab extends StatefulWidget {
-  final VoidCallback onNotePressed;
-  final VoidCallback onEventPressed;
-
   const ExpandableFab({
-    super.key,
     required this.onNotePressed,
     required this.onEventPressed,
+    super.key,
   });
+  final VoidCallback onNotePressed;
+  final VoidCallback onEventPressed;
 
   @override
   State<ExpandableFab> createState() => _ExpandableFabState();

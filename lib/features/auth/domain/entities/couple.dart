@@ -2,6 +2,16 @@ import 'package:equatable/equatable.dart';
 
 /// Couple entity representing a paired couple
 class Couple extends Equatable {
+  const Couple({
+    required this.id,
+    required this.user1Id,
+    required this.user2Id,
+    required this.user1Email,
+    required this.user2Email,
+    required this.pairedAt,
+    required this.settings,
+    this.anniversaryDate,
+  });
   final String id;
   final String user1Id;
   final String user2Id;
@@ -10,17 +20,6 @@ class Couple extends Equatable {
   final DateTime pairedAt;
   final DateTime? anniversaryDate;
   final CoupleSettings settings;
-
-  const Couple({
-    required this.id,
-    required this.user1Id,
-    required this.user2Id,
-    required this.user1Email,
-    required this.user2Email,
-    required this.pairedAt,
-    this.anniversaryDate,
-    required this.settings,
-  });
 
   /// Check if user is part of this couple
   bool containsUser(String userId) {
@@ -121,17 +120,16 @@ class Couple extends Equatable {
 
 /// Settings for a couple
 class CoupleSettings extends Equatable {
-  final bool heartbeatEnabled;
-  final bool notificationsEnabled;
-  final bool soundEnabled;
-  final bool vibrationEnabled;
-
   const CoupleSettings({
     this.heartbeatEnabled = true,
     this.notificationsEnabled = true,
     this.soundEnabled = true,
     this.vibrationEnabled = true,
   });
+  final bool heartbeatEnabled;
+  final bool notificationsEnabled;
+  final bool soundEnabled;
+  final bool vibrationEnabled;
 
   CoupleSettings copyWith({
     bool? heartbeatEnabled,

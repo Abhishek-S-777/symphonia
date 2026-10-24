@@ -1,1 +1,41 @@
-include: package:flutter_lints/flutter.yaml
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
+linter:
+  rules:
+    # App-level relaxations (this is an application, not a published package).
+    #
+    # Documenting every public member adds noise without value in an app.
+    public_member_api_docs: false
+    # Code width is governed by dart format; long strings and URLs cannot
+    # always be wrapped and should not fail analysis.
+    lines_longer_than_80_chars: false
+    # TODO author/issue tagging is not enforced in this project.
+    flutter_style_todos: false
+    # Broad catches are intentional at async service and UI boundaries, where
+    # any failure (not only Exception subtypes) must be surfaced to the user.
+    avoid_catches_without_on_clauses: false
+    # unawaited_futures already flags the cases that matter; discarded_futures
+    # is too aggressive for fire-and-forget UI callbacks.
+    discarded_futures: false
+    # Designed for scripts; it misreports widely-used members in a Flutter app.
+    unreachable_from_main: false
+    # Contentious micro-optimisation (sync vs async dart:io).
+    avoid_slow_async_io: false
+    # Cascades over Riverpod ref.read/listen and large closures read worse
+    # than plain statements here.
+    cascade_invocations: false
+    # pubspec dependencies are grouped by purpose with comments, which is more
+    # readable than a single alphabetical list.
+    sort_pub_dependencies: false
+    #
+    # API-shape rules deferred: the service layer is restructured into
+    # repositories (data layer) and Notifier/AsyncNotifier controllers in
+    # later refactors, which is the right time to reshape these signatures.
+    avoid_positional_boolean_parameters: false
+    use_setters_to_change_properties: false
+    prefer_constructors_over_static_methods: false

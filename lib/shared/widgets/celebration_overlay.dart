@@ -1,23 +1,22 @@
 import 'dart:math';
+
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:confetti/confetti.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../../core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
 
 /// A celebration overlay with confetti and animated text
 /// Shows when user taps on "days together"
 class CelebrationOverlay extends StatefulWidget {
-  final String daysTogetherFormatted;
-  final VoidCallback onDismiss;
-
   const CelebrationOverlay({
-    super.key,
     required this.daysTogetherFormatted,
     required this.onDismiss,
+    super.key,
   });
+  final String daysTogetherFormatted;
+  final VoidCallback onDismiss;
 
   @override
   State<CelebrationOverlay> createState() => _CelebrationOverlayState();
@@ -76,7 +75,6 @@ class _CelebrationOverlayState extends State<CelebrationOverlay> {
                   emissionFrequency: 0.05,
                   numberOfParticles: 20,
                   gravity: 0.1,
-                  shouldLoop: false,
                   colors: const [
                     AppColors.primary,
                     AppColors.primaryLight,
@@ -98,9 +96,6 @@ class _CelebrationOverlayState extends State<CelebrationOverlay> {
                   maxBlastForce: 15,
                   minBlastForce: 8,
                   emissionFrequency: 0.08,
-                  numberOfParticles: 10,
-                  gravity: 0.2,
-                  shouldLoop: false,
                   colors: const [
                     AppColors.primary,
                     AppColors.accent,
@@ -114,13 +109,9 @@ class _CelebrationOverlayState extends State<CelebrationOverlay> {
                 alignment: Alignment.centerRight,
                 child: ConfettiWidget(
                   confettiController: _confettiController,
-                  blastDirection: pi, // left
                   maxBlastForce: 15,
                   minBlastForce: 8,
                   emissionFrequency: 0.08,
-                  numberOfParticles: 10,
-                  gravity: 0.2,
-                  shouldLoop: false,
                   colors: const [
                     AppColors.primary,
                     AppColors.accent,
@@ -184,7 +175,7 @@ class _CelebrationOverlayState extends State<CelebrationOverlay> {
 
                   const SizedBox(height: 54),
 
-                  Text(
+                  const Text(
                         'Tap anywhere to close!',
                         style: TextStyle(
                           fontSize: 14,
@@ -219,7 +210,6 @@ void showCelebration(BuildContext context, String daysTogetherFormatted) {
     barrierDismissible: true,
     barrierLabel: 'Celebration',
     barrierColor: Colors.transparent,
-    transitionDuration: const Duration(milliseconds: 200),
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       return CelebrationOverlay(
         daysTogetherFormatted: daysTogetherFormatted,

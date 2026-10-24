@@ -1,25 +1,24 @@
 import 'dart:convert';
 
-import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter/material.dart' as material show TimeOfDay;
+import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-
-import '../../../../app.dart';
-import '../../../../core/router/routes.dart';
-import '../../../../core/services/event_service.dart';
-import '../../../../core/services/note_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/app_snackbar.dart';
-import '../../../../shared/widgets/expandable_fab.dart';
-import '../../../../shared/widgets/glass_card.dart';
-import '../../../notes/domain/entities/note.dart';
-import '../../domain/entities/event.dart';
+import 'package:symphonia/app.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/event_service.dart';
+import 'package:symphonia/core/services/note_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/events/domain/entities/event.dart';
+import 'package:symphonia/features/notes/domain/entities/note.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/app_snackbar.dart';
+import 'package:symphonia/shared/widgets/expandable_fab.dart';
+import 'package:symphonia/shared/widgets/glass_card.dart';
 
 /// Events screen for managing countdowns and special dates
 class EventsScreen extends ConsumerStatefulWidget {
@@ -30,7 +29,7 @@ class EventsScreen extends ConsumerStatefulWidget {
 }
 
 class _EventsScreenState extends ConsumerState<EventsScreen> {
-  final rootContext = rootNavigatorKey.currentContext;
+  final BuildContext? rootContext = rootNavigatorKey.currentContext;
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +147,11 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         if (notes.isNotEmpty) ...[
           Row(
             children: [
-              Icon(Icons.note_alt_outlined, size: 18, color: AppColors.accent),
+              const Icon(
+                Icons.note_alt_outlined,
+                size: 18,
+                color: AppColors.accent,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Notes',
@@ -171,7 +174,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         if (upcoming.isNotEmpty) ...[
           Row(
             children: [
-              Icon(Icons.event, size: 18, color: AppColors.primary),
+              const Icon(Icons.event, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
                 'Upcoming Events',
@@ -194,7 +197,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
           const SizedBox(height: 24),
           Row(
             children: [
-              Icon(Icons.history, size: 18, color: AppColors.gray),
+              const Icon(Icons.history, size: 18, color: AppColors.gray),
               const SizedBox(width: 8),
               Text(
                 'Past Events',
@@ -318,7 +321,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
   void _showNoteOptions(Note note) {
     if (rootContext == null) return;
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: rootContext!,
       useRootNavigator: true,
       enableDrag: false,
@@ -390,10 +393,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   void _showNoteSummary(Note note) {
     if (rootContext == null) return;
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: rootContext!,
-      isDismissible: true,
-      enableDrag: true,
       isScrollControlled: true,
       showDragHandle: false,
       useRootNavigator: true,
@@ -422,7 +423,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                         color: AppColors.accent.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.note_alt_outlined,
                         color: AppColors.accent,
                         size: 20,
@@ -521,7 +522,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     // Use QuillEditor in read-only mode to display the rich text content
     try {
       final deltaJson = jsonDecode(note.content);
-      final doc = Document.fromJson(deltaJson);
+      final doc = Document.fromJson(deltaJson as List<dynamic>);
       final controller = QuillController(
         document: doc,
         selection: const TextSelection.collapsed(offset: 0),
@@ -532,55 +533,53 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
         controller: controller,
         config: QuillEditorConfig(
           showCursor: false,
-          autoFocus: false,
-          expands: false,
           padding: const EdgeInsets.all(16),
           customStyles: DefaultStyles(
-            paragraph: DefaultTextBlockStyle(
-              const TextStyle(
+            paragraph: const DefaultTextBlockStyle(
+              TextStyle(
                 color: AppColors.white,
                 fontSize: 16,
                 height: 1.5,
               ),
-              const HorizontalSpacing(0, 0),
-              const VerticalSpacing(6, 0),
-              const VerticalSpacing(0, 6),
+              HorizontalSpacing.zero,
+              VerticalSpacing(6, 0),
+              VerticalSpacing(0, 6),
               null,
             ),
-            h1: DefaultTextBlockStyle(
-              const TextStyle(
+            h1: const DefaultTextBlockStyle(
+              TextStyle(
                 color: AppColors.white,
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 height: 1.4,
               ),
-              const HorizontalSpacing(0, 0),
-              const VerticalSpacing(12, 0),
-              const VerticalSpacing(0, 12),
+              HorizontalSpacing.zero,
+              VerticalSpacing(12, 0),
+              VerticalSpacing(0, 12),
               null,
             ),
-            h2: DefaultTextBlockStyle(
-              const TextStyle(
+            h2: const DefaultTextBlockStyle(
+              TextStyle(
                 color: AppColors.white,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 height: 1.4,
               ),
-              const HorizontalSpacing(0, 0),
-              const VerticalSpacing(10, 0),
-              const VerticalSpacing(0, 10),
+              HorizontalSpacing.zero,
+              VerticalSpacing(10, 0),
+              VerticalSpacing(0, 10),
               null,
             ),
-            h3: DefaultTextBlockStyle(
-              const TextStyle(
+            h3: const DefaultTextBlockStyle(
+              TextStyle(
                 color: AppColors.white,
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 height: 1.4,
               ),
-              const HorizontalSpacing(0, 0),
-              const VerticalSpacing(8, 0),
-              const VerticalSpacing(0, 8),
+              HorizontalSpacing.zero,
+              VerticalSpacing(8, 0),
+              VerticalSpacing(0, 8),
               null,
             ),
             bold: const TextStyle(fontWeight: FontWeight.bold),
@@ -589,43 +588,43 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             strikeThrough: const TextStyle(
               decoration: TextDecoration.lineThrough,
             ),
-            link: TextStyle(
+            link: const TextStyle(
               color: AppColors.accent,
               decoration: TextDecoration.underline,
             ),
-            leading: DefaultTextBlockStyle(
-              const TextStyle(
+            leading: const DefaultTextBlockStyle(
+              TextStyle(
                 color: AppColors.white,
                 fontSize: 16,
                 height: 1.15,
               ),
-              const HorizontalSpacing(0, 0),
-              const VerticalSpacing(0, 0),
-              const VerticalSpacing(0, 0),
+              HorizontalSpacing.zero,
+              VerticalSpacing.zero,
+              VerticalSpacing.zero,
               null,
             ),
-            lists: DefaultListBlockStyle(
-              const TextStyle(
+            lists: const DefaultListBlockStyle(
+              TextStyle(
                 color: AppColors.white,
                 fontSize: 16,
                 height: 1.15,
               ),
-              const HorizontalSpacing(0, 0),
-              const VerticalSpacing(6, 0),
-              const VerticalSpacing(0, 6),
+              HorizontalSpacing.zero,
+              VerticalSpacing(6, 0),
+              VerticalSpacing(0, 6),
               null,
               null,
             ),
-            quote: DefaultTextBlockStyle(
+            quote: const DefaultTextBlockStyle(
               TextStyle(
                 color: AppColors.gray,
                 fontSize: 16,
                 fontStyle: FontStyle.italic,
                 height: 1.5,
               ),
-              const HorizontalSpacing(16, 0),
-              const VerticalSpacing(8, 0),
-              const VerticalSpacing(0, 8),
+              HorizontalSpacing(16, 0),
+              VerticalSpacing(8, 0),
+              VerticalSpacing(0, 8),
               BoxDecoration(
                 border: Border(
                   left: BorderSide(color: AppColors.accent, width: 3),
@@ -633,7 +632,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
               ),
             ),
             code: DefaultTextBlockStyle(
-              TextStyle(
+              const TextStyle(
                 color: AppColors.primaryLight,
                 fontFamily: 'monospace',
                 fontSize: 14,
@@ -685,7 +684,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed ?? false) {
       try {
         final noteService = ref.read(noteServiceProvider);
         await noteService.deleteNote(note.id);
@@ -764,8 +763,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                           Row(
                             children: [
                               if (event.isRecurring)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 6),
+                                const Padding(
+                                  padding: EdgeInsets.only(right: 6),
                                   child: Icon(
                                     Icons.repeat,
                                     size: 16,
@@ -842,7 +841,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.event_busy, color: AppColors.gray, size: 28),
+                  const Icon(Icons.event_busy, color: AppColors.gray, size: 28),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -885,7 +884,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
   void _showEventOptions(Event event) {
     if (rootContext == null) return;
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: rootContext!,
       useRootNavigator: true,
       enableDrag: false,
@@ -968,23 +967,23 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     final descriptionController = TextEditingController(
       text: event?.description ?? '',
     );
-    DateTime selectedDate =
+    var selectedDate =
         event?.eventDate ?? DateTime.now().add(const Duration(days: 7));
-    bool isRecurring = event?.isRecurring ?? false;
-    RecurringType recurringType = event?.recurringType ?? RecurringType.yearly;
-    material.TimeOfDay notificationTime = event?.notificationTime != null
+    var isRecurring = event?.isRecurring ?? false;
+    var recurringType = event?.recurringType ?? RecurringType.yearly;
+    var notificationTime = event?.notificationTime != null
         ? material.TimeOfDay(
             hour: event!.notificationTime!.hour,
             minute: event.notificationTime!.minute,
           )
         : const material.TimeOfDay(hour: 9, minute: 0);
-    bool isLoading = false;
-    bool isPickerOpen = false;
+    var isLoading = false;
+    var isPickerOpen = false;
 
     // Use root navigator context to show over navigation bar
     if (rootContext == null) return;
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: rootContext!,
       isDismissible: false,
       enableDrag: false,
@@ -996,7 +995,6 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             visible: !isPickerOpen,
             maintainState: true,
             maintainAnimation: true,
-            maintainSize: false,
             child: Container(
               constraints: BoxConstraints(
                 maxHeight: MediaQuery.of(context).size.height * 0.7,
@@ -1079,7 +1077,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                             textCapitalization: TextCapitalization.sentences,
                             controller: descriptionController,
                             decoration: InputDecoration(
-                              labelText: 'What\'s the plan babe?',
+                              labelText: "What's the plan babe?",
                               labelStyle: const TextStyle(
                                 color: AppColors.white,
                               ),
@@ -1173,7 +1171,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Icon(
+                                child: const Icon(
                                   Icons.repeat,
                                   color: AppColors.success,
                                   size: 22,
@@ -1403,9 +1401,8 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
   void _showEventSummary(Event event) {
     if (rootContext == null) return;
 
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: rootContext!,
-      isDismissible: true,
       enableDrag: false,
       isScrollControlled: true,
       useRootNavigator: true,
@@ -1579,7 +1576,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
             ),
 
             // Bottom padding for safe area
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -1652,7 +1649,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed ?? false) {
       try {
         final eventService = ref.read(eventServiceProvider);
         await eventService.deleteEvent(event.id);

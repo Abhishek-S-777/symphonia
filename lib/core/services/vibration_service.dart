@@ -1,8 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:symphonia/core/constants/app_constants.dart';
 import 'package:vibration/vibration.dart';
-
-import '../constants/app_constants.dart';
 
 /// Provider for VibrationService
 final vibrationServiceProvider = Provider<VibrationService>((ref) {
@@ -45,7 +44,7 @@ class VibrationService {
     } else {
       // Fallback: simple double vibration
       await Vibration.vibrate(duration: 100);
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       await Vibration.vibrate(duration: 100);
     }
   }
@@ -61,7 +60,7 @@ class VibrationService {
       );
     } else {
       await Vibration.vibrate(duration: 80);
-      await Future.delayed(const Duration(milliseconds: 80));
+      await Future<void>.delayed(const Duration(milliseconds: 80));
       await Vibration.vibrate(duration: 80);
     }
   }
@@ -69,9 +68,9 @@ class VibrationService {
   /// Play continuous heartbeat for background service
   /// Returns after specified number of beats
   Future<void> playContinuousHeartbeat({int beats = 3}) async {
-    for (int i = 0; i < beats; i++) {
+    for (var i = 0; i < beats; i++) {
       await playHeartbeat();
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future<void>.delayed(const Duration(milliseconds: 800));
     }
   }
 
@@ -89,7 +88,7 @@ class VibrationService {
     } else {
       // Fallback: long vibration then short
       await Vibration.vibrate(duration: 600);
-      await Future.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
       await Vibration.vibrate(duration: 100);
     }
   }
@@ -104,7 +103,7 @@ class VibrationService {
 
     // Gentle double tap
     await Vibration.vibrate(duration: 50);
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     await Vibration.vibrate(duration: 50);
   }
 

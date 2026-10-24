@@ -33,17 +33,17 @@ class AppConstants {
     'Thinking of you 💭',
     'Missing you right now 🥺',
     'You make me smile 😊',
-    'Can\'t wait to see you! 🤗',
-    'You\'re my everything 💕',
+    "Can't wait to see you! 🤗",
+    "You're my everything 💕",
     'Sending hugs 🤗',
-    'You\'re amazing 🌟',
+    "You're amazing 🌟",
     'My heart is yours 💝',
     'Forever and always 💫',
     'Good morning, love ☀️',
     'Sweet dreams 🌙',
     'Have a great day! 🌈',
-    'I\'m grateful for you 🙏',
-    'You\'re my best friend 👫',
+    "I'm grateful for you 🙏",
+    "You're my best friend 👫",
   ];
 
   // ═══════════════════════════════════════════════════════════════════════════

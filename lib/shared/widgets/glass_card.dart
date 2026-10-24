@@ -1,26 +1,15 @@
-import 'package:flutter/material.dart';
 import 'dart:ui';
 
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_gradients.dart';
+import 'package:flutter/material.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
 
 /// A beautiful glassmorphism card widget
 /// Used throughout the app for a premium, elegant feel
 class GlassCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-  final EdgeInsetsGeometry? margin;
-  final double borderRadius;
-  final double blur;
-  final Color? backgroundColor;
-  final Color? borderColor;
-  final double borderWidth;
-  final VoidCallback? onTap;
-  final List<BoxShadow>? shadows;
-
   const GlassCard({
-    super.key,
     required this.child,
+    super.key,
     this.padding,
     this.margin,
     this.borderRadius = 20,
@@ -31,6 +20,16 @@ class GlassCard extends StatelessWidget {
     this.onTap,
     this.shadows,
   });
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final double borderRadius;
+  final double blur;
+  final Color? backgroundColor;
+  final Color? borderColor;
+  final double borderWidth;
+  final VoidCallback? onTap;
+  final List<BoxShadow>? shadows;
 
   @override
   Widget build(BuildContext context) {
@@ -83,18 +82,9 @@ class GlassCard extends StatelessWidget {
 
 /// Glass card with gradient border
 class GradientGlassCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-  final EdgeInsetsGeometry? margin;
-  final double borderRadius;
-  final double blur;
-  final Gradient? borderGradient;
-  final double borderWidth;
-  final VoidCallback? onTap;
-
   const GradientGlassCard({
-    super.key,
     required this.child,
+    super.key,
     this.padding,
     this.margin,
     this.borderRadius = 20,
@@ -103,6 +93,14 @@ class GradientGlassCard extends StatelessWidget {
     this.borderWidth = 2,
     this.onTap,
   });
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final EdgeInsetsGeometry? margin;
+  final double borderRadius;
+  final double blur;
+  final Gradient? borderGradient;
+  final double borderWidth;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

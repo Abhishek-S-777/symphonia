@@ -54,21 +54,18 @@ class AppGradients {
 
   /// Heart button normal state
   static const RadialGradient heartNormal = RadialGradient(
-    center: Alignment.center,
     radius: 0.8,
     colors: [Color(0xFFFF6B8A), Color(0xFFE85A7A), Color(0xFFC43D5C)],
   );
 
   /// Heart button pressed state
   static const RadialGradient heartPressed = RadialGradient(
-    center: Alignment.center,
-    radius: 1.0,
+    radius: 1,
     colors: [Color(0xFFFF8FA3), Color(0xFFFF6B8A), Color(0xFFE85A7A)],
   );
 
   /// Heart glow effect
   static const RadialGradient heartGlow = RadialGradient(
-    center: Alignment.center,
     radius: 1.2,
     colors: [Color(0x40FF6B8A), Color(0x20FF8FA3), Color(0x00FFFFFF)],
   );
@@ -118,15 +115,11 @@ class AppGradients {
 
   /// Voice note gradient
   static const LinearGradient voiceNote = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
     colors: [Color(0xFFB47ED8), Color(0xFF8B5CB8)],
   );
 
   /// Special moments gradient
   static const LinearGradient specialMoments = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
     colors: [
       Color.fromARGB(255, 186, 216, 126),
       Color.fromARGB(255, 170, 184, 92),
@@ -139,8 +132,8 @@ class AppGradients {
 
   /// Shimmer loading effect
   static const LinearGradient shimmer = LinearGradient(
-    begin: Alignment(-1.0, -0.3),
-    end: Alignment(1.0, 0.3),
+    begin: Alignment(-1, -0.3),
+    end: Alignment(1, 0.3),
     colors: [Color(0xFFF5F0EE), Color(0xFFFFFFFF), Color(0xFFF5F0EE)],
     stops: [0.0, 0.5, 1.0],
   );

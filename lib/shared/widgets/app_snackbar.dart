@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
 
 /// Snackbar types for consistent styling
 enum SnackBarType { success, error, info, warning }
@@ -82,7 +82,7 @@ class AppSnackbar {
 
   /// Show info snackbar
   static void showInfo(BuildContext context, String message) {
-    show(context, message: message, type: SnackBarType.info);
+    show(context, message: message);
   }
 
   /// Show warning snackbar

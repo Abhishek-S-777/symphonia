@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/services/auth_service.dart';
 import 'package:vibration/vibration.dart';
-
-import '../constants/firebase_collections.dart';
-import '../logging/app_logger.dart';
-import 'auth_service.dart';
 
 /// Ring service provider
 final ringServiceProvider = Provider<RingService>((ref) {
@@ -30,16 +29,16 @@ final isRingingProvider = NotifierProvider<RingingNotifier, bool>(() {
 
 /// Service for handling phone ringing feature
 class RingService {
+  RingService(this._ref);
   final Ref _ref;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Timer? _ringTimer;
   Timer? _vibrationTimer;
-  StreamSubscription? _ringRequestSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _ringRequestSubscription;
 
   static const int maxRingDurationSeconds = 30;
-
-  RingService(this._ref);
 
   /// Initialize and listen for ring requests
   Future<void> initialize() async {
@@ -100,7 +99,7 @@ class RingService {
               }
             }
           },
-          onError: (error) {
+          onError: (Object error) {
             AppLogger.error(
               'RingService: Error listening to ring requests',
               error: error,
@@ -120,30 +119,29 @@ class RingService {
     try {
       // Play alarm sound at max volume (overrides silent mode)
       await FlutterRingtonePlayer().playAlarm(
-        volume: 1.0, // Max volume
-        looping: true, // Keep playing until stopped
-        asAlarm: true, // This makes it play even in silent mode
+        volume: 1, // Max volume
       );
 
       // Start vibration pattern (simple: vibrate, pause, vibrate)
-      _startVibrationPattern();
+      unawaited(_startVibrationPattern());
 
       // Auto-stop after max duration
       _ringTimer?.cancel();
-      _ringTimer = Timer(Duration(seconds: maxRingDurationSeconds), () {
-        stopRinging();
-      });
+      _ringTimer = Timer(
+        const Duration(seconds: maxRingDurationSeconds),
+        stopRinging,
+      );
     } catch (e) {
       AppLogger.error('Error starting ring', error: e);
     }
   }
 
   /// Start continuous vibration pattern
-  void _startVibrationPattern() async {
+  Future<void> _startVibrationPattern() async {
     _vibrationTimer?.cancel();
 
     final hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator != true) return;
+    if (!hasVibrator) return;
 
     // Initial vibration
     await Vibration.vibrate(

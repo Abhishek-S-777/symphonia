@@ -1,16 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../../../../core/router/routes.dart';
-import '../../../../core/services/permission_service.dart';
-import '../../../../core/services/vibration_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/custom_button.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/permission_service.dart';
+import 'package:symphonia/core/services/vibration_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/custom_button.dart';
 
 /// Screen for requesting app permissions
 class PermissionSetupScreen extends ConsumerStatefulWidget {
@@ -51,7 +53,7 @@ class _PermissionSetupScreenState extends ConsumerState<PermissionSetupScreen> {
     setState(() => _notificationsGranted = granted);
 
     if (granted) {
-      ref.read(vibrationServiceProvider).success();
+      unawaited(ref.read(vibrationServiceProvider).success());
     }
   }
 
@@ -61,7 +63,7 @@ class _PermissionSetupScreenState extends ConsumerState<PermissionSetupScreen> {
     setState(() => _microphoneGranted = granted);
 
     if (granted) {
-      ref.read(vibrationServiceProvider).success();
+      unawaited(ref.read(vibrationServiceProvider).success());
     }
   }
 
@@ -102,7 +104,7 @@ class _PermissionSetupScreenState extends ConsumerState<PermissionSetupScreen> {
                       Container(
                         width: 100,
                         height: 100,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: AppGradients.primary,
                         ),

@@ -2,6 +2,16 @@ import 'package:equatable/equatable.dart';
 
 /// Voice note entity
 class VoiceNote extends Equatable {
+  const VoiceNote({
+    required this.id,
+    required this.senderId,
+    required this.durationSeconds,
+    required this.createdAt,
+    this.storageUrl,
+    this.localPath,
+    this.playedAt,
+    this.isSynced = false,
+  });
   final String id;
   final String senderId;
   final int durationSeconds;
@@ -10,17 +20,6 @@ class VoiceNote extends Equatable {
   final DateTime createdAt;
   final DateTime? playedAt;
   final bool isSynced;
-
-  const VoiceNote({
-    required this.id,
-    required this.senderId,
-    required this.durationSeconds,
-    this.storageUrl,
-    this.localPath,
-    required this.createdAt,
-    this.playedAt,
-    this.isSynced = false,
-  });
 
   /// Check if voice note is from me
   bool isFromMe(String myUserId) => senderId == myUserId;

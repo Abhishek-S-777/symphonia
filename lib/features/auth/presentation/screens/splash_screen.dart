@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/constants/storage_keys.dart';
-import '../../../../core/router/routes.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/core/constants/storage_keys.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 
 /// Splash screen with animated logo
 class SplashScreen extends ConsumerStatefulWidget {
@@ -76,7 +76,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                     onPlay: (controller) => controller.repeat(reverse: true),
                   )
                   .scale(
-                    begin: const Offset(1.0, 1.0),
+                    begin: const Offset(1, 1),
                     end: const Offset(1.15, 1.15),
                     duration: 800.ms,
                     curve: Curves.easeInOut,

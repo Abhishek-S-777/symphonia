@@ -1,16 +1,15 @@
 /// Base exception class for data layer errors
 sealed class AppException implements Exception {
-  final String message;
-  final String? code;
-  final dynamic originalError;
-  final StackTrace? stackTrace;
-
   const AppException({
     required this.message,
     this.code,
     this.originalError,
     this.stackTrace,
   });
+  final String message;
+  final String? code;
+  final dynamic originalError;
+  final StackTrace? stackTrace;
 
   @override
   String toString() => 'AppException(message: $message, code: $code)';

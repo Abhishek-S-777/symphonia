@@ -2,6 +2,18 @@ import 'package:equatable/equatable.dart';
 
 /// Event entity for countdowns and special dates
 class Event extends Equatable {
+  const Event({
+    required this.id,
+    required this.creatorId,
+    required this.title,
+    required this.eventDate,
+    required this.createdAt,
+    this.description,
+    this.isRecurring = false,
+    this.recurringType = RecurringType.none,
+    this.notificationTime,
+    this.notificationsEnabled = true,
+  });
   final String id;
   final String creatorId;
   final String title;
@@ -13,24 +25,11 @@ class Event extends Equatable {
   final TimeOfDay? notificationTime;
   final bool notificationsEnabled;
 
-  const Event({
-    required this.id,
-    required this.creatorId,
-    required this.title,
-    this.description,
-    required this.eventDate,
-    this.isRecurring = false,
-    this.recurringType = RecurringType.none,
-    required this.createdAt,
-    this.notificationTime,
-    this.notificationsEnabled = true,
-  });
-
   /// Days until the event
   int get daysUntil {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    DateTime targetDate = DateTime(
+    var targetDate = DateTime(
       eventDate.year,
       eventDate.month,
       eventDate.day,
@@ -44,19 +43,16 @@ class Event extends Equatable {
           if (targetDate.isBefore(today)) {
             targetDate = DateTime(now.year + 1, eventDate.month, eventDate.day);
           }
-          break;
         case RecurringType.monthly:
           targetDate = DateTime(now.year, now.month, eventDate.day);
           if (targetDate.isBefore(today)) {
             targetDate = DateTime(now.year, now.month + 1, eventDate.day);
           }
-          break;
         case RecurringType.weekly:
           final daysUntilNext = (eventDate.weekday - now.weekday + 7) % 7;
           targetDate = today.add(
             Duration(days: daysUntilNext == 0 ? 7 : daysUntilNext),
           );
-          break;
         case RecurringType.none:
           break;
       }
@@ -75,7 +71,7 @@ class Event extends Equatable {
   DateTime get nextOccurrence {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    DateTime targetDate = DateTime(
+    var targetDate = DateTime(
       eventDate.year,
       eventDate.month,
       eventDate.day,
@@ -88,19 +84,16 @@ class Event extends Equatable {
           if (targetDate.isBefore(today)) {
             targetDate = DateTime(now.year + 1, eventDate.month, eventDate.day);
           }
-          break;
         case RecurringType.monthly:
           targetDate = DateTime(now.year, now.month, eventDate.day);
           if (targetDate.isBefore(today)) {
             targetDate = DateTime(now.year, now.month + 1, eventDate.day);
           }
-          break;
         case RecurringType.weekly:
           final daysUntilNext = (eventDate.weekday - now.weekday + 7) % 7;
           targetDate = today.add(
             Duration(days: daysUntilNext == 0 ? 7 : daysUntilNext),
           );
-          break;
         case RecurringType.none:
           break;
       }
@@ -155,10 +148,9 @@ enum RecurringType { none, weekly, monthly, yearly }
 
 /// Time of day for notifications
 class TimeOfDay extends Equatable {
+  const TimeOfDay({required this.hour, required this.minute});
   final int hour;
   final int minute;
-
-  const TimeOfDay({required this.hour, required this.minute});
 
   String get formatted {
     final h = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);

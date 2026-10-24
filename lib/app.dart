@@ -6,15 +6,15 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'core/logging/app_logger.dart';
-import 'core/router/app_router.dart';
-import 'core/router/routes.dart';
-import 'core/services/auth_service.dart';
-import 'core/services/message_service.dart';
-import 'core/services/vibration_service.dart';
-import 'core/theme/app_theme.dart';
-import 'features/auth/presentation/screens/biometrics_lock_screen.dart';
-import 'shared/widgets/app_snackbar.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/router/app_router.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/services/message_service.dart';
+import 'package:symphonia/core/services/vibration_service.dart';
+import 'package:symphonia/core/theme/app_theme.dart';
+import 'package:symphonia/features/auth/presentation/screens/biometrics_lock_screen.dart';
+import 'package:symphonia/shared/widgets/app_snackbar.dart';
 
 /// Global navigator key for accessing root context
 /// Use this to show bottom sheets that appear over the navigation bar
@@ -35,7 +35,6 @@ class SymphoniaApp extends ConsumerWidget {
       // Theme configuration
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
 
       // Localization for flutter_quill
       localizationsDelegates: const [
@@ -44,7 +43,6 @@ class SymphoniaApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         FlutterQuillLocalizations.delegate,
       ],
-      supportedLocales: const [Locale('en', 'US')],
 
       // Router configuration
       routerConfig: router,
@@ -69,9 +67,8 @@ class SymphoniaApp extends ConsumerWidget {
 /// Global listener for heartbeats and online/offline status
 /// Handles app lifecycle to update online status
 class _GlobalHeartbeatListener extends ConsumerStatefulWidget {
-  final Widget child;
-
   const _GlobalHeartbeatListener({required this.child});
+  final Widget child;
 
   @override
   ConsumerState<_GlobalHeartbeatListener> createState() =>
@@ -148,31 +145,26 @@ class _GlobalHeartbeatListenerState
         _isInForeground = true;
         _lastResumedAt = DateTime.now();
         _setOnline();
-        break;
       case AppLifecycleState.inactive:
         // App is transitioning (switching apps, phone call)
         // Set offline early while network is still available
         AppLogger.debug('App inactive; setting offline');
         _isInForeground = false;
         _setOffline();
-        break;
       case AppLifecycleState.paused:
         // App is in background
         AppLogger.debug('App paused; confirming offline');
         _isInForeground = false;
         _setOffline();
-        break;
       case AppLifecycleState.hidden:
         // App is hidden
         AppLogger.debug('App hidden');
         _isInForeground = false;
-        break;
       case AppLifecycleState.detached:
         // App is being terminated
         AppLogger.debug('App detached');
         _isInForeground = false;
         _setOffline();
-        break;
     }
   }
 

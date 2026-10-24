@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../../shared/widgets/glass_card.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/custom_button.dart';
+import 'package:symphonia/shared/widgets/glass_card.dart';
 
 /// Screen to add a new memory to the gallery
 class AddMemoryScreen extends ConsumerStatefulWidget {
@@ -102,7 +102,6 @@ class _AddMemoryScreenState extends ConsumerState<AddMemoryScreen> {
                             border: Border.all(
                               color: AppColors.primary.withValues(alpha: 0.3),
                               width: 2,
-                              style: BorderStyle.solid,
                             ),
                           ),
                           child: _selectedImages.isEmpty

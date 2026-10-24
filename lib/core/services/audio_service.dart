@@ -1,18 +1,18 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as path;
-import 'package:record/record.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/features/voice_notes/domain/entities/voice_note.dart';
 import 'package:uuid/uuid.dart';
-
-import '../constants/firebase_collections.dart';
-import '../logging/app_logger.dart';
-import '../../features/voice_notes/domain/entities/voice_note.dart';
-import 'auth_service.dart';
 
 // =============================================================================
 // STATE NOTIFIERS (Modern Riverpod 2.x pattern)
@@ -56,7 +56,7 @@ final pendingVoiceNotesProvider =
 /// Audio Service Provider
 final audioServiceProvider = Provider<AudioService>((ref) {
   final service = AudioService(ref);
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
   return service;
 });
 
@@ -78,9 +78,7 @@ final _firebaseVoiceNotesProvider = StreamProvider<List<VoiceNote>>((ref) {
       .limit(50)
       .snapshots()
       .map((snapshot) {
-        return snapshot.docs
-            .map((doc) => _voiceNoteFromFirestore(doc))
-            .toList();
+        return snapshot.docs.map(_voiceNoteFromFirestore).toList();
       });
 });
 
@@ -125,7 +123,7 @@ final voiceNotesStreamProvider = Provider<AsyncValue<List<VoiceNote>>>((ref) {
       }
       return const AsyncValue.loading();
     },
-    error: (e, st) => AsyncValue.error(e, st),
+    error: AsyncValue.error,
   );
 });
 
@@ -151,25 +149,33 @@ final unreadVoiceNotesCountProvider = Provider<int>((ref) {
 });
 
 VoiceNote _voiceNoteFromFirestore(DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+  final data = doc.data()! as Map<String, dynamic>;
   return VoiceNote(
     id: doc.id,
-    senderId: data[FirebaseCollections.voiceNoteSenderId] ?? '',
-    storageUrl: data[FirebaseCollections.voiceNoteStorageUrl],
-    localPath: data[FirebaseCollections.voiceNoteLocalPath],
-    durationSeconds: data[FirebaseCollections.voiceNoteDuration] ?? 0,
+    senderId: data[FirebaseCollections.voiceNoteSenderId] as String? ?? '',
+    storageUrl: data[FirebaseCollections.voiceNoteStorageUrl] as String?,
+    localPath: data[FirebaseCollections.voiceNoteLocalPath] as String?,
+    durationSeconds: data[FirebaseCollections.voiceNoteDuration] as int? ?? 0,
     createdAt:
         (data[FirebaseCollections.voiceNoteCreatedAt] as Timestamp?)
             ?.toDate() ??
         DateTime.now(),
     playedAt: (data[FirebaseCollections.voiceNotePlayedAt] as Timestamp?)
         ?.toDate(),
-    isSynced: data[FirebaseCollections.voiceNoteIsSynced] ?? true,
+    isSynced: data[FirebaseCollections.voiceNoteIsSynced] as bool? ?? true,
   );
 }
 
 /// Audio Service for recording, playing, and managing voice notes
 class AudioService {
+  AudioService(this._ref) {
+    // Set up a SINGLE listener for player state changes
+    _playerStateSubscription = _player.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed) {
+        _ref.read(currentlyPlayingIdProvider.notifier).clear();
+      }
+    });
+  }
   final Ref _ref;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
@@ -182,20 +188,11 @@ class AudioService {
   DateTime? _recordingStartTime;
   StreamSubscription<PlayerState>? _playerStateSubscription;
 
-  AudioService(this._ref) {
-    // Set up a SINGLE listener for player state changes
-    _playerStateSubscription = _player.playerStateStream.listen((state) {
-      if (state.processingState == ProcessingState.completed) {
-        _ref.read(currentlyPlayingIdProvider.notifier).clear();
-      }
-    });
-  }
-
   bool get isRecording => _isRecording;
 
   /// Check if microphone permission is granted
   Future<bool> hasPermission() async {
-    return await _recorder.hasPermission();
+    return _recorder.hasPermission();
   }
 
   /// Start recording a voice note with compression
@@ -218,11 +215,7 @@ class AudioService {
     _recordingStartTime = DateTime.now();
 
     await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 128000,
-        sampleRate: 44100,
-      ),
+      const RecordConfig(),
       path: _currentRecordingPath!,
     );
 
@@ -264,23 +257,23 @@ class AudioService {
     final localVoiceNote = VoiceNote(
       id: voiceNoteId,
       senderId: currentUser.id,
-      storageUrl: null, // Not uploaded yet
       localPath: recordPath,
       durationSeconds: duration,
       createdAt: DateTime.now(),
-      isSynced: false, // Mark as not synced
     );
 
     // Add to pending list for immediate display
     _ref.read(pendingVoiceNotesProvider.notifier).add(localVoiceNote);
 
     // STEP 2: Upload to Firebase in BACKGROUND
-    _uploadVoiceNoteInBackground(
-      voiceNoteId: voiceNoteId,
-      recordPath: recordPath,
-      duration: duration,
-      coupleId: currentUser.coupleId!,
-      senderId: currentUser.id,
+    unawaited(
+      _uploadVoiceNoteInBackground(
+        voiceNoteId: voiceNoteId,
+        recordPath: recordPath,
+        duration: duration,
+        coupleId: currentUser.coupleId!,
+        senderId: currentUser.id,
+      ),
     );
 
     _currentRecordingPath = null;
