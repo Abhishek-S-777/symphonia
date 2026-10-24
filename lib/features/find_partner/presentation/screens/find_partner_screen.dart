@@ -304,7 +304,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withValues(alpha: 0.6),
                           Colors.transparent,
                         ],
                       ),
@@ -390,7 +390,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
               Container(
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -414,7 +414,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                 _errorMessage ??
                     'To find your partner, we need access to your location.',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 16,
                 ),
                 textAlign: TextAlign.center,
@@ -502,14 +502,13 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
     return Stack(
       children: [
         GoogleMap(
+          style: _darkMapStyle,
           initialCameraPosition: CameraPosition(
             target: initialPosition,
             zoom: _myPosition != null ? 14 : 4,
           ),
           onMapCreated: (controller) {
             _mapController = controller;
-            // Apply dark mode style
-            _setMapStyle();
             // Center on both after map loads
             Future.delayed(const Duration(milliseconds: 500), () {
               if (_myPosition != null) {
@@ -559,16 +558,15 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
           LatLng(_myPosition!.latitude, _myPosition!.longitude),
           LatLng(partnerLocation.latitude, partnerLocation.longitude),
         ],
-        color: AppColors.primary.withOpacity(0.7),
+        color: AppColors.primary.withValues(alpha: 0.7),
         width: 3,
         patterns: [PatternItem.dash(20), PatternItem.gap(10)],
       ),
     };
   }
 
-  Future<void> _setMapStyle() async {
-    // Dark mode style for the map
-    const darkStyle = '''
+  /// Dark mode style for the map, applied via [GoogleMap.style].
+  static const String _darkMapStyle = '''
     [
       {"elementType": "geometry", "stylers": [{"color": "#212121"}]},
       {"elementType": "labels.icon", "stylers": [{"visibility": "off"}]},
@@ -589,9 +587,6 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
     ]
     ''';
 
-    await _mapController?.setMapStyle(darkStyle);
-  }
-
   Widget _buildBottomPanel({
     required dynamic partner,
     required PartnerLocation? partnerLocation,
@@ -604,8 +599,8 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
           end: Alignment.bottomCenter,
           colors: [
             Colors.transparent,
-            Colors.black.withOpacity(0.8),
-            Colors.black.withOpacity(0.85),
+            Colors.black.withValues(alpha: 0.8),
+            Colors.black.withValues(alpha: 0.85),
           ],
         ),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
@@ -659,13 +654,13 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                               Icon(
                                 Icons.access_time,
                                 size: 14,
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 partnerLocation.timeAgo,
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6),
+                                  color: Colors.white.withValues(alpha: 0.6),
                                   fontSize: 14,
                                 ),
                               ),
@@ -678,7 +673,9 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                                 Icon(
                                   Icons.straighten,
                                   size: 14,
-                                  color: AppColors.primary.withOpacity(0.8),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.8,
+                                  ),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
@@ -699,7 +696,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                               Text(
                                 'Location not available',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: Colors.white.withValues(alpha: 0.5),
                                   fontSize: 14,
                                 ),
                               ),
@@ -707,7 +704,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                               Text(
                                 'Ask partner to open this screen',
                                 style: TextStyle(
-                                  color: Colors.orange.withOpacity(0.8),
+                                  color: Colors.orange.withValues(alpha: 0.8),
                                   fontSize: 12,
                                 ),
                               ),
@@ -775,15 +772,15 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
               (isPrimary ? AppGradients.primary.withOpacity(0.6) : null),
           color: isPrimary || gradient != null
               ? null
-              : Colors.white.withOpacity(0.1),
+              : Colors.white.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
           border: isPrimary || gradient != null
               ? null
-              : Border.all(color: Colors.white.withOpacity(0.2)),
+              : Border.all(color: Colors.white.withValues(alpha: 0.2)),
           boxShadow: isPrimary || gradient != null
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -837,11 +834,11 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.7),
+            color: Colors.black.withValues(alpha: 0.7),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -864,9 +861,9 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
             shape: BoxShape.circle,
             gradient: RadialGradient(
               colors: [
-                AppColors.primary.withOpacity(0.3),
-                AppColors.primary.withOpacity(
-                  0.1 * (1 - _radarController.value),
+                AppColors.primary.withValues(alpha: 0.3),
+                AppColors.primary.withValues(
+                  alpha: 0.1 * (1 - _radarController.value),
                 ),
                 Colors.transparent,
               ],
@@ -879,7 +876,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
               height: 50,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.5),
+                color: AppColors.primary.withValues(alpha: 0.5),
               ),
               child: const Icon(
                 Icons.location_searching,

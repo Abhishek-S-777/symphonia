@@ -43,7 +43,7 @@ final currentAppUserProvider = StreamProvider<app.User?>((ref) {
       return _getUserFromSharedPrefs();
     },
     loading: () => Stream.value(null),
-    error: (_, __) => Stream.value(null),
+    error: (_, _) => Stream.value(null),
   );
 });
 
@@ -317,9 +317,7 @@ class AuthService {
     // Cache the uid for future use
     _cachedUserId = uid;
 
-    debugPrint(
-      '🔄 Setting online status to: $isOnline for user: $uid',
-    );
+    debugPrint('🔄 Setting online status to: $isOnline for user: $uid');
 
     // Fire and forget - don't await
     // This ensures we don't block when app goes to background

@@ -146,7 +146,7 @@ final unreadVoiceNotesCountProvider = Provider<int>((ref) {
           .length;
     },
     loading: () => 0,
-    error: (_, __) => 0,
+    error: (_, _) => 0,
   );
 });
 

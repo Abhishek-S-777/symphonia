@@ -99,7 +99,7 @@ class QuoteService {
           .update({
             'customQuote': {
               'quote': quote.trim(),
-              'author': currentUser.displayName ?? 'Your Partner',
+              'author': currentUser.displayName,
               'authorId': currentUser.id,
               'setAt': Timestamp.fromDate(now),
             },
