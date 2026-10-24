@@ -148,7 +148,8 @@ Message _messageFromFirestore(DocumentSnapshot doc) {
     isSynced: true,
     replyToMessageId: data[FirebaseCollections.messageReplyToId] as String?,
     replyToContent: data[FirebaseCollections.messageReplyToContent] as String?,
-    replyToSenderId: data[FirebaseCollections.messageReplyToSenderId] as String?,
+    replyToSenderId:
+        data[FirebaseCollections.messageReplyToSenderId] as String?,
   );
 }
 

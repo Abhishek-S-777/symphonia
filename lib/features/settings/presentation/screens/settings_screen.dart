@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
@@ -25,11 +24,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _notificationsEnabled = true;
-  bool _vibrationEnabled = true;
-  bool _soundEnabled = true;
-  bool _heartbeatEnabled = true;
-  bool _darkMode = false;
   bool _isLoading = false;
   bool _biometricsEnabled = false;
   bool _biometricsAvailable = false;
@@ -42,8 +36,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-
     // Load biometrics settings
     final biometricsService = ref.read(biometricsServiceProvider);
     final isAvailable = await biometricsService.hasBiometricsEnrolled();
@@ -53,11 +45,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!mounted) return;
 
     setState(() {
-      _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
-      _vibrationEnabled = prefs.getBool('vibrationEnabled') ?? true;
-      _soundEnabled = prefs.getBool('soundEnabled') ?? true;
-      _heartbeatEnabled = prefs.getBool('heartbeatEnabled') ?? true;
-      _darkMode = prefs.getBool('darkMode') ?? false;
       _biometricsAvailable = isAvailable;
       _biometricsEnabled = isEnabled;
       _biometricTypeName = typeName;
@@ -294,7 +281,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: Image.network(
                       user.photoUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (_, _, _) => const Icon(
                         Icons.person,
                         color: AppColors.white,
                         size: 32,
@@ -758,7 +745,7 @@ class _EditProfileBottomSheetState
                                   fit: BoxFit.cover,
                                   width: 100,
                                   height: 100,
-                                  errorBuilder: (_, __, ___) => const Icon(
+                                  errorBuilder: (_, _, _) => const Icon(
                                     Icons.person,
                                     color: AppColors.white,
                                     size: 48,

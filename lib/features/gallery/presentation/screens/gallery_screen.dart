@@ -203,6 +203,8 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
 
       if (file == null) return;
 
+      if (!mounted) return;
+
       // Show note dialog
       final noteController = TextEditingController();
       final note = await showDialog<String>(
@@ -491,6 +493,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                 style: TextStyle(color: AppColors.error),
               ),
               onTap: () async {
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(context);
                 final confirmed = await showDialog<bool>(
                   context: context,
@@ -519,13 +522,13 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                     await galleryService.deleteMemory(memory);
 
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(content: Text('Memory deleted')),
                       );
                     }
                   } catch (e) {
                     if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(
                           content: Text('Error: $e'),
                           backgroundColor: AppColors.error,

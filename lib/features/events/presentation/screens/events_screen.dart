@@ -1292,7 +1292,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                       if (sheetContext.mounted) {
                                         Navigator.pop(sheetContext);
                                       }
-                                      if (mounted) {
+                                      if (context.mounted) {
                                         AppSnackbar.showSuccess(
                                           context,
                                           isEditing
@@ -1301,7 +1301,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                                         );
                                       }
                                     } catch (e) {
-                                      if (mounted) {
+                                      if (context.mounted) {
                                         AppSnackbar.showError(
                                           context,
                                           'Error creating event: $e',

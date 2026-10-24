@@ -90,11 +90,11 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       final coupleService = ref.read(coupleServiceProvider);
       await coupleService.usePairingCode(code);
 
-      if (!mounted) return;
-
       // Save paired status to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(StorageKeys.isPaired, true);
+
+      if (!mounted) return;
 
       // Show success message
       AppSnackbar.showSuccess(context, 'Successfully paired! 💕');

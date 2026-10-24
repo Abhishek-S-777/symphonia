@@ -493,16 +493,6 @@ class _DailyMessageCardWidgetState
     super.dispose();
   }
 
-  void _toggleEmojiPicker() {
-    if (_showEmojiPicker) {
-      setState(() => _showEmojiPicker = false);
-      _focusNode.requestFocus();
-    } else {
-      _focusNode.unfocus();
-      setState(() => _showEmojiPicker = true);
-    }
-  }
-
   void _startEditing() {
     final currentQuote = widget.quoteAsync.value;
     _textController.text = currentQuote?.isCustom == true
@@ -798,7 +788,7 @@ class _DailyMessageCardWidgetState
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
-              error: (_, __) => Text(
+              error: (_, _) => Text(
                 '"Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day."',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontStyle: FontStyle.italic,

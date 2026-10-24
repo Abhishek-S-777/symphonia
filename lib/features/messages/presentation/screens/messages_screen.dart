@@ -376,7 +376,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     child: Image.network(
                       photoUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(
+                      errorBuilder: (_, _, _) => const Icon(
                         Icons.person,
                         color: AppColors.white,
                         size: 22,

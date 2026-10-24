@@ -175,7 +175,7 @@ class _CachedProfileImageState extends ConsumerState<CachedProfileImage> {
         width: widget.size,
         height: widget.size,
         fit: widget.fit,
-        errorBuilder: (_, __, ___) => defaultPlaceholder,
+        errorBuilder: (_, _, _) => defaultPlaceholder,
       ),
     );
   }

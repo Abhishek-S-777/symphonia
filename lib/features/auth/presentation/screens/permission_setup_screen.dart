@@ -24,8 +24,6 @@ class PermissionSetupScreen extends ConsumerStatefulWidget {
 class _PermissionSetupScreenState extends ConsumerState<PermissionSetupScreen> {
   bool _notificationsGranted = false;
   bool _microphoneGranted = false;
-  bool _cameraGranted = false;
-  bool _photosGranted = false;
   bool _isLoading = true;
 
   @override
@@ -39,14 +37,10 @@ class _PermissionSetupScreenState extends ConsumerState<PermissionSetupScreen> {
 
     final notificationStatus = await service.getNotificationStatus();
     final microphoneStatus = await service.getMicrophoneStatus();
-    final cameraStatus = await service.getCameraStatus();
-    final photosStatus = await service.getPhotosStatus();
 
     setState(() {
       _notificationsGranted = notificationStatus.isGranted;
       _microphoneGranted = microphoneStatus.isGranted;
-      _cameraGranted = cameraStatus.isGranted;
-      _photosGranted = photosStatus.isGranted;
       _isLoading = false;
     });
   }
@@ -65,26 +59,6 @@ class _PermissionSetupScreenState extends ConsumerState<PermissionSetupScreen> {
     final service = ref.read(permissionServiceProvider);
     final granted = await service.requestMicrophonePermission();
     setState(() => _microphoneGranted = granted);
-
-    if (granted) {
-      ref.read(vibrationServiceProvider).success();
-    }
-  }
-
-  Future<void> _requestCamera() async {
-    final service = ref.read(permissionServiceProvider);
-    final granted = await service.requestCameraPermission();
-    setState(() => _cameraGranted = granted);
-
-    if (granted) {
-      ref.read(vibrationServiceProvider).success();
-    }
-  }
-
-  Future<void> _requestPhotos() async {
-    final service = ref.read(permissionServiceProvider);
-    final granted = await service.requestPhotosPermission();
-    setState(() => _photosGranted = granted);
 
     if (granted) {
       ref.read(vibrationServiceProvider).success();
