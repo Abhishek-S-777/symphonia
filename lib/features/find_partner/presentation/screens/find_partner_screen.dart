@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/location_service.dart';
 import '../../../../core/services/vibration_service.dart';
@@ -116,27 +117,27 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
       final locationService = ref.read(locationServiceProvider);
 
       // Get my position
-      debugPrint('📍 FindPartner: Getting current position...');
+      AppLogger.debug('FindPartner: Getting current position...');
       final position = await locationService.getCurrentPosition();
       if (position != null) {
-        debugPrint(
-          '📍 FindPartner: Got position: ${position.latitude}, ${position.longitude}',
+        AppLogger.debug(
+          'FindPartner: Got position: ${position.latitude}, ${position.longitude}',
         );
         setState(() => _myPosition = position);
 
         // Share my location
-        debugPrint('📍 FindPartner: Sharing my location to Firestore...');
+        AppLogger.debug('FindPartner: Sharing my location to Firestore...');
         final shared = await locationService.shareMyLocation();
-        debugPrint('📍 FindPartner: Location shared: $shared');
+        AppLogger.debug('FindPartner: Location shared: $shared');
       } else {
-        debugPrint('📍 FindPartner: Failed to get position');
+        AppLogger.error('FindPartner: Failed to get position');
       }
 
       // Request partner's location (this creates a request doc - partner needs to be online)
-      debugPrint('📍 FindPartner: Requesting partner location...');
+      AppLogger.debug('FindPartner: Requesting partner location...');
       await locationService.requestPartnerLocation();
     } catch (e) {
-      debugPrint('📍 FindPartner: Error loading data: $e');
+      AppLogger.error('FindPartner: Error loading data', error: e);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -155,12 +156,12 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
       if (position != null && mounted) {
         setState(() => _myPosition = position);
         await locationService.shareMyLocation();
-        debugPrint('📍 Refresh: Shared my location');
+        AppLogger.debug('Refresh: Shared my location');
       }
 
       // Request PARTNER's location (this sends FCM to partner)
       await locationService.requestPartnerLocation();
-      debugPrint('📍 Refresh: Requested partner location');
+      AppLogger.debug('Refresh: Requested partner location');
 
       // Show feedback
       if (mounted) {

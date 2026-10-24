@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 import '../constants/firebase_collections.dart';
 import '../constants/storage_keys.dart';
+import '../logging/app_logger.dart';
 import '../../features/auth/domain/entities/user.dart' as app;
 
 /// Auth Service Provider
@@ -158,12 +158,12 @@ class AuthService {
             .set({
               FirebaseCollections.userFcmToken: newToken,
             }, SetOptions(merge: true));
-        debugPrint('✅ FCM token updated (was different)');
+        AppLogger.info('FCM token updated (was different)');
       } else {
-        debugPrint('✅ FCM token unchanged, skipping write');
+        AppLogger.info('FCM token unchanged, skipping write');
       }
     } catch (e) {
-      debugPrint('Error refreshing FCM token: $e');
+      AppLogger.error('Error refreshing FCM token', error: e);
     }
   }
 
@@ -308,7 +308,7 @@ class AuthService {
     final uid = currentUser?.uid ?? _cachedUserId;
 
     if (uid == null) {
-      debugPrint('⚠️ setOnlineStatus: no userId available, skipping');
+      AppLogger.warning('setOnlineStatus: no userId available, skipping');
       // Try to load from SharedPreferences as a last resort
       _loadCachedUserIdAndSetStatus(isOnline);
       return;
@@ -317,7 +317,7 @@ class AuthService {
     // Cache the uid for future use
     _cachedUserId = uid;
 
-    debugPrint('🔄 Setting online status to: $isOnline for user: $uid');
+    AppLogger.debug('Setting online status to: $isOnline for user: $uid');
 
     // Fire and forget - don't await
     // This ensures we don't block when app goes to background
@@ -329,10 +329,10 @@ class AuthService {
           FirebaseCollections.userLastActive: FieldValue.serverTimestamp(),
         }, SetOptions(merge: true))
         .then((_) {
-          debugPrint('✅ Online status set to $isOnline successfully');
+          AppLogger.info('Online status set to $isOnline successfully');
         })
         .catchError((e) {
-          debugPrint('❌ Error setting online status: $e');
+          AppLogger.error('Error setting online status', error: e);
           // Silently ignore errors - Firestore will retry with offline persistence
         });
   }
@@ -347,7 +347,7 @@ class AuthService {
         setOnlineStatus(isOnline);
       }
     } catch (e) {
-      debugPrint('❌ Error loading cached userId: $e');
+      AppLogger.error('Error loading cached userId', error: e);
     }
   }
 

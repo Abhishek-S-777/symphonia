@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as path;
 import 'package:record/record.dart';
@@ -11,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../constants/firebase_collections.dart';
+import '../logging/app_logger.dart';
 import '../../features/voice_notes/domain/entities/voice_note.dart';
 import 'auth_service.dart';
 
@@ -343,9 +343,9 @@ class AudioService {
       // Remove from pending list (Firestore stream will add the synced version)
       _ref.read(pendingVoiceNotesProvider.notifier).remove(voiceNoteId);
 
-      debugPrint('VoiceNote uploaded successfully: $voiceNoteId');
+      AppLogger.info('VoiceNote uploaded successfully: $voiceNoteId');
     } catch (e) {
-      debugPrint('Failed to upload voice note: $e');
+      AppLogger.error('Failed to upload voice note', error: e);
       // Mark the pending note as failed (could show error UI)
       // For now, we'll just leave it in pending
     }

@@ -1,12 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants/firebase_collections.dart';
 import '../constants/storage_keys.dart';
+import '../logging/app_logger.dart';
 
 /// Biometrics Service Provider
 final biometricsServiceProvider = Provider<BiometricsService>((ref) {
@@ -32,7 +32,7 @@ class BiometricsService {
       final isDeviceSupported = await _localAuth.isDeviceSupported();
       return canCheckBiometrics && isDeviceSupported;
     } catch (e) {
-      debugPrint('Error checking biometrics availability: $e');
+      AppLogger.error('Error checking biometrics availability', error: e);
       return false;
     }
   }
@@ -42,7 +42,7 @@ class BiometricsService {
     try {
       return await _localAuth.getAvailableBiometrics();
     } catch (e) {
-      debugPrint('Error getting available biometrics: $e');
+      AppLogger.error('Error getting available biometrics', error: e);
       return [];
     }
   }
@@ -87,7 +87,7 @@ class BiometricsService {
 
       return firestoreValue;
     } catch (e) {
-      debugPrint('Error checking biometrics enabled: $e');
+      AppLogger.error('Error checking biometrics enabled', error: e);
       return false;
     }
   }
@@ -127,7 +127,7 @@ class BiometricsService {
 
       return true;
     } catch (e) {
-      debugPrint('Error setting biometrics enabled: $e');
+      AppLogger.error('Error setting biometrics enabled', error: e);
       return false;
     }
   }
@@ -139,7 +139,7 @@ class BiometricsService {
     try {
       final isAvailable = await isBiometricsAvailable();
       if (!isAvailable) {
-        debugPrint('Biometrics not available');
+        AppLogger.warning('Biometrics not available');
         return true; // Allow access if biometrics not available
       }
 
@@ -153,7 +153,7 @@ class BiometricsService {
 
       return authenticated;
     } catch (e) {
-      debugPrint('Biometric authentication error: $e');
+      AppLogger.error('Biometric authentication error', error: e);
       return false;
     }
   }

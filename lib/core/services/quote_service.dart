@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/firebase_collections.dart';
+import '../logging/app_logger.dart';
 import 'auth_service.dart';
 
 /// Daily Quote Model
@@ -105,7 +105,7 @@ class QuoteService {
             },
           });
     } catch (e) {
-      debugPrint('Quote error: $e');
+      AppLogger.error('Quote error', error: e);
       rethrow;
     }
   }
@@ -124,7 +124,7 @@ class QuoteService {
           .doc(coupleId)
           .update({'customQuote': FieldValue.delete()});
     } catch (e) {
-      debugPrint('Quote error: $e');
+      AppLogger.error('Quote error', error: e);
       rethrow;
     }
   }

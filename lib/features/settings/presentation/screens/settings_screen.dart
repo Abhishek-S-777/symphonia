@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/router/routes.dart';
 import '../../../../core/services/auth_service.dart';
 import '../../../../core/services/biometrics_service.dart';
@@ -593,17 +594,17 @@ class _EditProfileBottomSheetState
   }
 
   Future<void> _pickImage() async {
-    debugPrint('EditProfile: Starting image pick');
+    AppLogger.debug('EditProfile: Starting image pick');
     final profileService = ref.read(profileServiceProvider);
     final pickedImage = await profileService.pickAndCropImage(context);
 
-    debugPrint('EditProfile: Picked image: ${pickedImage?.path}');
+    AppLogger.debug('EditProfile: Picked image: ${pickedImage?.path}');
 
     if (pickedImage != null && mounted) {
       setState(() {
         _selectedImage = pickedImage;
       });
-      debugPrint('EditProfile: State updated with new image');
+      AppLogger.debug('EditProfile: State updated with new image');
     }
   }
 

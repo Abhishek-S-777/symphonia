@@ -1,10 +1,10 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../constants/firebase_collections.dart';
 import '../constants/app_constants.dart';
+import '../logging/app_logger.dart';
 import '../../features/auth/domain/entities/couple.dart';
 import 'auth_service.dart';
 
@@ -186,7 +186,7 @@ class CoupleService {
     if (existingCouple.docs.isNotEmpty) {
       // REUSE existing couple document - preserves all shared data!
       coupleId = existingCouple.docs.first.id;
-      debugPrint('♻️ Reusing existing couple document: $coupleId');
+      AppLogger.info('Reusing existing couple document: $coupleId');
 
       await _firestore.runTransaction((transaction) async {
         // Update the couple document with new pairedAt time
@@ -214,7 +214,7 @@ class CoupleService {
           .collection(FirebaseCollections.couples)
           .doc();
       coupleId = coupleRef.id;
-      debugPrint('🆕 Creating new couple document: $coupleId');
+      AppLogger.info('Creating new couple document: $coupleId');
 
       await _firestore.runTransaction((transaction) async {
         // Create couple
