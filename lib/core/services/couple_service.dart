@@ -1,12 +1,12 @@
 import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../constants/firebase_collections.dart';
-import '../constants/app_constants.dart';
-import '../logging/app_logger.dart';
-import '../../features/auth/domain/entities/couple.dart';
-import 'auth_service.dart';
+import 'package:symphonia/core/constants/app_constants.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/features/auth/domain/entities/couple.dart';
 
 /// Couple Service Provider
 final coupleServiceProvider = Provider<CoupleService>((ref) {
@@ -35,16 +35,16 @@ final currentCoupleProvider = StreamProvider<Couple?>((ref) {
 });
 
 Couple _coupleFromFirestore(DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+  final data = doc.data()! as Map<String, dynamic>;
   final settingsData =
       data[FirebaseCollections.coupleSettings] as Map<String, dynamic>? ?? {};
 
   return Couple(
     id: doc.id,
-    user1Id: data[FirebaseCollections.coupleUser1Id] ?? '',
-    user2Id: data[FirebaseCollections.coupleUser2Id] ?? '',
-    user1Email: data[FirebaseCollections.coupleUser1Email] ?? '',
-    user2Email: data[FirebaseCollections.coupleUser2Email] ?? '',
+    user1Id: data[FirebaseCollections.coupleUser1Id] as String? ?? '',
+    user2Id: data[FirebaseCollections.coupleUser2Id] as String? ?? '',
+    user1Email: data[FirebaseCollections.coupleUser1Email] as String? ?? '',
+    user2Email: data[FirebaseCollections.coupleUser2Email] as String? ?? '',
     pairedAt:
         (data[FirebaseCollections.couplePairedAt] as Timestamp?)?.toDate() ??
         DateTime.now(),
@@ -52,20 +52,20 @@ Couple _coupleFromFirestore(DocumentSnapshot doc) {
         (data[FirebaseCollections.coupleAnniversaryDate] as Timestamp?)
             ?.toDate(),
     settings: CoupleSettings(
-      heartbeatEnabled: settingsData['heartbeatEnabled'] ?? true,
-      notificationsEnabled: settingsData['notificationsEnabled'] ?? true,
-      soundEnabled: settingsData['soundEnabled'] ?? true,
-      vibrationEnabled: settingsData['vibrationEnabled'] ?? true,
+      heartbeatEnabled: settingsData['heartbeatEnabled'] as bool? ?? true,
+      notificationsEnabled:
+          settingsData['notificationsEnabled'] as bool? ?? true,
+      soundEnabled: settingsData['soundEnabled'] as bool? ?? true,
+      vibrationEnabled: settingsData['vibrationEnabled'] as bool? ?? true,
     ),
   );
 }
 
 /// Couple Service for pairing operations
 class CoupleService {
+  CoupleService(this._authService);
   final AuthService _authService;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  CoupleService(this._authService);
 
   /// Generate a pairing code
   String _generatePairingCode() {
@@ -84,7 +84,7 @@ class CoupleService {
 
     final code = _generatePairingCode();
     final expiresAt = DateTime.now().add(
-      Duration(minutes: AppConstants.pairingCodeExpiryMinutes),
+      const Duration(minutes: AppConstants.pairingCodeExpiryMinutes),
     );
 
     // Delete any existing pairing codes for this user

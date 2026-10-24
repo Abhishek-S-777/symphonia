@@ -9,10 +9,9 @@ import 'package:symphonia/core/theme/app_colors.dart';
 /// Hugs & Kisses Button - Amber themed, long press to build up hugs duration
 /// Vibration pattern: long vibrations + short kiss at the end
 class HugsButton extends ConsumerStatefulWidget {
-  final Function(int seconds)? onHugsSent;
-  final double size;
-
   const HugsButton({super.key, this.onHugsSent, this.size = 180});
+  final void Function(int seconds)? onHugsSent;
+  final double size;
 
   @override
   ConsumerState<HugsButton> createState() => _HugsButtonState();
@@ -43,7 +42,7 @@ class _HugsButtonState extends ConsumerState<HugsButton>
       vsync: this,
     );
 
-    _idlePulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+    _idlePulseAnimation = Tween<double>(begin: 1, end: 1.05).animate(
       CurvedAnimation(parent: _idlePulseController, curve: Curves.easeInOut),
     );
 
@@ -149,7 +148,7 @@ class _HugsButtonState extends ConsumerState<HugsButton>
       });
 
       // Resume idle pulse
-      _idlePulseController.repeat(reverse: true);
+      unawaited(_idlePulseController.repeat(reverse: true));
     }
   }
 
@@ -158,16 +157,16 @@ class _HugsButtonState extends ConsumerState<HugsButton>
     // Long vibrations (proportional to seconds held, max 3)
     final longVibs = math.min(seconds, 3);
 
-    for (int i = 0; i < longVibs; i++) {
-      HapticFeedback.heavyImpact();
-      await Future.delayed(const Duration(milliseconds: 200));
+    for (var i = 0; i < longVibs; i++) {
+      unawaited(HapticFeedback.heavyImpact());
+      await Future<void>.delayed(const Duration(milliseconds: 200));
     }
 
     // Short pause
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
 
     // Final short "kiss" vibration
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
   }
 
   @override

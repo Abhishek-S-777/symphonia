@@ -1,16 +1,16 @@
 import 'dart:io';
+
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:uuid/uuid.dart';
-
-import '../logging/app_logger.dart';
-import '../theme/app_colors.dart';
 
 /// Profile Service Provider
 final profileServiceProvider = Provider<ProfileService>((ref) {
@@ -25,7 +25,7 @@ final profileImageCacheProvider = Provider<ProfileImageCache>((ref) {
 /// Profile Service for handling profile image operations
 class ProfileService {
   final _picker = ImagePicker();
-  final _storage = FirebaseStorage.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   final _uuid = const Uuid();
 
   /// Pick image from source and optionally crop it
@@ -33,7 +33,7 @@ class ProfileService {
     try {
       AppLogger.debug('ProfileService: Picking image from $source');
 
-      final XFile? pickedFile = await _picker.pickImage(
+      final pickedFile = await _picker.pickImage(
         source: source,
         imageQuality: 85,
         maxWidth: 1024,

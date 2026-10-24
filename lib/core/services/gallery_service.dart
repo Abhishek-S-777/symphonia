@@ -1,15 +1,16 @@
+import 'dart:async';
 import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/services/fcm_service.dart';
+import 'package:symphonia/features/gallery/domain/entities/memory.dart';
 import 'package:uuid/uuid.dart';
-
-import '../constants/firebase_collections.dart';
-import '../../features/gallery/domain/entities/memory.dart';
-import 'auth_service.dart';
-import 'fcm_service.dart';
 
 /// Gallery Service Provider
 final galleryServiceProvider = Provider<GalleryService>((ref) {
@@ -33,43 +34,42 @@ final memoriesStreamProvider = StreamProvider<List<Memory>>((ref) {
       .orderBy(FirebaseCollections.memoryDate, descending: true)
       .snapshots()
       .map((snapshot) {
-        return snapshot.docs.map((doc) => _memoryFromFirestore(doc)).toList();
+        return snapshot.docs.map(_memoryFromFirestore).toList();
       });
 });
 
 Memory _memoryFromFirestore(DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+  final data = doc.data()! as Map<String, dynamic>;
   return Memory(
     id: doc.id,
-    creatorId: data[FirebaseCollections.memoryCreatorId] ?? '',
+    creatorId: data[FirebaseCollections.memoryCreatorId] as String? ?? '',
     imageUrls: List<String>.from(
-      data[FirebaseCollections.memoryImageUrls] ?? [],
+      data[FirebaseCollections.memoryImageUrls] as List<dynamic>? ?? const [],
     ),
     localPaths: const [],
-    note: data[FirebaseCollections.memoryNote],
+    note: data[FirebaseCollections.memoryNote] as String?,
     date:
         (data[FirebaseCollections.memoryDate] as Timestamp?)?.toDate() ??
         DateTime.now(),
     createdAt:
         (data[FirebaseCollections.memoryCreatedAt] as Timestamp?)?.toDate() ??
         DateTime.now(),
-    isSynced: data[FirebaseCollections.memoryIsSynced] ?? true,
+    isSynced: data[FirebaseCollections.memoryIsSynced] as bool? ?? true,
   );
 }
 
 /// Gallery Service for managing memories and photos
 class GalleryService {
+  GalleryService(this._ref);
   final Ref _ref;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _imagePicker = ImagePicker();
   final _uuid = const Uuid();
 
-  GalleryService(this._ref);
-
   /// Pick image from gallery
   Future<File?> pickImageFromGallery() async {
-    final XFile? image = await _imagePicker.pickImage(
+    final image = await _imagePicker.pickImage(
       source: ImageSource.gallery,
       maxWidth: 1920,
       maxHeight: 1920,
@@ -80,7 +80,7 @@ class GalleryService {
 
   /// Pick image from camera
   Future<File?> pickImageFromCamera() async {
-    final XFile? image = await _imagePicker.pickImage(
+    final image = await _imagePicker.pickImage(
       source: ImageSource.camera,
       maxWidth: 1920,
       maxHeight: 1920,
@@ -91,7 +91,7 @@ class GalleryService {
 
   /// Pick multiple images
   Future<List<File>> pickMultipleImages() async {
-    final List<XFile> images = await _imagePicker.pickMultiImage(
+    final images = await _imagePicker.pickMultiImage(
       maxWidth: 1920,
       maxHeight: 1920,
       imageQuality: 85,
@@ -119,7 +119,7 @@ class GalleryService {
       SettableMetadata(contentType: 'image/jpeg'),
     );
 
-    return await uploadTask.ref.getDownloadURL();
+    return uploadTask.ref.getDownloadURL();
   }
 
   /// Create a new memory
@@ -174,7 +174,7 @@ class GalleryService {
     });
 
     // Send notification to partner
-    _sendNotificationToPartner(note);
+    unawaited(_sendNotificationToPartner(note));
 
     return memory;
   }

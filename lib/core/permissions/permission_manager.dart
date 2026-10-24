@@ -65,7 +65,7 @@ class PermissionManager {
   /// Request all essential permissions at once
   Future<Map<Permission, PermissionStatus>>
   requestEssentialPermissions() async {
-    return await [
+    return [
       Permission.notification,
       Permission.microphone,
       Permission.storage,
@@ -134,7 +134,7 @@ class PermissionManager {
 
   /// Open app settings for manually granting permissions
   Future<bool> openAppSettings() async {
-    return await openAppSettings();
+    return openAppSettings();
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -223,15 +223,14 @@ This uses more battery, but ensures your partner always knows when you've arrive
 
 /// Result of a permission request
 class PermissionResult {
-  final Permission permission;
-  final PermissionStatus status;
-  final String explanation;
-
   const PermissionResult({
     required this.permission,
     required this.status,
     required this.explanation,
   });
+  final Permission permission;
+  final PermissionStatus status;
+  final String explanation;
 
   bool get isGranted => status.isGranted;
   bool get isDenied => status.isDenied;

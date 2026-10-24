@@ -3,15 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/services/gallery_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../domain/entities/memory.dart';
+import 'package:symphonia/core/services/gallery_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/features/gallery/domain/entities/memory.dart';
 
 /// Full-screen slideshow viewer for memories
 class SlideshowScreen extends ConsumerStatefulWidget {
-  final int startIndex;
-
   const SlideshowScreen({super.key, this.startIndex = 0});
+  final int startIndex;
 
   @override
   ConsumerState<SlideshowScreen> createState() => _SlideshowScreenState();
@@ -263,8 +262,8 @@ class _SlideshowScreenState extends ConsumerState<SlideshowScreen> {
 
   Widget _buildSlide(Memory memory) {
     return InteractiveViewer(
-      minScale: 1.0,
-      maxScale: 3.0,
+      minScale: 1,
+      maxScale: 3,
       child: Center(
         child: Image.network(
           memory.imageUrls.first,

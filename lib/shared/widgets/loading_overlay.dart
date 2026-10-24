@@ -1,24 +1,23 @@
-import 'package:flutter/material.dart';
 import 'dart:ui';
 
-import '../../core/theme/app_colors.dart';
+import 'package:flutter/material.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
 
 /// Loading overlay with blur effect
 class LoadingOverlay extends StatelessWidget {
+  const LoadingOverlay({
+    required this.isLoading,
+    required this.child,
+    super.key,
+    this.message,
+    this.backgroundColor,
+    this.blur = 5,
+  });
   final bool isLoading;
   final Widget child;
   final String? message;
   final Color? backgroundColor;
   final double blur;
-
-  const LoadingOverlay({
-    super.key,
-    required this.isLoading,
-    required this.child,
-    this.message,
-    this.backgroundColor,
-    this.blur = 5,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +28,7 @@ class LoadingOverlay extends StatelessWidget {
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-              child: Container(
+              child: ColoredBox(
                 color:
                     backgroundColor ??
                     AppColors.charcoal.withValues(alpha: 0.3),
@@ -87,10 +86,9 @@ class LoadingOverlay extends StatelessWidget {
 
 /// Heart-shaped loading indicator
 class HeartLoadingIndicator extends StatefulWidget {
+  const HeartLoadingIndicator({super.key, this.size = 48, this.color});
   final double size;
   final Color? color;
-
-  const HeartLoadingIndicator({super.key, this.size = 48, this.color});
 
   @override
   State<HeartLoadingIndicator> createState() => _HeartLoadingIndicatorState();
@@ -143,16 +141,15 @@ class _HeartLoadingIndicatorState extends State<HeartLoadingIndicator>
 
 /// Shimmer loading placeholder
 class ShimmerLoading extends StatefulWidget {
+  const ShimmerLoading({
+    required this.width,
+    required this.height,
+    super.key,
+    this.borderRadius = 8,
+  });
   final double width;
   final double height;
   final double borderRadius;
-
-  const ShimmerLoading({
-    super.key,
-    required this.width,
-    required this.height,
-    this.borderRadius = 8,
-  });
 
   @override
   State<ShimmerLoading> createState() => _ShimmerLoadingState();

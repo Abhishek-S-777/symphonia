@@ -5,12 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/constants/storage_keys.dart';
-import '../../../../core/router/routes.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/custom_button.dart';
+import 'package:symphonia/core/constants/storage_keys.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/custom_button.dart';
 
 /// Onboarding screen with beautiful illustrations
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -37,14 +37,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           'Send a gentle heartbeat to your partner with one tap. Let them feel your love, no matter the distance.',
       gradient: AppGradients.primary,
     ),
-    OnboardingPage(
+    const OnboardingPage(
       icon: Icons.chat_bubble,
       title: 'Messages',
       description:
           'Send your heartfelt messages or record sweet voice messages and let your partner hear your voice whenever they miss you.',
       gradient: AppGradients.voiceNote,
     ),
-    OnboardingPage(
+    const OnboardingPage(
       icon: Icons.auto_awesome,
       title: 'Special Moments',
       description:
@@ -58,7 +58,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     //       'Capture and cherish your special moments together in a beautiful shared gallery.',
     //   gradient: AppGradients.sunset,
     // ),
-    OnboardingPage(
+    const OnboardingPage(
       icon: Icons.lock,
       title: 'Just You Two',
       description:
@@ -132,7 +132,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
                         _pages.length,
-                        (index) => _buildPageIndicator(index),
+                        _buildPageIndicator,
                       ),
                     ),
 
@@ -189,13 +189,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   ],
                 ),
                 child: page.icon != null
-                    ? Icon(page.icon!, size: 70, color: AppColors.white)
+                    ? Icon(page.icon, size: 70, color: AppColors.white)
                     : Center(child: page.image),
               )
               .animate(delay: 200.ms)
               .scale(
                 begin: const Offset(0.5, 0.5),
-                end: const Offset(1.0, 1.0),
+                end: const Offset(1, 1),
                 duration: 500.ms,
                 curve: Curves.elasticOut,
               )
@@ -253,17 +253,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
 /// Data class for onboarding pages
 class OnboardingPage {
+  const OnboardingPage({
+    required this.title,
+    required this.description,
+    required this.gradient,
+    this.icon,
+    this.image,
+  });
   final IconData? icon;
   final Image? image;
   final String title;
   final String description;
   final Gradient gradient;
-
-  const OnboardingPage({
-    this.icon,
-    this.image,
-    required this.title,
-    required this.description,
-    required this.gradient,
-  });
 }

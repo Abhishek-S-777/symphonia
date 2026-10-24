@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'app_colors.dart';
-import 'app_typography.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_typography.dart';
 
 /// Symphonia Theme Configuration
 /// Material Design 3 compliant with romantic, premium aesthetics
@@ -22,11 +22,9 @@ class AppTheme {
       tertiaryContainer: AppColors.accentLight,
       surface: AppColors.offWhite,
       error: AppColors.error,
-      onPrimary: AppColors.white,
       onSecondary: AppColors.charcoal,
       onTertiary: AppColors.white,
       onSurface: AppColors.charcoal,
-      onError: AppColors.white,
       outline: AppColors.gray,
       shadow: AppColors.charcoal.withValues(alpha: 0.1),
     );
@@ -135,7 +133,7 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.error, width: 1),
+          borderSide: const BorderSide(color: AppColors.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

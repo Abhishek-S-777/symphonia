@@ -4,16 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/router/routes.dart';
-import '../../../../core/services/audio_service.dart';
-import '../../../../core/services/auth_service.dart';
-import '../../../../core/services/message_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../domain/entities/message.dart';
+import 'package:symphonia/core/constants/app_constants.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/audio_service.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/services/message_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/messages/domain/entities/message.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 
 /// Messages screen showing conversation with partner
 class MessagesScreen extends ConsumerStatefulWidget {
@@ -57,7 +56,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
   Future<void> _markMessagesAsRead() async {
     // Small delay to ensure the screen is fully loaded
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
     try {
       final messageService = ref.read(messageServiceProvider);
       await messageService.markAllAsRead();
@@ -72,8 +71,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
     // Messages are ordered newest first (reverse: true in ListView)
     // Find first unread message from partner (searching from oldest to newest)
-    int firstUnreadIndex = -1;
-    for (int i = messages.length - 1; i >= 0; i--) {
+    var firstUnreadIndex = -1;
+    for (var i = messages.length - 1; i >= 0; i--) {
       final message = messages[i];
       if (message.senderId != currentUserId && message.readAt == null) {
         firstUnreadIndex = i;
@@ -134,7 +133,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send: ${e.toString()}'),
+            content: Text('Failed to send: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -201,7 +200,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.error_outline,
                         size: 48,
                         color: AppColors.gray,
@@ -276,11 +275,6 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                       backgroundColor: AppColors.darkCard,
                       columns: 8,
                     ),
-                    viewOrderConfig: const ViewOrderConfig(
-                      top: EmojiPickerItem.categoryBar,
-                      middle: EmojiPickerItem.emojiView,
-                      bottom: EmojiPickerItem.searchBar,
-                    ),
                     categoryViewConfig: CategoryViewConfig(
                       backgroundColor: AppColors.darkCard,
                       indicatorColor: AppColors.primary,
@@ -288,12 +282,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                       iconColorSelected: AppColors.primary,
                       dividerColor: AppColors.gray.withValues(alpha: 0.2),
                     ),
-                    bottomActionBarConfig: BottomActionBarConfig(
+                    bottomActionBarConfig: const BottomActionBarConfig(
                       backgroundColor: AppColors.darkCard,
-                      buttonIconColor: AppColors.white,
                       buttonColor: Colors.transparent,
-                      showBackspaceButton: true,
-                      showSearchViewButton: true,
                     ),
                     searchViewConfig: SearchViewConfig(
                       backgroundColor: AppColors.darkCard,
@@ -328,7 +319,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             Container(
               width: 100,
               height: 100,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: AppGradients.primarySoft,
               ),
@@ -436,7 +427,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     top: 4,
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.error,
                         shape: BoxShape.circle,
                       ),
@@ -485,12 +476,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.favorite, color: AppColors.heartRed, size: 18)
+                const Icon(Icons.favorite, color: AppColors.heartRed, size: 18)
                     .animate(
                       onPlay: (controller) => controller.repeat(reverse: true),
                     )
                     .scale(
-                      begin: const Offset(1.0, 1.0),
+                      begin: const Offset(1, 1),
                       end: const Offset(1.2, 1.2),
                       duration: 600.ms,
                     ),
@@ -524,12 +515,12 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('\u{1F917}\u{1F618}', style: TextStyle(fontSize: 12))
+                const Text('\u{1F917}\u{1F618}', style: TextStyle(fontSize: 12))
                     .animate(
                       onPlay: (controller) => controller.repeat(reverse: true),
                     )
                     .scale(
-                      begin: const Offset(1.0, 1.0),
+                      begin: const Offset(1, 1),
                       end: const Offset(1.2, 1.2),
                       duration: 600.ms,
                     ),
@@ -741,7 +732,9 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
       decoration: BoxDecoration(
         color: AppColors.darkElevated.withValues(alpha: 0.8),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-        border: Border(left: BorderSide(color: AppColors.primary, width: 3)),
+        border: const Border(
+          left: BorderSide(color: AppColors.primary, width: 3),
+        ),
       ),
       child: Row(
         children: [
@@ -771,7 +764,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           ),
           IconButton(
             onPressed: _cancelReply,
-            icon: Icon(Icons.close, color: AppColors.gray, size: 18),
+            icon: const Icon(Icons.close, color: AppColors.gray, size: 18),
             constraints: const BoxConstraints(),
             padding: EdgeInsets.zero,
           ),
@@ -815,7 +808,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                   border: InputBorder.none,
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide(color: Colors.transparent),
+                    borderSide: const BorderSide(color: Colors.transparent),
                   ),
                   counterText: '',
                   contentPadding: const EdgeInsets.symmetric(
@@ -823,7 +816,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                     horizontal: 8,
                   ),
                 ),
-                onSubmitted: (value) => _sendMessage(value),
+                onSubmitted: _sendMessage,
               ),
             ),
             const SizedBox(width: 8),
@@ -906,7 +899,7 @@ class _MessagesEmojiSearchViewState
           constraints.maxWidth,
         );
 
-        return Container(
+        return ColoredBox(
           color: widget.config.searchViewConfig.backgroundColor,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -916,7 +909,7 @@ class _MessagesEmojiSearchViewState
                 child: SizedBox(
                   height: emojiBoxSize + 8.0,
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    padding: const EdgeInsets.symmetric(vertical: 4),
                     scrollDirection: Axis.horizontal,
                     itemCount: results.length,
                     itemBuilder: (context, index) {

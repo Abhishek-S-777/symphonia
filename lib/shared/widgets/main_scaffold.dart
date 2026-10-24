@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/message_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
-
-import '../../../core/services/message_service.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_gradients.dart';
-import '../../../core/router/routes.dart';
 
 /// Main scaffold with persistent bottom navigation bar
 class MainScaffold extends ConsumerStatefulWidget {
-  final Widget child;
-  final String currentPath;
-
   const MainScaffold({
-    super.key,
     required this.child,
     required this.currentPath,
+    super.key,
   });
+  final Widget child;
+  final String currentPath;
 
   @override
   ConsumerState<MainScaffold> createState() => _MainScaffoldState();
@@ -46,16 +44,12 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     switch (index) {
       case 0:
         targetPath = Routes.homePath;
-        break;
       case 1:
         targetPath = Routes.messagesPath;
-        break;
       case 2:
         targetPath = Routes.findPartnerPath;
-        break;
       case 3:
         targetPath = Routes.eventsPath;
-        break;
       default:
         targetPath = Routes.homePath;
     }
@@ -85,7 +79,6 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(
@@ -133,7 +126,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
       onTap: () => _onItemTapped(index),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 8),
+        padding: const EdgeInsets.only(left: 12, right: 12, top: 12, bottom: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

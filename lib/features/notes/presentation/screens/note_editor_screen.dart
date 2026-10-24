@@ -5,18 +5,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../../core/services/note_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/app_snackbar.dart';
-import '../../domain/entities/note.dart';
+import 'package:symphonia/core/services/note_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/features/notes/domain/entities/note.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/app_snackbar.dart';
 
 /// Full-page Quill editor for creating/editing notes
 class NoteEditorScreen extends ConsumerStatefulWidget {
-  final Note? note;
-
   const NoteEditorScreen({super.key, this.note});
+  final Note? note;
 
   @override
   ConsumerState<NoteEditorScreen> createState() => _NoteEditorScreenState();
@@ -43,7 +41,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     if (widget.note != null) {
       try {
         final deltaJson = jsonDecode(widget.note!.content);
-        final doc = Document.fromJson(deltaJson);
+        final doc = Document.fromJson(deltaJson as List<dynamic>);
         _quillController = QuillController(
           document: doc,
           selection: const TextSelection.collapsed(offset: 0),
@@ -263,7 +261,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               decoration: InputDecoration(
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(color: Colors.transparent),
+                  borderSide: const BorderSide(color: Colors.transparent),
                 ),
                 hintText: 'Note Title',
                 hintStyle: TextStyle(
@@ -273,7 +271,6 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 ),
                 border: InputBorder.none,
               ),
-              maxLines: 1,
               textCapitalization: TextCapitalization.sentences,
             ),
           ),
@@ -291,8 +288,6 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 config: QuillEditorConfig(
                   placeholder: 'Start writing your note...',
                   padding: const EdgeInsets.all(16),
-                  scrollable: true,
-                  autoFocus: false,
                   expands: true,
                   customStyles: DefaultStyles(
                     placeHolder: DefaultTextBlockStyle(
@@ -300,56 +295,56 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                         color: AppColors.gray.withValues(alpha: 0.6),
                         fontSize: 16,
                       ),
-                      const HorizontalSpacing(0, 0),
-                      const VerticalSpacing(0, 0),
-                      const VerticalSpacing(0, 0),
+                      HorizontalSpacing.zero,
+                      VerticalSpacing.zero,
+                      VerticalSpacing.zero,
                       null,
                     ),
-                    paragraph: DefaultTextBlockStyle(
-                      const TextStyle(
+                    paragraph: const DefaultTextBlockStyle(
+                      TextStyle(
                         color: AppColors.white,
                         fontSize: 16,
                         height: 1.5,
                       ),
-                      const HorizontalSpacing(0, 0),
-                      const VerticalSpacing(6, 0),
-                      const VerticalSpacing(0, 6),
+                      HorizontalSpacing.zero,
+                      VerticalSpacing(6, 0),
+                      VerticalSpacing(0, 6),
                       null,
                     ),
-                    h1: DefaultTextBlockStyle(
-                      const TextStyle(
+                    h1: const DefaultTextBlockStyle(
+                      TextStyle(
                         color: AppColors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
                         height: 1.4,
                       ),
-                      const HorizontalSpacing(0, 0),
-                      const VerticalSpacing(12, 0),
-                      const VerticalSpacing(0, 12),
+                      HorizontalSpacing.zero,
+                      VerticalSpacing(12, 0),
+                      VerticalSpacing(0, 12),
                       null,
                     ),
-                    h2: DefaultTextBlockStyle(
-                      const TextStyle(
+                    h2: const DefaultTextBlockStyle(
+                      TextStyle(
                         color: AppColors.white,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         height: 1.4,
                       ),
-                      const HorizontalSpacing(0, 0),
-                      const VerticalSpacing(10, 0),
-                      const VerticalSpacing(0, 10),
+                      HorizontalSpacing.zero,
+                      VerticalSpacing(10, 0),
+                      VerticalSpacing(0, 10),
                       null,
                     ),
-                    h3: DefaultTextBlockStyle(
-                      const TextStyle(
+                    h3: const DefaultTextBlockStyle(
+                      TextStyle(
                         color: AppColors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         height: 1.4,
                       ),
-                      const HorizontalSpacing(0, 0),
-                      const VerticalSpacing(8, 0),
-                      const VerticalSpacing(0, 8),
+                      HorizontalSpacing.zero,
+                      VerticalSpacing(8, 0),
+                      VerticalSpacing(0, 8),
                       null,
                     ),
                     bold: const TextStyle(fontWeight: FontWeight.bold),
@@ -360,43 +355,43 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                     strikeThrough: const TextStyle(
                       decoration: TextDecoration.lineThrough,
                     ),
-                    link: TextStyle(
+                    link: const TextStyle(
                       color: AppColors.accent,
                       decoration: TextDecoration.underline,
                     ),
-                    leading: DefaultTextBlockStyle(
-                      const TextStyle(
+                    leading: const DefaultTextBlockStyle(
+                      TextStyle(
                         color: AppColors.white,
                         fontSize: 16,
                         height: 1.15,
                       ),
-                      const HorizontalSpacing(0, 0),
-                      const VerticalSpacing(0, 0),
-                      const VerticalSpacing(0, 0),
+                      HorizontalSpacing.zero,
+                      VerticalSpacing.zero,
+                      VerticalSpacing.zero,
                       null,
                     ),
-                    lists: DefaultListBlockStyle(
-                      const TextStyle(
+                    lists: const DefaultListBlockStyle(
+                      TextStyle(
                         color: AppColors.white,
                         fontSize: 16,
                         height: 1.15,
                       ),
-                      const HorizontalSpacing(0, 0),
-                      const VerticalSpacing(6, 0),
-                      const VerticalSpacing(0, 6),
+                      HorizontalSpacing.zero,
+                      VerticalSpacing(6, 0),
+                      VerticalSpacing(0, 6),
                       null,
                       null,
                     ),
-                    quote: DefaultTextBlockStyle(
+                    quote: const DefaultTextBlockStyle(
                       TextStyle(
                         color: AppColors.gray,
                         fontSize: 16,
                         fontStyle: FontStyle.italic,
                         height: 1.5,
                       ),
-                      const HorizontalSpacing(16, 0),
-                      const VerticalSpacing(8, 0),
-                      const VerticalSpacing(0, 8),
+                      HorizontalSpacing(16, 0),
+                      VerticalSpacing(8, 0),
+                      VerticalSpacing(0, 8),
                       BoxDecoration(
                         border: Border(
                           left: BorderSide(color: AppColors.accent, width: 3),
@@ -404,7 +399,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                       ),
                     ),
                     code: DefaultTextBlockStyle(
-                      TextStyle(
+                      const TextStyle(
                         color: AppColors.primaryLight,
                         fontFamily: 'monospace',
                         fontSize: 14,
@@ -435,43 +430,30 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         controller: _quillController,
         config: QuillSimpleToolbarConfig(
           multiRowsDisplay: false,
-          showDividers: true,
           showFontFamily: false,
           showFontSize: false,
-          showBoldButton: true,
-          showItalicButton: true,
-          showUnderLineButton: true,
           showStrikeThrough: false,
-          showListNumbers: true,
-          showListBullets: true,
-          showListCheck: true,
           showInlineCode: false,
           showColorButton: false,
           showBackgroundColorButton: false,
           showClearFormat: false,
-          showAlignmentButtons: false,
           showLeftAlignment: false,
           showCenterAlignment: false,
           showRightAlignment: false,
           showJustifyAlignment: false,
-          showHeaderStyle: true,
           showCodeBlock: false,
-          showQuote: true,
           showIndent: false,
-          showLink: true,
           showUndo: false,
           showRedo: false,
-          showDirection: false,
           showSearchButton: false,
           showSubscript: false,
           showSuperscript: false,
-          showClipboardCut: false,
-          showClipboardCopy: false,
-          showClipboardPaste: false,
           buttonOptions: QuillSimpleToolbarButtonOptions(
             base: QuillToolbarBaseButtonOptions(
               iconTheme: QuillIconTheme(
-                iconButtonUnselectedData: IconButtonData(color: AppColors.gray),
+                iconButtonUnselectedData: const IconButtonData(
+                  color: AppColors.gray,
+                ),
                 iconButtonSelectedData: IconButtonData(
                   color: AppColors.white,
                   style: IconButton.styleFrom(

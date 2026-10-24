@@ -4,9 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../constants/firebase_collections.dart';
-import '../logging/app_logger.dart';
-import 'auth_service.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/services/auth_service.dart';
 
 /// Location service provider
 final locationServiceProvider = Provider<LocationService>((ref) {
@@ -15,13 +15,6 @@ final locationServiceProvider = Provider<LocationService>((ref) {
 
 /// Entity representing a partner's location
 class PartnerLocation {
-  final String userId;
-  final double latitude;
-  final double longitude;
-  final double accuracy;
-  final DateTime timestamp;
-  final String? address;
-
   const PartnerLocation({
     required this.userId,
     required this.latitude,
@@ -32,7 +25,7 @@ class PartnerLocation {
   });
 
   factory PartnerLocation.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data()! as Map<String, dynamic>;
     return PartnerLocation(
       userId: data['userId'] as String,
       latitude: (data['latitude'] as num).toDouble(),
@@ -42,6 +35,12 @@ class PartnerLocation {
       address: data['address'] as String?,
     );
   }
+  final String userId;
+  final double latitude;
+  final double longitude;
+  final double accuracy;
+  final DateTime timestamp;
+  final String? address;
 
   String get timeAgo {
     final now = DateTime.now();
@@ -107,24 +106,23 @@ final myLocationProvider = StreamProvider<PartnerLocation?>((ref) {
 
 /// Service for handling location tracking
 class LocationService {
+  LocationService(this._ref);
   final Ref _ref;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  LocationService(this._ref);
-
   /// Check if location services are enabled
   Future<bool> isLocationServiceEnabled() async {
-    return await Geolocator.isLocationServiceEnabled();
+    return Geolocator.isLocationServiceEnabled();
   }
 
   /// Check location permission status
   Future<LocationPermission> checkPermission() async {
-    return await Geolocator.checkPermission();
+    return Geolocator.checkPermission();
   }
 
   /// Request location permission
   Future<LocationPermission> requestPermission() async {
-    return await Geolocator.requestPermission();
+    return Geolocator.requestPermission();
   }
 
   /// Check if we have location permission
@@ -287,11 +285,11 @@ class LocationService {
 
   /// Open location settings
   Future<bool> openLocationSettings() async {
-    return await Geolocator.openLocationSettings();
+    return Geolocator.openLocationSettings();
   }
 
   /// Open app settings
   Future<bool> openAppSettings() async {
-    return await Geolocator.openAppSettings();
+    return Geolocator.openAppSettings();
   }
 }

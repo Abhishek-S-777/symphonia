@@ -3,10 +3,9 @@ import 'dart:ui';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:timezone/timezone.dart' as tz;
+import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
-
-import '../theme/app_colors.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// Provider for NotificationService
 final notificationServiceProvider = Provider<NotificationService>((ref) {
@@ -87,8 +86,6 @@ class NotificationService {
         'Messages',
         description: 'Notifications for messages from your partner',
         importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
       );
 
   /// Event channel - for new events created by partner
@@ -98,8 +95,6 @@ class NotificationService {
         'Events',
         description: 'Notifications when partner creates new events',
         importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
       );
 
   /// Reminder channel - for event countdown and reminders
@@ -109,8 +104,6 @@ class NotificationService {
         'Reminders',
         description: 'Event reminders and countdown notifications',
         importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
       );
 
   /// Voice notes channel
@@ -120,8 +113,6 @@ class NotificationService {
         'Voice Notes',
         description: 'Notifications for voice notes from your partner',
         importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
       );
 
   /// Heartbeat service channel (for foreground service - low priority)
@@ -144,8 +135,6 @@ class NotificationService {
         'Ring Phone',
         description: 'Notifications when your partner is trying to find you',
         importance: Importance.max,
-        playSound: true,
-        enableVibration: true,
         vibrationPattern: Int64List.fromList([
           0,
           1000,
@@ -179,8 +168,6 @@ class NotificationService {
         'Location Requests',
         description: 'Notifications when your partner requests your location',
         importance: Importance.high,
-        playSound: true,
-        enableVibration: true,
       );
 
   /// Create notification channels (Android 8+)
@@ -221,19 +208,18 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'symphonia_messages',
       'Love Messages',
       channelDescription: 'Notifications for love messages from your partner',
       importance: Importance.high,
       priority: Priority.high,
-      showWhen: true,
       icon: '@drawable/ic_notification',
       color: AppColors.primary,
       category: AndroidNotificationCategory.message,
     );
 
-    final details = NotificationDetails(android: androidDetails);
+    const details = NotificationDetails(android: androidDetails);
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -250,19 +236,18 @@ class NotificationService {
     required int durationSeconds,
     String? payload,
   }) async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'symphonia_voice_notes',
       'Voice Notes',
       channelDescription: 'Notifications for voice notes from your partner',
       importance: Importance.high,
       priority: Priority.high,
-      showWhen: true,
       icon: '@drawable/ic_notification',
       color: AppColors.accent,
       category: AndroidNotificationCategory.message,
     );
 
-    final details = NotificationDetails(android: androidDetails);
+    const details = NotificationDetails(android: androidDetails);
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -275,24 +260,23 @@ class NotificationService {
 
   /// Show a heartbeat notification (when partner sends heartbeat)
   Future<void> showHeartbeatNotification({required String senderName}) async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'symphonia_messages',
       'Love Messages',
       channelDescription: 'Notifications for love messages from your partner',
       importance: Importance.high,
       priority: Priority.high,
-      showWhen: true,
       icon: '@drawable/ic_notification',
       color: AppColors.heartRed,
       category: AndroidNotificationCategory.message,
     );
 
-    final details = NotificationDetails(android: androidDetails);
+    const details = NotificationDetails(android: androidDetails);
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
       '💓 $senderName sent you a heartbeat',
-      'They\'re thinking of you right now',
+      "They're thinking of you right now",
       details,
     );
   }
@@ -304,25 +288,22 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'symphonia_reminders',
       'Reminders',
       channelDescription: 'Scheduled reminders and event notifications',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
-      showWhen: true,
       icon: '@drawable/ic_notification',
       color: AppColors.secondary,
     );
 
-    final details = NotificationDetails(android: androidDetails);
+    const details = NotificationDetails(android: androidDetails);
 
     await _localNotifications.show(id, title, body, details, payload: payload);
   }
 
   /// Show foreground service notification (for background heartbeat)
   Future<void> showForegroundServiceNotification() async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'symphonia_heartbeat',
       'Heartbeat Service',
       channelDescription: 'Background service for heartbeat feature',
@@ -334,7 +315,7 @@ class NotificationService {
       color: AppColors.primary,
     );
 
-    final details = NotificationDetails(android: androidDetails);
+    const details = NotificationDetails(android: androidDetails);
 
     await _localNotifications.show(
       1,
@@ -356,7 +337,7 @@ class NotificationService {
     required DateTime scheduledTime,
     String? payload,
   }) async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'symphonia_reminders',
       'Reminders',
       channelDescription: 'Scheduled reminders and event notifications',
@@ -366,7 +347,7 @@ class NotificationService {
       color: AppColors.primary,
     );
 
-    final details = NotificationDetails(android: androidDetails);
+    const details = NotificationDetails(android: androidDetails);
 
     await _localNotifications.zonedSchedule(
       id,

@@ -1,23 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_gradients.dart';
-import '../../core/theme/app_typography.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/core/theme/app_typography.dart';
 
 /// Primary gradient button with animations
 class PrimaryButton extends StatelessWidget {
-  final String text;
-  final VoidCallback? onPressed;
-  final bool isLoading;
-  final bool isEnabled;
-  final IconData? icon;
-  final double? width;
-  final EdgeInsetsGeometry? padding;
-
   const PrimaryButton({
-    super.key,
     required this.text,
+    super.key,
     this.onPressed,
     this.isLoading = false,
     this.isEnabled = true,
@@ -25,6 +17,13 @@ class PrimaryButton extends StatelessWidget {
     this.width,
     this.padding,
   });
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final bool isEnabled;
+  final IconData? icon;
+  final double? width;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -97,22 +96,21 @@ class PrimaryButton extends StatelessWidget {
 
 /// Secondary outlined button
 class SecondaryButton extends StatelessWidget {
-  final String text;
-  final VoidCallback? onPressed;
-  final bool isLoading;
-  final bool isEnabled;
-  final IconData? icon;
-  final double? width;
-
   const SecondaryButton({
-    super.key,
     required this.text,
+    super.key,
     this.onPressed,
     this.isLoading = false,
     this.isEnabled = true,
     this.icon,
     this.width,
   });
+  final String text;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final bool isEnabled;
+  final IconData? icon;
+  final double? width;
 
   @override
   Widget build(BuildContext context) {
@@ -176,18 +174,17 @@ class SecondaryButton extends StatelessWidget {
 
 /// Icon button with gradient background
 class GradientIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onPressed;
-  final double size;
-  final Gradient? gradient;
-
   const GradientIconButton({
-    super.key,
     required this.icon,
+    super.key,
     this.onPressed,
     this.size = 56,
     this.gradient,
   });
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final double size;
+  final Gradient? gradient;
 
   @override
   Widget build(BuildContext context) {
@@ -219,16 +216,15 @@ class GradientIconButton extends StatelessWidget {
 
 /// Text button with subtle animation
 class SubtleTextButton extends StatelessWidget {
-  final String text;
-  final VoidCallback? onPressed;
-  final Color? color;
-
   const SubtleTextButton({
-    super.key,
     required this.text,
+    super.key,
     this.onPressed,
     this.color,
   });
+  final String text;
+  final VoidCallback? onPressed;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {

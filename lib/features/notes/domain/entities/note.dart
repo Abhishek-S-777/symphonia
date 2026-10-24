@@ -3,13 +3,6 @@ import 'package:equatable/equatable.dart';
 
 /// Note entity for storing rich text notes
 class Note extends Equatable {
-  final String id;
-  final String creatorId;
-  final String title;
-  final String content; // JSON Delta format from Quill
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
   const Note({
     required this.id,
     required this.creatorId,
@@ -18,6 +11,12 @@ class Note extends Equatable {
     required this.createdAt,
     required this.updatedAt,
   });
+  final String id;
+  final String creatorId;
+  final String title;
+  final String content; // JSON Delta format from Quill
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   /// Get plain text preview from Quill Delta content
   String get plainTextPreview {

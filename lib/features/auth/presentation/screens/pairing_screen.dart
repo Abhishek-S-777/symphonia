@@ -4,18 +4,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:symphonia/core/constants/app_constants.dart';
+import 'package:symphonia/core/constants/storage_keys.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/services/couple_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
-
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/constants/storage_keys.dart';
-import '../../../../core/router/routes.dart';
-import '../../../../core/services/auth_service.dart';
-import '../../../../core/services/couple_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../../shared/widgets/glass_card.dart';
+import 'package:symphonia/shared/widgets/custom_button.dart';
+import 'package:symphonia/shared/widgets/glass_card.dart';
 
 /// Pairing screen for connecting two devices
 class PairingScreen extends ConsumerStatefulWidget {
@@ -147,7 +146,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
       ),
     );
 
-    if (shouldLogout == true && mounted) {
+    if ((shouldLogout ?? false) && mounted) {
       try {
         final authService = ref.read(authServiceProvider);
         await authService.signOut();
@@ -229,7 +228,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                                   controller.repeat(reverse: true),
                             )
                             .scale(
-                              begin: const Offset(1.0, 1.0),
+                              begin: const Offset(1, 1),
                               end: const Offset(1.1, 1.1),
                               duration: 1000.ms,
                               curve: Curves.easeInOut,
@@ -241,7 +240,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                           top: 0,
                           child: IconButton(
                             onPressed: _showLogoutConfirmation,
-                            icon: Icon(
+                            icon: const Icon(
                               Icons.logout_rounded,
                               color: AppColors.error,
                               size: 24,
@@ -409,7 +408,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
                 ),
               ).animate().scale(
                 begin: const Offset(0.8, 0.8),
-                end: const Offset(1.0, 1.0),
+                end: const Offset(1, 1),
                 duration: 400.ms,
                 curve: Curves.elasticOut,
               ),

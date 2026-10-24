@@ -3,12 +3,11 @@ import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/constants/storage_keys.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
 import 'package:uuid/uuid.dart';
-
-import '../constants/firebase_collections.dart';
-import '../constants/storage_keys.dart';
-import '../logging/app_logger.dart';
-import '../../features/auth/domain/entities/user.dart' as app;
 
 /// Auth Service Provider
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -94,7 +93,7 @@ final partnerUserProvider = StreamProvider<app.User?>((ref) {
         // Stream partner's user document for real-time updates (including online status)
         return FirebaseFirestore.instance
             .collection(FirebaseCollections.users)
-            .doc(partnerId)
+            .doc(partnerId as String?)
             .snapshots()
             .map((partnerDoc) {
               if (!partnerDoc.exists) return null;
@@ -104,22 +103,22 @@ final partnerUserProvider = StreamProvider<app.User?>((ref) {
 });
 
 app.User _userFromFirestore(DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+  final data = doc.data()! as Map<String, dynamic>;
   return app.User(
     id: doc.id,
-    email: data[FirebaseCollections.userEmail] ?? '',
-    displayName: data[FirebaseCollections.userDisplayName] ?? 'User',
-    photoUrl: data[FirebaseCollections.userPhotoUrl],
-    deviceId: data[FirebaseCollections.userDeviceId] ?? '',
-    fcmToken: data[FirebaseCollections.userFcmToken],
-    coupleId: data[FirebaseCollections.userCoupleId],
+    email: data[FirebaseCollections.userEmail] as String? ?? '',
+    displayName: data[FirebaseCollections.userDisplayName] as String? ?? 'User',
+    photoUrl: data[FirebaseCollections.userPhotoUrl] as String?,
+    deviceId: data[FirebaseCollections.userDeviceId] as String? ?? '',
+    fcmToken: data[FirebaseCollections.userFcmToken] as String?,
+    coupleId: data[FirebaseCollections.userCoupleId] as String?,
     createdAt:
         (data[FirebaseCollections.userCreatedAt] as Timestamp?)?.toDate() ??
         DateTime.now(),
     lastActive:
         (data[FirebaseCollections.userLastActive] as Timestamp?)?.toDate() ??
         DateTime.now(),
-    isOnline: data[FirebaseCollections.userIsOnline] ?? false,
+    isOnline: data[FirebaseCollections.userIsOnline] as bool? ?? false,
   );
 }
 
@@ -331,14 +330,14 @@ class AuthService {
         .then((_) {
           AppLogger.info('Online status set to $isOnline successfully');
         })
-        .catchError((e) {
+        .catchError((Object e) {
           AppLogger.error('Error setting online status', error: e);
           // Silently ignore errors - Firestore will retry with offline persistence
         });
   }
 
   /// Fallback: load userId from SharedPreferences and set status
-  void _loadCachedUserIdAndSetStatus(bool isOnline) async {
+  Future<void> _loadCachedUserIdAndSetStatus(bool isOnline) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(StorageKeys.userId);
@@ -374,6 +373,6 @@ class AuthService {
         .get();
 
     if (!doc.exists) return null;
-    return doc.data()?[FirebaseCollections.userCoupleId];
+    return doc.data()?[FirebaseCollections.userCoupleId] as String?;
   }
 }

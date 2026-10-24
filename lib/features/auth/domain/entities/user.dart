@@ -2,6 +2,18 @@ import 'package:equatable/equatable.dart';
 
 /// User entity for domain layer
 class User extends Equatable {
+  const User({
+    required this.id,
+    required this.email,
+    required this.displayName,
+    required this.deviceId,
+    required this.createdAt,
+    required this.lastActive,
+    this.photoUrl,
+    this.fcmToken,
+    this.coupleId,
+    this.isOnline = false,
+  });
   final String id;
   final String email;
   final String displayName;
@@ -12,19 +24,6 @@ class User extends Equatable {
   final DateTime createdAt;
   final DateTime lastActive;
   final bool isOnline;
-
-  const User({
-    required this.id,
-    required this.email,
-    required this.displayName,
-    this.photoUrl,
-    required this.deviceId,
-    this.fcmToken,
-    this.coupleId,
-    required this.createdAt,
-    required this.lastActive,
-    this.isOnline = false,
-  });
 
   /// Check if user is paired with someone
   bool get isPaired => coupleId != null;

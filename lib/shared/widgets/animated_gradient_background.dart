@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_gradients.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
 
 /// Animated gradient background for screens
 /// Creates the premium, romantic atmosphere
 class AnimatedGradientBackground extends StatefulWidget {
-  final Widget child;
-  final List<Color>? colors;
-  final Duration animationDuration;
-  final bool animate;
-
   const AnimatedGradientBackground({
-    super.key,
     required this.child,
+    super.key,
     this.colors,
     this.animationDuration = const Duration(seconds: 10),
     this.animate = true,
   });
+  final Widget child;
+  final List<Color>? colors;
+  final Duration animationDuration;
+  final bool animate;
 
   @override
   State<AnimatedGradientBackground> createState() =>
@@ -162,16 +161,15 @@ class _AnimatedGradientBackgroundState extends State<AnimatedGradientBackground>
 
 /// Static gradient background with subtle pattern
 class GradientBackground extends StatelessWidget {
-  final Widget child;
-  final Gradient? gradient;
-  final bool showPattern;
-
   const GradientBackground({
-    super.key,
     required this.child,
+    super.key,
     this.gradient,
     this.showPattern = true,
   });
+  final Widget child;
+  final Gradient? gradient;
+  final bool showPattern;
 
   @override
   Widget build(BuildContext context) {

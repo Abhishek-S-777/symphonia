@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../constants/firebase_collections.dart';
-import '../constants/storage_keys.dart';
-import '../logging/app_logger.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/constants/storage_keys.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
 
 /// Biometrics Service Provider
 final biometricsServiceProvider = Provider<BiometricsService>((ref) {
@@ -147,7 +147,6 @@ class BiometricsService {
         localizedReason: reason,
         options: const AuthenticationOptions(
           stickyAuth: true,
-          biometricOnly: false, // Allow device PIN/pattern as fallback
         ),
       );
 
