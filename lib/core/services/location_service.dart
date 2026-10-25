@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../constants/firebase_collections.dart';
+import '../logging/app_logger.dart';
 import 'auth_service.dart';
 
 /// Location service provider
@@ -140,7 +140,7 @@ class LocationService {
       // Check if service is enabled
       final serviceEnabled = await isLocationServiceEnabled();
       if (!serviceEnabled) {
-        debugPrint('📍 Location services disabled');
+        AppLogger.warning('Location services disabled');
         return null;
       }
 
@@ -149,13 +149,13 @@ class LocationService {
       if (permission == LocationPermission.denied) {
         permission = await requestPermission();
         if (permission == LocationPermission.denied) {
-          debugPrint('📍 Location permission denied');
+          AppLogger.warning('Location permission denied');
           return null;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        debugPrint('📍 Location permission permanently denied');
+        AppLogger.warning('Location permission permanently denied');
         return null;
       }
 
@@ -167,12 +167,12 @@ class LocationService {
         ),
       );
 
-      debugPrint(
-        '📍 Got position: ${position.latitude}, ${position.longitude}',
+      AppLogger.debug(
+        'Got position: ${position.latitude}, ${position.longitude}',
       );
       return position;
     } catch (e) {
-      debugPrint('📍 Error getting position: $e');
+      AppLogger.error('Error getting position', error: e);
       return null;
     }
   }
@@ -182,7 +182,7 @@ class LocationService {
     try {
       final currentUser = _ref.read(currentAppUserProvider).value;
       if (currentUser == null || currentUser.coupleId == null) {
-        debugPrint('📍 No user or coupleId');
+        AppLogger.warning('No user or coupleId');
         return false;
       }
 
@@ -205,10 +205,10 @@ class LocationService {
             'timestamp': FieldValue.serverTimestamp(),
           });
 
-      debugPrint('📍 Location shared successfully');
+      AppLogger.info('Location shared successfully');
       return true;
     } catch (e) {
-      debugPrint('📍 Error sharing location: $e');
+      AppLogger.error('Error sharing location', error: e);
       return false;
     }
   }
@@ -229,7 +229,7 @@ class LocationService {
           'type': 'request_location',
         });
 
-    debugPrint('📍 Location request sent');
+    AppLogger.info('Location request sent');
   }
 
   /// Request partner's phone to ring via FCM
@@ -248,7 +248,7 @@ class LocationService {
           'type': 'ring_phone',
         });
 
-    debugPrint('🔔 Ring request sent');
+    AppLogger.info('Ring request sent');
   }
 
   /// Stop partner's phone ringing via FCM
@@ -266,7 +266,7 @@ class LocationService {
           'type': 'stop_ring',
         });
 
-    debugPrint('🔔 Stop ring request sent');
+    AppLogger.info('Stop ring request sent');
   }
 
   /// Calculate distance between two points in km

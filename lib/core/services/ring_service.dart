@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vibration/vibration.dart';
 
 import '../constants/firebase_collections.dart';
+import '../logging/app_logger.dart';
 import 'auth_service.dart';
 
 /// Ring service provider
@@ -45,12 +45,12 @@ class RingService {
   Future<void> initialize() async {
     final currentUser = _ref.read(currentAppUserProvider).value;
     if (currentUser == null || currentUser.coupleId == null) {
-      debugPrint('🔔 RingService: No user or coupleId, cannot initialize');
+      AppLogger.warning('RingService: No user or coupleId, cannot initialize');
       return;
     }
 
-    debugPrint(
-      '🔔 RingService: Initializing for couple ${currentUser.coupleId}',
+    AppLogger.debug(
+      'RingService: Initializing for couple ${currentUser.coupleId}',
     );
 
     // Cancel existing subscription if any
@@ -81,15 +81,15 @@ class RingService {
                   final requestTime = timestamp.toDate();
                   final now = DateTime.now();
                   if (now.difference(requestTime).inSeconds > 30) {
-                    debugPrint('🔔 RingService: Ignoring old request');
+                    AppLogger.warning('RingService: Ignoring old request');
                     continue;
                   }
                 }
 
                 // Only process requests from partner (not self)
                 if (requesterId != null && requesterId != currentUser.id) {
-                  debugPrint(
-                    '🔔 RingService: Got request type=$type from $requesterId',
+                  AppLogger.debug(
+                    'RingService: Got request type=$type from $requesterId',
                   );
                   if (type == 'ring_phone') {
                     startRinging();
@@ -101,18 +101,19 @@ class RingService {
             }
           },
           onError: (error) {
-            debugPrint(
-              '🔔 RingService: Error listening to ring requests: $error',
+            AppLogger.error(
+              'RingService: Error listening to ring requests',
+              error: error,
             );
           },
         );
 
-    debugPrint('🔔 RingService: Initialized and listening for ring requests');
+    AppLogger.info('RingService: Initialized and listening for ring requests');
   }
 
   /// Start ringing the phone
   Future<void> startRinging() async {
-    debugPrint('🔔 Starting ring...');
+    AppLogger.debug('Starting ring...');
 
     _ref.read(isRingingProvider.notifier).startRinging();
 
@@ -133,7 +134,7 @@ class RingService {
         stopRinging();
       });
     } catch (e) {
-      debugPrint('🔔 Error starting ring: $e');
+      AppLogger.error('Error starting ring', error: e);
     }
   }
 
@@ -169,7 +170,7 @@ class RingService {
 
   /// Stop ringing
   Future<void> stopRinging() async {
-    debugPrint('🔔 Stopping ring...');
+    AppLogger.debug('Stopping ring...');
 
     _ref.read(isRingingProvider.notifier).stopRinging();
 

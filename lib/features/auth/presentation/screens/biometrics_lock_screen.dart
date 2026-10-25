@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/constants/storage_keys.dart';
+import '../../../../core/logging/app_logger.dart';
 import '../../../../core/services/biometrics_service.dart';
 import '../../../../core/theme/app_colors.dart';
 
@@ -58,14 +59,16 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     if (_initialCheckDone) return;
     _initialCheckDone = true;
 
-    debugPrint('BiometricsLock: Checking initial lock...');
+    AppLogger.debug('BiometricsLock: Checking initial lock...');
 
     // Check if user is authenticated (using SharedPreferences since Firebase might not be ready)
     final prefs = await SharedPreferences.getInstance();
     final isAuthenticated = prefs.getBool(StorageKeys.isAuthenticated) ?? false;
 
     if (!isAuthenticated) {
-      debugPrint('BiometricsLock: Not authenticated, skipping initial lock');
+      AppLogger.warning(
+        'BiometricsLock: Not authenticated, skipping initial lock',
+      );
       return;
     }
 
@@ -75,13 +78,13 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     final isEnabled = await _biometricsService!.isBiometricsEnabled();
 
     if (!isEnabled) {
-      debugPrint(
+      AppLogger.warning(
         'BiometricsLock: Biometrics not enabled, skipping initial lock',
       );
       return;
     }
 
-    debugPrint('BiometricsLock: Locking on cold start');
+    AppLogger.debug('BiometricsLock: Locking on cold start');
 
     if (mounted) {
       setState(() {
@@ -102,7 +105,7 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint(
+    AppLogger.debug(
       'BiometricsLock: Lifecycle = $state, wasInBackground=$_wasInBackground, justUnlocked=$_justUnlocked',
     );
 
@@ -120,14 +123,14 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
   }
 
   Future<void> _checkAndLock() async {
-    debugPrint('BiometricsLock: Checking if should lock on resume...');
+    AppLogger.debug('BiometricsLock: Checking if should lock on resume...');
 
     // Check if user is authenticated
     final prefs = await SharedPreferences.getInstance();
     final isAuthenticated = prefs.getBool(StorageKeys.isAuthenticated) ?? false;
 
     if (!isAuthenticated) {
-      debugPrint('BiometricsLock: Not authenticated, skipping');
+      AppLogger.warning('BiometricsLock: Not authenticated, skipping');
       return;
     }
 
@@ -137,11 +140,11 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     final isEnabled = await _biometricsService!.isBiometricsEnabled();
 
     if (!isEnabled) {
-      debugPrint('BiometricsLock: Biometrics not enabled');
+      AppLogger.warning('BiometricsLock: Biometrics not enabled');
       return;
     }
 
-    debugPrint('BiometricsLock: Locking screen');
+    AppLogger.debug('BiometricsLock: Locking screen');
 
     if (mounted) {
       setState(() {
@@ -170,7 +173,7 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
         reason: 'Authenticate to access Symphonia',
       );
 
-      debugPrint('BiometricsLock: Auth result = $authenticated');
+      AppLogger.debug('BiometricsLock: Auth result = $authenticated');
 
       if (mounted) {
         setState(() {
@@ -182,7 +185,7 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
         });
       }
     } catch (e) {
-      debugPrint('BiometricsLock: Auth error: $e');
+      AppLogger.error('BiometricsLock: Auth error', error: e);
       if (mounted) {
         setState(() {
           _isAuthenticating = false;

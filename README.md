@@ -4,6 +4,7 @@
 
 A private, intimate companion app designed exclusively for couples to stay deeply connected through heartbeats, hugs, messages, voice notes, shared memories, and special events.
 
+[![CI](https://github.com/Abhishek-S-777/symphonia/actions/workflows/ci.yml/badge.svg)](https://github.com/Abhishek-S-777/symphonia/actions/workflows/ci.yml)
 ![Flutter](https://img.shields.io/badge/Flutter-3.38.5-blue)
 ![Dart](https://img.shields.io/badge/Dart-3.8-blue)
 ![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20iOS-green)

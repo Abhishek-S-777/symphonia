@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
+import '../logging/app_logger.dart';
 import '../theme/app_colors.dart';
 
 /// Profile Service Provider
@@ -30,7 +31,7 @@ class ProfileService {
   /// Pick image from source and optionally crop it
   Future<File?> pickImage(ImageSource source) async {
     try {
-      debugPrint('ProfileService: Picking image from $source');
+      AppLogger.debug('ProfileService: Picking image from $source');
 
       final XFile? pickedFile = await _picker.pickImage(
         source: source,
@@ -40,22 +41,22 @@ class ProfileService {
       );
 
       if (pickedFile == null) {
-        debugPrint('ProfileService: No image picked');
+        AppLogger.debug('ProfileService: No image picked');
         return null;
       }
 
-      debugPrint('ProfileService: Image picked: ${pickedFile.path}');
+      AppLogger.debug('ProfileService: Image picked: ${pickedFile.path}');
       return File(pickedFile.path);
     } catch (e) {
-      debugPrint('ProfileService: Error picking image: $e');
+      AppLogger.error('ProfileService: Error picking image', error: e);
       return null;
     }
   }
 
   /// Crop an image file
   Future<File?> cropImage(File imageFile, BuildContext context) async {
-    debugPrint('ProfileService: Starting crop for: ${imageFile.path}');
-    debugPrint('ProfileService: File exists: ${imageFile.existsSync()}');
+    AppLogger.debug('ProfileService: Starting crop for: ${imageFile.path}');
+    AppLogger.debug('ProfileService: File exists: ${imageFile.existsSync()}');
 
     try {
       final cropper = ImageCropper();
@@ -88,15 +89,22 @@ class ProfileService {
       );
 
       if (croppedFile != null) {
-        debugPrint('ProfileService: Cropped successfully: ${croppedFile.path}');
+        AppLogger.info(
+          'ProfileService: Cropped successfully: ${croppedFile.path}',
+        );
         return File(croppedFile.path);
       }
 
-      debugPrint('ProfileService: User cancelled cropping, using original');
+      AppLogger.debug(
+        'ProfileService: User cancelled cropping, using original',
+      );
       return imageFile; // Return original if user cancels crop
     } catch (e, stackTrace) {
-      debugPrint('ProfileService: Crop error: $e');
-      debugPrint('ProfileService: Stack trace: $stackTrace');
+      AppLogger.error(
+        'ProfileService: Crop error',
+        error: e,
+        stackTrace: stackTrace,
+      );
       // Return original image if cropping fails
       return imageFile;
     }
@@ -147,11 +155,11 @@ class ProfileService {
     );
 
     if (source == null) {
-      debugPrint('ProfileService: Source selection cancelled');
+      AppLogger.debug('ProfileService: Source selection cancelled');
       return null;
     }
 
-    debugPrint('ProfileService: Selected source: $source');
+    AppLogger.debug('ProfileService: Selected source: $source');
 
     // Step 2: Pick image
     final pickedImage = await pickImage(source);
@@ -166,7 +174,7 @@ class ProfileService {
       result = pickedImage;
     }
 
-    debugPrint('ProfileService: Final result: ${result?.path}');
+    AppLogger.debug('ProfileService: Final result: ${result?.path}');
     return result;
   }
 
@@ -212,7 +220,7 @@ class ProfileService {
     void Function(double progress)? onProgress,
   }) async {
     try {
-      debugPrint('ProfileService: Uploading image for user $userId');
+      AppLogger.debug('ProfileService: Uploading image for user $userId');
 
       final fileName = '${_uuid.v4()}.jpg';
       final ref = _storage.ref().child('profile_images/$userId/$fileName');
@@ -225,7 +233,7 @@ class ProfileService {
       // Listen to progress
       uploadTask.snapshotEvents.listen((event) {
         final progress = event.bytesTransferred / event.totalBytes;
-        debugPrint(
+        AppLogger.debug(
           'ProfileService: Upload progress: ${(progress * 100).toInt()}%',
         );
         onProgress?.call(progress);
@@ -236,10 +244,10 @@ class ProfileService {
 
       // Get download URL
       final downloadUrl = await ref.getDownloadURL();
-      debugPrint('ProfileService: Upload complete: $downloadUrl');
+      AppLogger.info('ProfileService: Upload complete: $downloadUrl');
       return downloadUrl;
     } catch (e) {
-      debugPrint('ProfileService: Error uploading image: $e');
+      AppLogger.error('ProfileService: Error uploading image', error: e);
       return null;
     }
   }
@@ -251,9 +259,9 @@ class ProfileService {
     try {
       final ref = _storage.refFromURL(photoUrl);
       await ref.delete();
-      debugPrint('ProfileService: Deleted old image');
+      AppLogger.info('ProfileService: Deleted old image');
     } catch (e) {
-      debugPrint('ProfileService: Error deleting image: $e');
+      AppLogger.error('ProfileService: Error deleting image', error: e);
     }
   }
 }
@@ -275,7 +283,10 @@ class ProfileImageCache {
         }
       }
     } catch (e) {
-      debugPrint('ProfileImageCache: Error getting cached image: $e');
+      AppLogger.error(
+        'ProfileImageCache: Error getting cached image',
+        error: e,
+      );
     }
     return null;
   }
@@ -310,7 +321,7 @@ class ProfileImageCache {
 
       return file;
     } catch (e) {
-      debugPrint('ProfileImageCache: Error caching image: $e');
+      AppLogger.error('ProfileImageCache: Error caching image', error: e);
       return null;
     }
   }
@@ -330,7 +341,7 @@ class ProfileImageCache {
       await prefs.remove('$_cacheKeyPrefix$userId');
       await prefs.remove('$_cacheUrlPrefix$userId');
     } catch (e) {
-      debugPrint('ProfileImageCache: Error invalidating cache: $e');
+      AppLogger.error('ProfileImageCache: Error invalidating cache', error: e);
     }
   }
 }

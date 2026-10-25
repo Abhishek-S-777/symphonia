@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +12,7 @@ import 'package:vibration/vibration.dart';
 
 import '../constants/app_constants.dart';
 import '../constants/firebase_collections.dart';
+import '../logging/app_logger.dart';
 
 /// FCM Service Provider
 final fcmServiceProvider = Provider<FCMService>((ref) {
@@ -84,11 +84,11 @@ class FCMService {
     final android = message.notification?.android;
     final data = message.data;
 
-    debugPrint('📩 FCM Foreground message received: type=${data['type']}');
+    AppLogger.debug('FCM Foreground message received: type=${data['type']}');
 
     // Handle location request - show notification AND share location
     if (data['type'] == 'request_location') {
-      debugPrint('📍 Location request received in foreground');
+      AppLogger.debug('Location request received in foreground');
       await _handleLocationRequest();
       // Show notification for location request
       // Use notification payload if available, otherwise use data payload
@@ -120,7 +120,7 @@ class FCMService {
 
     // Handle ring request - start ringing AND show notification
     if (data['type'] == 'ring_phone') {
-      debugPrint('🔔 Ring request received in foreground');
+      AppLogger.debug('Ring request received in foreground');
       await _handleRingRequest();
       // Show notification for ring request
       // Use notification payload if available, otherwise use data payload
@@ -152,7 +152,7 @@ class FCMService {
 
     // Handle stop ring request
     if (data['type'] == 'stop_ring') {
-      debugPrint('🔔 Stop ring request received');
+      AppLogger.debug('Stop ring request received');
       await _handleStopRing();
       return;
     }
@@ -223,13 +223,13 @@ class FCMService {
 
   /// Handle location request from partner - auto share location
   Future<void> _handleLocationRequest() async {
-    debugPrint('📍 Location requested by partner - attempting auto-share');
+    AppLogger.debug('Location requested by partner - attempting auto-share');
     await _autoShareLocationForCurrentUser();
   }
 
   /// Handle ring request from partner - play alarm in foreground
   Future<void> _handleRingRequest() async {
-    debugPrint('🔔 Ring requested by partner - playing alarm');
+    AppLogger.debug('Ring requested by partner - playing alarm');
     try {
       // Start vibration pattern
       final hasVibrator = await Vibration.hasVibrator();
@@ -253,18 +253,18 @@ class FCMService {
         await Vibration.cancel();
       });
     } catch (e) {
-      debugPrint('🔔 Error playing alarm: $e');
+      AppLogger.error('Error playing alarm', error: e);
     }
   }
 
   /// Handle stop ring request
   Future<void> _handleStopRing() async {
-    debugPrint('🔔 Stop ring requested by partner');
+    AppLogger.debug('Stop ring requested by partner');
     try {
       await FlutterRingtonePlayer().stop();
       await Vibration.cancel();
     } catch (e) {
-      debugPrint('🔔 Error stopping ring: $e');
+      AppLogger.error('Error stopping ring', error: e);
     }
   }
 
@@ -427,7 +427,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // If it's a ring phone request, play ringtone and vibrate
   // Data-only message - we need to show notification AND play alarm
   if (messageType == 'ring_phone') {
-    debugPrint('🔔 Background: Ring phone request received');
+    AppLogger.debug('Background: Ring phone request received');
 
     // Show notification first
     final notificationTitle =
@@ -449,7 +449,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // If it's a location request - show notification
   // Data-only message - we need to show notification
   if (messageType == 'request_location') {
-    debugPrint('📍 Background: Location request received');
+    AppLogger.debug('Background: Location request received');
 
     // Try to auto-share location even in background isolate.
     await _autoShareLocationForCurrentUser();
@@ -475,20 +475,20 @@ Future<bool> _autoShareLocationForCurrentUser() async {
   try {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      debugPrint('📍 Location services disabled, cannot auto-share');
+      AppLogger.warning('Location services disabled, cannot auto-share');
       return false;
     }
 
     final permission = await Geolocator.checkPermission();
     if (permission != LocationPermission.always &&
         permission != LocationPermission.whileInUse) {
-      debugPrint('📍 Location permission not granted, cannot auto-share');
+      AppLogger.warning('Location permission not granted, cannot auto-share');
       return false;
     }
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      debugPrint('📍 No authenticated user, cannot auto-share');
+      AppLogger.warning('No authenticated user, cannot auto-share');
       return false;
     }
 
@@ -500,7 +500,7 @@ Future<bool> _autoShareLocationForCurrentUser() async {
     final coupleId =
         userDoc.data()?[FirebaseCollections.userCoupleId] as String?;
     if (coupleId == null || coupleId.isEmpty) {
-      debugPrint('📍 No coupleId found, cannot auto-share');
+      AppLogger.warning('No coupleId found, cannot auto-share');
       return false;
     }
 
@@ -524,12 +524,12 @@ Future<bool> _autoShareLocationForCurrentUser() async {
           'timestamp': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-    debugPrint(
-      '📍 Location auto-shared successfully: ${position.latitude}, ${position.longitude}',
+    AppLogger.info(
+      'Location auto-shared successfully: ${position.latitude}, ${position.longitude}',
     );
     return true;
   } catch (e) {
-    debugPrint('📍 Error auto-sharing location: $e');
+    AppLogger.error('Error auto-sharing location', error: e);
     return false;
   }
 }
@@ -596,7 +596,7 @@ Future<void> _playRingtoneInBackground() async {
     });
   } catch (e) {
     // Fallback: just vibrate if ringtone fails
-    debugPrint('Error playing ringtone in background: $e');
+    AppLogger.error('Error playing ringtone in background', error: e);
     await Vibration.vibrate(duration: 2000);
   }
 }

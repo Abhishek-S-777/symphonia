@@ -6,6 +6,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/logging/app_logger.dart';
 import 'core/router/app_router.dart';
 import 'core/router/routes.dart';
 import 'core/services/auth_service.dart';
@@ -130,20 +131,20 @@ class _GlobalHeartbeatListenerState
     }
 
     setState(() => _isInitialized = true);
-    debugPrint(
-      '✅ GlobalHeartbeatListener initialized - Set ONLINE, FCM token refreshed',
+    AppLogger.info(
+      'GlobalHeartbeatListener initialized; set online and refreshed FCM token',
     );
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    debugPrint('🔄 App lifecycle changed to: $state');
+    AppLogger.debug('App lifecycle changed to: $state');
 
     switch (state) {
       case AppLifecycleState.resumed:
         // App is in foreground - set online
-        debugPrint('📱 App RESUMED - Setting ONLINE');
+        AppLogger.debug('App resumed; setting online');
         _isInForeground = true;
         _lastResumedAt = DateTime.now();
         _setOnline();
@@ -151,24 +152,24 @@ class _GlobalHeartbeatListenerState
       case AppLifecycleState.inactive:
         // App is transitioning (switching apps, phone call)
         // Set offline early while network is still available
-        debugPrint('📱 App INACTIVE - Setting OFFLINE');
+        AppLogger.debug('App inactive; setting offline');
         _isInForeground = false;
         _setOffline();
         break;
       case AppLifecycleState.paused:
         // App is in background
-        debugPrint('📱 App PAUSED - Confirming OFFLINE');
+        AppLogger.debug('App paused; confirming offline');
         _isInForeground = false;
         _setOffline();
         break;
       case AppLifecycleState.hidden:
         // App is hidden
-        debugPrint('📱 App HIDDEN');
+        AppLogger.debug('App hidden');
         _isInForeground = false;
         break;
       case AppLifecycleState.detached:
         // App is being terminated
-        debugPrint('📱 App DETACHED');
+        AppLogger.debug('App detached');
         _isInForeground = false;
         _setOffline();
         break;
@@ -180,7 +181,7 @@ class _GlobalHeartbeatListenerState
       final authService = ref.read(authServiceProvider);
       authService.setOnlineStatus(true);
     } catch (e) {
-      debugPrint('Error setting online: $e');
+      AppLogger.error('Error setting online', error: e);
     }
   }
 
@@ -189,7 +190,7 @@ class _GlobalHeartbeatListenerState
       final authService = ref.read(authServiceProvider);
       authService.setOnlineStatus(false);
     } catch (e) {
-      debugPrint('Error setting offline: $e');
+      AppLogger.error('Error setting offline', error: e);
     }
   }
 
@@ -205,8 +206,8 @@ class _GlobalHeartbeatListenerState
         currentCoupleId == null &&
         currentUser != null) {
       // Partner unpaired! Navigate to pairing screen
-      debugPrint(
-        '⚠️ Partner unpaired! coupleId changed from $_previousCoupleId to null',
+      AppLogger.warning(
+        'Partner unpaired; coupleId changed from $_previousCoupleId to null',
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final navigatorContext = rootNavigatorKey.currentContext;
