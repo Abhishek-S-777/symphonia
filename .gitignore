@@ -44,6 +44,13 @@ app.*.map.json
 # FVM Version Cache
 .fvm/
 
+# Claude Code local settings (personal, machine-specific)
+.claude/settings.local.json
+
+# Firestore rules test project dependencies
+firestore_tests/node_modules/
+firestore_tests/package-lock.json
+
 # Coverage
 coverage/
 

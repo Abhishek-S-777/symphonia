@@ -1,0 +1,90 @@
+rules_version = '2';
+
+// Symphonia Firestore security rules.
+//
+// Model: all shared data lives under couples/{coupleId} and is readable and
+// writable only by the two members of that couple. User profiles are readable
+// by any signed-in user (profiles hold a display name, photo URL and online
+// status; the only semi-sensitive field is the FCM token).
+//
+// Known limitation: pairing is performed entirely client-side, so when a user
+// redeems a partner's pairing code their client writes the coupleId onto the
+// partner's user document. Rules cannot tie that cross-user write to the code,
+// so the users update rule below permits a signed-in user to set ONLY the
+// coupleId field on another user's document. Moving pairing into a Cloud
+// Function would remove this allowance; see the README security section.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myUid() {
+      return request.auth.uid;
+    }
+
+    // True if the signed-in user is one of the two members of the couple.
+    // Reads the couple document, so use it for subcollections where the
+    // couple document itself is not the resource being evaluated.
+    function coupleHasMe(coupleId) {
+      let couple = get(/databases/$(database)/documents/couples/$(coupleId)).data;
+      return couple.user1Id == myUid() || couple.user2Id == myUid();
+    }
+
+    // ---- User profiles ----
+    match /users/{userId} {
+      // Own profile and the partner's profile (for online status, name, photo).
+      // Pairing also needs an unpaired user to read the code creator's profile,
+      // so any signed-in user may read a profile.
+      allow read: if signedIn();
+
+      // A user creates and maintains only their own document, except that the
+      // partner may set ONLY the coupleId field during the pairing handshake.
+      allow create: if signedIn() && userId == myUid();
+      allow update: if signedIn() &&
+        (
+          userId == myUid() ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'coupleId',
+          ])
+        );
+      allow delete: if false;
+    }
+
+    // ---- Pairing codes ----
+    // A short-lived shared secret. The partner must read the code document by
+    // its (secret) id and delete it once consumed.
+    match /pairingCodes/{code} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.creatorId == myUid();
+      allow delete: if signedIn();
+      allow update: if false;
+    }
+
+    // ---- Couples and all couple-scoped data ----
+    match /couples/{coupleId} {
+      allow read: if signedIn() &&
+        (resource.data.user1Id == myUid() || resource.data.user2Id == myUid());
+      // A new couple may be created only by one of its two members.
+      allow create: if signedIn() &&
+        (
+          request.resource.data.user1Id == myUid() ||
+          request.resource.data.user2Id == myUid()
+        );
+      allow update: if signedIn() &&
+        (resource.data.user1Id == myUid() || resource.data.user2Id == myUid());
+      allow delete: if false;
+
+      // messages, voiceNotes, memories, events, notes, journal, locations.
+      match /{document=**} {
+        allow read, write: if signedIn() && coupleHasMe(coupleId);
+      }
+    }
+
+    // Default deny for anything not matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
