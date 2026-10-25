@@ -15,9 +15,15 @@ service firebase.storage {
         firestore.get(userDocPath(request.auth.uid)).data.coupleId == coupleId;
     }
 
-    // Profile photos
+    // Profile photos: readable by any signed-in user (a partner must be able
+    // to display them); writable only by the owner, images only, up to 10 MB.
     match /profile_images/{userId}/{fileName} {
-      allow read, write: if signedIn() && request.auth.uid == userId;
+      allow read: if signedIn();
+      allow write: if signedIn()
+        && request.auth.uid == userId
+        && request.resource != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
     }
 
     // Voice notes: couples/{coupleId}/voice_notes/*

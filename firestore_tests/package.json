@@ -1,0 +1,14 @@
+{
+  "name": "symphonia-firestore-rules-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Firebase emulator tests for Symphonia's Firestore security rules.",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project demo-symphonia \"node --test\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.3.0"
+  }
+}
