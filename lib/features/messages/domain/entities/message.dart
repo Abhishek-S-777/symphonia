@@ -5,6 +5,20 @@ enum MessageType { text, predefined, scheduled, heartbeat, hugs }
 
 /// Message entity for love messages
 class Message extends Equatable {
+  const Message({
+    required this.id,
+    required this.senderId,
+    required this.content,
+    required this.type,
+    required this.sentAt,
+    this.scheduledFor,
+    this.readAt,
+    this.isDelivered = false,
+    this.isSynced = false,
+    this.replyToMessageId,
+    this.replyToContent,
+    this.replyToSenderId,
+  });
   final String id;
   final String senderId;
   final String content;
@@ -19,21 +33,6 @@ class Message extends Equatable {
   final String? replyToMessageId;
   final String? replyToContent;
   final String? replyToSenderId;
-
-  const Message({
-    required this.id,
-    required this.senderId,
-    required this.content,
-    required this.type,
-    this.scheduledFor,
-    required this.sentAt,
-    this.readAt,
-    this.isDelivered = false,
-    this.isSynced = false,
-    this.replyToMessageId,
-    this.replyToContent,
-    this.replyToSenderId,
-  });
 
   /// Check if message is from me
   bool isFromMe(String myUserId) => senderId == myUserId;

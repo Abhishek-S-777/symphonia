@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../constants/firebase_collections.dart';
-import '../../features/notes/domain/entities/note.dart';
-import 'auth_service.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/features/notes/domain/entities/note.dart';
 
 /// Note Service Provider
 final noteServiceProvider = Provider<NoteService>((ref) {
@@ -28,18 +27,18 @@ final notesStreamProvider = StreamProvider<List<Note>>((ref) {
       .orderBy(FirebaseCollections.noteUpdatedAt, descending: true)
       .snapshots()
       .map((snapshot) {
-        return snapshot.docs.map((doc) => _noteFromFirestore(doc)).toList();
+        return snapshot.docs.map(_noteFromFirestore).toList();
       });
 });
 
 Note _noteFromFirestore(DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+  final data = doc.data()! as Map<String, dynamic>;
 
   return Note(
     id: doc.id,
-    creatorId: data[FirebaseCollections.noteCreatorId] ?? '',
-    title: data[FirebaseCollections.noteTitle] ?? 'Untitled',
-    content: data[FirebaseCollections.noteContent] ?? '[]',
+    creatorId: data[FirebaseCollections.noteCreatorId] as String? ?? '',
+    title: data[FirebaseCollections.noteTitle] as String? ?? 'Untitled',
+    content: data[FirebaseCollections.noteContent] as String? ?? '[]',
     createdAt:
         (data[FirebaseCollections.noteCreatedAt] as Timestamp?)?.toDate() ??
         DateTime.now(),
@@ -51,10 +50,9 @@ Note _noteFromFirestore(DocumentSnapshot doc) {
 
 /// Note Service for managing rich text notes
 class NoteService {
+  NoteService(this._ref);
   final Ref _ref;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  NoteService(this._ref);
 
   /// Create a new note
   Future<Note> createNote({

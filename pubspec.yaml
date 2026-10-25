@@ -19,15 +19,10 @@ dependencies:
   # Navigation
   go_router: ^17.0.1
 
-  # Local Database (Drift/SQLite)
-  drift: ^2.23.1
-  sqlite3_flutter_libs: ^0.5.30
-  path_provider: ^2.1.5
-  path: ^1.9.1
-
   # Local Storage
   shared_preferences: ^2.5.3
-  flutter_secure_storage: ^10.0.0
+  path_provider: ^2.1.5
+  path: ^1.9.1
 
   # Firebase
   firebase_core: ^3.13.0
@@ -36,16 +31,14 @@ dependencies:
   firebase_storage: ^12.4.4
   firebase_messaging: ^15.2.4
 
-  # Networking & Connectivity
-  connectivity_plus: ^7.0.0
+  # Networking
   http: ^1.2.0
 
   # UI Components
   flutter_animate: ^4.5.2
-  shimmer: ^3.0.0
   cached_network_image: ^3.4.1
-  flutter_svg: ^2.0.17
   confetti: ^0.8.0
+  google_fonts: ^6.2.1
 
   # Audio Recording & Playback
   record: ^6.1.2
@@ -64,7 +57,6 @@ dependencies:
   # Image Handling
   image_picker: ^1.1.2
   image_cropper: ^8.0.2
-  photo_view: ^0.15.0
 
   # Location & Maps
   geolocator: ^13.0.1
@@ -80,39 +72,30 @@ dependencies:
   # Ringtone Player (for ring phone feature)
   flutter_ringtone_player: ^4.0.0+3
 
-  # UUID Generation
-  uuid: ^4.5.1
-
-  # Equatable for value comparison
-  equatable: ^2.0.7
-
-  # Functional Programming
-  fpdart: ^1.1.1
-
-  # Icons
-  cupertino_icons: ^1.0.8
-
-  # Home Screen Widget (Android)
-  home_widget: ^0.8.1
-
-  # Animation
-  lottie: ^3.3.1
-
-  # Google Fonts
-  google_fonts: ^6.2.1
-  flutter_launcher_icons: ^0.14.4
+  # Rich Text Editing
   flutter_quill: ^11.5.0
+
+  # Emoji Picker
   emoji_picker_flutter: ^4.4.0
+
+  # Utilities
+  uuid: ^4.5.1
+  equatable: ^2.0.7
+  cupertino_icons: ^1.0.8
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
-  
+
+  # Linting
+  very_good_analysis: ^10.0.0
+
+  # Launcher icon generation
+  flutter_launcher_icons: ^0.14.4
+
   # Code Generation
   build_runner: ^2.4.15
   riverpod_generator: ^3.0.3
-  drift_dev: ^2.23.1
 
 flutter:
   uses-material-design: true

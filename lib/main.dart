@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'app.dart';
-import 'core/services/fcm_service.dart';
-import 'core/services/notification_service.dart';
+import 'package:symphonia/app.dart';
+import 'package:symphonia/core/services/fcm_service.dart';
+import 'package:symphonia/core/services/notification_service.dart';
 
 /// Main entry point for Symphonia
 void main() async {

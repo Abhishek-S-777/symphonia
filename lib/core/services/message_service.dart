@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../constants/firebase_collections.dart';
-import '../../features/messages/domain/entities/message.dart';
-import 'auth_service.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/features/messages/domain/entities/message.dart';
 
 /// Message Service Provider
 final messageServiceProvider = Provider<MessageService>((ref) {
@@ -28,7 +27,7 @@ final messagesStreamProvider = StreamProvider<List<Message>>((ref) {
       .limit(100)
       .snapshots()
       .map((snapshot) {
-        return snapshot.docs.map((doc) => _messageFromFirestore(doc)).toList();
+        return snapshot.docs.map(_messageFromFirestore).toList();
       });
 });
 
@@ -129,11 +128,11 @@ final unreadMessagesCountProvider = StreamProvider<int>((ref) {
 });
 
 Message _messageFromFirestore(DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
+  final data = doc.data()! as Map<String, dynamic>;
   return Message(
     id: doc.id,
-    senderId: data[FirebaseCollections.messageSenderId] ?? '',
-    content: data[FirebaseCollections.messageContent] ?? '',
+    senderId: data[FirebaseCollections.messageSenderId] as String? ?? '',
+    content: data[FirebaseCollections.messageContent] as String? ?? '',
     type: MessageType.values.firstWhere(
       (e) => e.name == data[FirebaseCollections.messageType],
       orElse: () => MessageType.text,
@@ -144,7 +143,7 @@ Message _messageFromFirestore(DocumentSnapshot doc) {
         (data[FirebaseCollections.messageSentAt] as Timestamp?)?.toDate() ??
         DateTime.now(),
     readAt: (data[FirebaseCollections.messageReadAt] as Timestamp?)?.toDate(),
-    isDelivered: data[FirebaseCollections.messageIsDelivered] ?? true,
+    isDelivered: data[FirebaseCollections.messageIsDelivered] as bool? ?? true,
     isSynced: true,
     replyToMessageId: data[FirebaseCollections.messageReplyToId] as String?,
     replyToContent: data[FirebaseCollections.messageReplyToContent] as String?,
@@ -155,10 +154,9 @@ Message _messageFromFirestore(DocumentSnapshot doc) {
 
 /// Message Service for sending and receiving messages
 class MessageService {
+  MessageService(this._ref);
   final Ref _ref;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  MessageService(this._ref);
 
   /// Send a text message
   Future<void> sendMessage({

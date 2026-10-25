@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'app_colors.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
 
 /// Symphonia Typography System
 /// Uses system fonts with Material Design 3 styling

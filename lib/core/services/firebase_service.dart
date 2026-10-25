@@ -33,11 +33,6 @@ final currentUserProvider = Provider<User?>((ref) {
 
 /// Firebase Service for centralized Firebase operations
 class FirebaseService {
-  final FirebaseAuth _auth;
-  final FirebaseFirestore _firestore;
-  final FirebaseStorage _storage;
-  final FirebaseMessaging _messaging;
-
   FirebaseService({
     FirebaseAuth? auth,
     FirebaseFirestore? firestore,
@@ -47,6 +42,10 @@ class FirebaseService {
        _firestore = firestore ?? FirebaseFirestore.instance,
        _storage = storage ?? FirebaseStorage.instance,
        _messaging = messaging ?? FirebaseMessaging.instance;
+  final FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
+  final FirebaseMessaging _messaging;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // AUTHENTICATION
@@ -63,7 +62,7 @@ class FirebaseService {
     required String email,
     required String password,
   }) async {
-    return await _auth.createUserWithEmailAndPassword(
+    return _auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
@@ -74,7 +73,7 @@ class FirebaseService {
     required String email,
     required String password,
   }) async {
-    return await _auth.signInWithEmailAndPassword(
+    return _auth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
@@ -135,20 +134,12 @@ class FirebaseService {
 
   /// Get FCM token
   Future<String?> getFCMToken() async {
-    return await _messaging.getToken();
+    return _messaging.getToken();
   }
 
   /// Request notification permissions
   Future<NotificationSettings> requestNotificationPermissions() async {
-    return await _messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
+    return _messaging.requestPermission();
   }
 
   /// Subscribe to a topic
@@ -163,7 +154,7 @@ class FirebaseService {
 
   /// Get initial message (if app was opened from a notification)
   Future<RemoteMessage?> getInitialMessage() async {
-    return await _messaging.getInitialMessage();
+    return _messaging.getInitialMessage();
   }
 
   /// Stream of messages when app is in foreground

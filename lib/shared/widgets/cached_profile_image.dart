@@ -1,21 +1,15 @@
 import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-
-import '../../core/services/profile_service.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_gradients.dart';
+import 'package:symphonia/core/services/profile_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
 
 /// A widget that displays a cached profile image
 /// Uses local cache first, then falls back to network
 class CachedProfileImage extends ConsumerStatefulWidget {
-  final String? photoUrl;
-  final String? userId;
-  final double size;
-  final Widget? placeholder;
-  final BoxFit fit;
-
   const CachedProfileImage({
     super.key,
     this.photoUrl,
@@ -24,6 +18,11 @@ class CachedProfileImage extends ConsumerStatefulWidget {
     this.placeholder,
     this.fit = BoxFit.cover,
   });
+  final String? photoUrl;
+  final String? userId;
+  final double size;
+  final Widget? placeholder;
+  final BoxFit fit;
 
   @override
   ConsumerState<CachedProfileImage> createState() => _CachedProfileImageState();
@@ -109,7 +108,7 @@ class _CachedProfileImageState extends ConsumerState<CachedProfileImage> {
         Container(
           width: widget.size,
           height: widget.size,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             shape: BoxShape.circle,
             gradient: AppGradients.heartNormal,
           ),
@@ -128,7 +127,7 @@ class _CachedProfileImageState extends ConsumerState<CachedProfileImage> {
       return Container(
         width: widget.size,
         height: widget.size,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           shape: BoxShape.circle,
           gradient: AppGradients.heartNormal,
         ),
@@ -152,7 +151,7 @@ class _CachedProfileImageState extends ConsumerState<CachedProfileImage> {
           placeholder: (context, url) => Container(
             width: widget.size,
             height: widget.size,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: AppGradients.heartNormal,
             ),
@@ -184,16 +183,15 @@ class _CachedProfileImageState extends ConsumerState<CachedProfileImage> {
 /// Simple profile avatar that just uses the network or shows placeholder
 /// For cases where caching isn't critical (small avatars, etc.)
 class ProfileAvatar extends StatelessWidget {
-  final String? photoUrl;
-  final double size;
-  final Widget? placeholder;
-
   const ProfileAvatar({
     super.key,
     this.photoUrl,
     this.size = 48,
     this.placeholder,
   });
+  final String? photoUrl;
+  final double size;
+  final Widget? placeholder;
 
   @override
   Widget build(BuildContext context) {
@@ -202,7 +200,7 @@ class ProfileAvatar extends StatelessWidget {
         Container(
           width: size,
           height: size,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             shape: BoxShape.circle,
             gradient: AppGradients.heartNormal,
           ),

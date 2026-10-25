@@ -1,20 +1,21 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../../core/logging/app_logger.dart';
-import '../../../../core/router/routes.dart';
-import '../../../../core/services/auth_service.dart';
-import '../../../../core/services/biometrics_service.dart';
-import '../../../../core/services/couple_service.dart';
-import '../../../../core/services/profile_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/app_snackbar.dart';
-import '../../../../shared/widgets/glass_card.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/services/biometrics_service.dart';
+import 'package:symphonia/core/services/couple_service.dart';
+import 'package:symphonia/core/services/profile_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/app_snackbar.dart';
+import 'package:symphonia/shared/widgets/glass_card.dart';
 
 /// Settings screen for app configuration
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -124,7 +125,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             _buildActionTile(
                               icon: Icons.lock_outline,
                               title: 'Change Password',
-                              onTap: () => _showChangePasswordDialog(),
+                              onTap: _showChangePasswordDialog,
                             ),
                             _buildDivider(),
                             _buildActionTile(
@@ -155,7 +156,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               value: _biometricsEnabled,
                               enabled: _biometricsAvailable,
                               onChanged: _biometricsAvailable
-                                  ? (value) => _toggleBiometrics(value)
+                                  ? _toggleBiometrics
                                   : null,
                             ),
                           ])
@@ -172,7 +173,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             _buildActionTile(
                               icon: Icons.info_outline,
                               title: 'About Symphonia',
-                              onTap: () => _showAboutDialog(),
+                              onTap: _showAboutDialog,
                             ),
                             _buildDivider(),
                             _buildActionTile(
@@ -210,7 +211,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         child: _isLoading
                             ? const CircularProgressIndicator()
                             : TextButton.icon(
-                                onPressed: () => _showLogoutDialog(),
+                                onPressed: _showLogoutDialog,
                                 icon: const Icon(
                                   Icons.logout,
                                   color: AppColors.error,
@@ -265,22 +266,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildProfileSection(dynamic user) {
+    final appUser = user as app.User?;
     return GlassCard(
       child: Row(
         children: [
           Container(
             width: 64,
             height: 64,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: [AppColors.primary, AppColors.primaryLight],
               ),
             ),
-            child: user?.photoUrl != null
+            child: appUser?.photoUrl != null
                 ? ClipOval(
                     child: Image.network(
-                      user.photoUrl,
+                      appUser!.photoUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => const Icon(
                         Icons.person,
@@ -297,12 +299,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user?.displayName ?? 'Your Name',
+                  appUser?.displayName ?? 'Your Name',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  user?.email ?? 'you@email.com',
+                  appUser?.email ?? 'you@email.com',
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(color: AppColors.gray),
@@ -366,8 +368,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildActionTile({
     required IconData icon,
     required String title,
-    Color? color,
     required VoidCallback onTap,
+    Color? color,
   }) {
     return ListTile(
       onTap: onTap,
@@ -381,11 +383,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Widget _buildDivider() {
-    return Divider(height: 1, indent: 56, color: AppColors.grayLight);
+    return const Divider(height: 1, indent: 56, color: AppColors.grayLight);
   }
 
   void _showEditProfileBottomSheet(dynamic user) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       enableDrag: false,
@@ -420,7 +422,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return;
     }
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Unpair Device?'),
@@ -463,7 +465,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showLogoutDialog() {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Sign Out?'),
@@ -506,7 +508,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showAboutDialog() {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
@@ -557,13 +559,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
 /// Edit Profile Bottom Sheet Widget
 class _EditProfileBottomSheet extends ConsumerStatefulWidget {
-  final dynamic user;
-  final VoidCallback onProfileUpdated;
-
   const _EditProfileBottomSheet({
     required this.user,
     required this.onProfileUpdated,
   });
+  final dynamic user;
+  final VoidCallback onProfileUpdated;
 
   @override
   ConsumerState<_EditProfileBottomSheet> createState() =>
@@ -582,9 +583,9 @@ class _EditProfileBottomSheetState
   void initState() {
     super.initState();
     _nameController = TextEditingController(
-      text: widget.user?.displayName ?? '',
+      text: (widget.user as app.User?)?.displayName ?? '',
     );
-    _currentPhotoUrl = widget.user?.photoUrl;
+    _currentPhotoUrl = (widget.user as app.User?)?.photoUrl;
   }
 
   @override
@@ -625,7 +626,7 @@ class _EditProfileBottomSheetState
       // Upload new image if selected
       if (_selectedImage != null) {
         final profileService = ref.read(profileServiceProvider);
-        final userId = widget.user?.id;
+        final userId = (widget.user as app.User?)?.id;
 
         if (userId != null) {
           newPhotoUrl = await profileService.uploadProfileImage(
@@ -644,7 +645,7 @@ class _EditProfileBottomSheetState
           }
 
           // Invalidate cache so fresh image is fetched
-          if (newPhotoUrl != null && userId != null) {
+          if (newPhotoUrl != null) {
             final imageCache = ref.read(profileImageCacheProvider);
             await imageCache.invalidateCache(userId);
           }

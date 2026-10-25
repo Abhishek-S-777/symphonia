@@ -1,20 +1,20 @@
 import 'dart:async';
+
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/services/audio_service.dart';
-import '../../../../core/services/auth_service.dart';
-import '../../../../core/services/vibration_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/app_snackbar.dart';
-import '../../../../shared/widgets/glass_card.dart';
-import '../../domain/entities/voice_note.dart';
+import 'package:symphonia/core/constants/app_constants.dart';
+import 'package:symphonia/core/services/audio_service.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/services/vibration_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/voice_notes/domain/entities/voice_note.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/app_snackbar.dart';
+import 'package:symphonia/shared/widgets/glass_card.dart';
 
 /// Voice notes screen for recording and listening to voice messages
 class VoiceNotesScreen extends ConsumerStatefulWidget {
@@ -60,7 +60,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
         _recordingSeconds = 0;
       });
 
-      _pulseController.repeat(reverse: true);
+      unawaited(_pulseController.repeat(reverse: true));
 
       // Start timer
       _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -75,7 +75,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
       });
 
       // Light vibration feedback
-      ref.read(vibrationServiceProvider).lightImpact();
+      unawaited(ref.read(vibrationServiceProvider).lightImpact());
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,7 +102,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
       final voiceNote = await audioService.stopRecording();
 
       // Confirmation vibration
-      ref.read(vibrationServiceProvider).success();
+      unawaited(ref.read(vibrationServiceProvider).success());
 
       if (voiceNote != null &&
           _recordingSeconds >= AppConstants.voiceNoteMinDuration) {
@@ -135,7 +135,9 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
       } else {
         // Play the new note (service handles stopping current playback)
         await audioService.playVoiceNote(note);
-        ref.read(vibrationServiceProvider).vibrateVoiceNoteReceived();
+        unawaited(
+          ref.read(vibrationServiceProvider).vibrateVoiceNoteReceived(),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -179,13 +181,13 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.error_outline,
                                   size: 48,
                                   color: AppColors.gray,
                                 ),
                                 const SizedBox(height: 16),
-                                Text('Unable to load voice notes'),
+                                const Text('Unable to load voice notes'),
                                 const SizedBox(height: 8),
                                 TextButton(
                                   onPressed: () =>
@@ -225,7 +227,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
             Container(
               width: 100,
               height: 100,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: AppGradients.voiceNote,
               ),
@@ -307,8 +309,8 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
     _hasScrolledToUnread = true;
 
     // Find first unread message (not from me and not played)
-    int firstUnreadIndex = -1;
-    for (int i = 0; i < voiceNotes.length; i++) {
+    var firstUnreadIndex = -1;
+    for (var i = 0; i < voiceNotes.length; i++) {
       final note = voiceNotes[i];
       if (note.senderId != currentUserId && note.playedAt == null) {
         firstUnreadIndex = i;
@@ -363,9 +365,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
                   // Skip backward button (only when playing)
                   if (isPlaying)
                     IconButton(
-                      onPressed: () => audioService.seekBackward(
-                        duration: const Duration(seconds: 5),
-                      ),
+                      onPressed: audioService.seekBackward,
                       icon: Icon(
                         Icons.replay_5,
                         color: isMe ? AppColors.primary : AppColors.accent,
@@ -402,9 +402,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
                   // Skip forward button (only when playing)
                   if (isPlaying)
                     IconButton(
-                      onPressed: () => audioService.seekForward(
-                        duration: const Duration(seconds: 5),
-                      ),
+                      onPressed: audioService.seekForward,
                       icon: Icon(
                         Icons.forward_5,
                         color: isMe ? AppColors.primary : AppColors.accent,
@@ -437,8 +435,7 @@ class _VoiceNotesScreenState extends ConsumerState<VoiceNotesScreen>
                                 progress: position,
                                 total: total,
                                 buffered: total,
-                                onSeek: (duration) =>
-                                    audioService.seekTo(duration),
+                                onSeek: audioService.seekTo,
                                 barHeight: 4,
                                 thumbRadius: 6,
                                 thumbGlowRadius: 12,

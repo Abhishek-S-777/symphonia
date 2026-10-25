@@ -1,33 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../app.dart';
-import 'routes.dart';
-import '../../features/auth/presentation/screens/splash_screen.dart';
-import '../../features/auth/presentation/screens/onboarding_screen.dart';
-import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/signup_screen.dart';
-import '../../features/auth/presentation/screens/pairing_screen.dart';
-import '../../features/auth/presentation/screens/permission_setup_screen.dart';
-import '../../features/home/presentation/screens/home_screen.dart';
-import '../../features/messages/presentation/screens/messages_screen.dart';
-import '../../features/messages/presentation/screens/compose_message_screen.dart';
-import '../../features/voice_notes/presentation/screens/voice_notes_screen.dart';
-import '../../features/find_partner/presentation/screens/find_partner_screen.dart';
-import '../../features/gallery/presentation/screens/gallery_screen.dart';
-import '../../features/gallery/presentation/screens/add_memory_screen.dart';
-import '../../features/gallery/presentation/screens/slideshow_screen.dart';
-import '../../features/events/presentation/screens/events_screen.dart';
-import '../../features/notes/domain/entities/note.dart';
-import '../../features/notes/presentation/screens/note_editor_screen.dart';
-import '../../features/settings/presentation/screens/settings_screen.dart';
-import '../../shared/widgets/main_scaffold.dart';
+import 'package:symphonia/app.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/features/auth/presentation/screens/login_screen.dart';
+import 'package:symphonia/features/auth/presentation/screens/onboarding_screen.dart';
+import 'package:symphonia/features/auth/presentation/screens/pairing_screen.dart';
+import 'package:symphonia/features/auth/presentation/screens/permission_setup_screen.dart';
+import 'package:symphonia/features/auth/presentation/screens/signup_screen.dart';
+import 'package:symphonia/features/auth/presentation/screens/splash_screen.dart';
+import 'package:symphonia/features/events/presentation/screens/events_screen.dart';
+import 'package:symphonia/features/find_partner/presentation/screens/find_partner_screen.dart';
+import 'package:symphonia/features/gallery/presentation/screens/add_memory_screen.dart';
+import 'package:symphonia/features/gallery/presentation/screens/gallery_screen.dart';
+import 'package:symphonia/features/gallery/presentation/screens/slideshow_screen.dart';
+import 'package:symphonia/features/home/presentation/screens/home_screen.dart';
+import 'package:symphonia/features/messages/presentation/screens/compose_message_screen.dart';
+import 'package:symphonia/features/messages/presentation/screens/messages_screen.dart';
+import 'package:symphonia/features/notes/domain/entities/note.dart';
+import 'package:symphonia/features/notes/presentation/screens/note_editor_screen.dart';
+import 'package:symphonia/features/settings/presentation/screens/settings_screen.dart';
+import 'package:symphonia/features/voice_notes/presentation/screens/voice_notes_screen.dart';
+import 'package:symphonia/shared/widgets/main_scaffold.dart';
 
 /// Provider for the app router with authentication guard
-final appRouterProvider = Provider<GoRouter>((ref) {
-  return AppRouter.createRouter(ref);
-});
+final appRouterProvider = Provider<GoRouter>(AppRouter.createRouter);
 
 /// App Router configuration using go_router
 class AppRouter {
@@ -96,7 +93,7 @@ class AppRouter {
               path: Routes.homePath,
               name: Routes.home,
               pageBuilder: (context, state) =>
-                  NoTransitionPage(child: const HomeScreen()),
+                  const NoTransitionPage(child: HomeScreen()),
             ),
 
             // Messages routes
@@ -104,7 +101,7 @@ class AppRouter {
               path: Routes.messagesPath,
               name: Routes.messages,
               pageBuilder: (context, state) =>
-                  NoTransitionPage(child: const MessagesScreen()),
+                  const NoTransitionPage(child: MessagesScreen()),
             ),
 
             // Find Partner route
@@ -112,7 +109,7 @@ class AppRouter {
               path: Routes.findPartnerPath,
               name: Routes.findPartner,
               pageBuilder: (context, state) =>
-                  NoTransitionPage(child: const FindPartnerScreen()),
+                  const NoTransitionPage(child: FindPartnerScreen()),
             ),
 
             // Gallery routes
@@ -120,7 +117,7 @@ class AppRouter {
               path: Routes.galleryPath,
               name: Routes.gallery,
               pageBuilder: (context, state) =>
-                  NoTransitionPage(child: const GalleryScreen()),
+                  const NoTransitionPage(child: GalleryScreen()),
             ),
 
             // Events route
@@ -128,7 +125,7 @@ class AppRouter {
               path: Routes.eventsPath,
               name: Routes.events,
               pageBuilder: (context, state) =>
-                  NoTransitionPage(child: const EventsScreen()),
+                  const NoTransitionPage(child: EventsScreen()),
             ),
           ],
         ),

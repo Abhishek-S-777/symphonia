@@ -4,16 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/constants/storage_keys.dart';
-import '../../../../core/logging/app_logger.dart';
-import '../../../../core/services/biometrics_service.dart';
-import '../../../../core/theme/app_colors.dart';
+import 'package:symphonia/core/constants/storage_keys.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/services/biometrics_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
 
 /// Biometrics lock screen - shows on cold start AND when returning from background
 class BiometricsLockScreen extends ConsumerStatefulWidget {
+  const BiometricsLockScreen({required this.child, super.key});
   final Widget child;
-
-  const BiometricsLockScreen({super.key, required this.child});
 
   @override
   ConsumerState<BiometricsLockScreen> createState() =>
@@ -93,7 +92,7 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     }
 
     // Small delay then authenticate
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
     await _authenticate();
   }
 
@@ -153,7 +152,7 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     }
 
     // Small delay then authenticate
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future<void>.delayed(const Duration(milliseconds: 300));
     await _authenticate();
   }
 
@@ -169,9 +168,7 @@ class _BiometricsLockScreenState extends ConsumerState<BiometricsLockScreen>
     try {
       if (!mounted) return;
       _biometricsService ??= ref.read(biometricsServiceProvider);
-      final authenticated = await _biometricsService!.authenticate(
-        reason: 'Authenticate to access Symphonia',
-      );
+      final authenticated = await _biometricsService!.authenticate();
 
       AppLogger.debug('BiometricsLock: Auth result = $authenticated');
 

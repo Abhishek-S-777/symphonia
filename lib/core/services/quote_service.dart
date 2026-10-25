@@ -1,18 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../constants/firebase_collections.dart';
-import '../logging/app_logger.dart';
-import 'auth_service.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/services/auth_service.dart';
 
 /// Daily Quote Model
 class DailyQuote {
-  final String quote;
-  final String author;
-  final DateTime date;
-  final bool isCustom;
-  final String? authorId;
-
   const DailyQuote({
     required this.quote,
     required this.author,
@@ -20,13 +14,17 @@ class DailyQuote {
     this.isCustom = false,
     this.authorId,
   });
+  final String quote;
+  final String author;
+  final DateTime date;
+  final bool isCustom;
+  final String? authorId;
 
   /// Default fallback quote
   static DailyQuote get defaultQuote => DailyQuote(
     quote: 'I love you infinity always',
     author: 'With Love',
     date: DateTime.now(),
-    isCustom: false,
   );
 }
 
@@ -58,13 +56,13 @@ final dailyQuoteProvider = StreamProvider<DailyQuote>((ref) {
         }
 
         return DailyQuote(
-          quote: customQuoteData['quote'] ?? '',
-          author: customQuoteData['author'] ?? 'Your Partner',
+          quote: customQuoteData['quote'] as String? ?? '',
+          author: customQuoteData['author'] as String? ?? 'Your Partner',
           date:
               (customQuoteData['setAt'] as Timestamp?)?.toDate() ??
               DateTime.now(),
           isCustom: true,
-          authorId: customQuoteData['authorId'],
+          authorId: customQuoteData['authorId'] as String?,
         );
       });
 });
@@ -75,9 +73,8 @@ final quoteServiceProvider = Provider<QuoteService>((ref) {
 });
 
 class QuoteService {
-  final Ref _ref;
-
   QuoteService(this._ref);
+  final Ref _ref;
 
   /// Set a custom quote
   Future<void> setCustomQuote(String quote) async {

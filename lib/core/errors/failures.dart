@@ -3,11 +3,10 @@ import 'package:equatable/equatable.dart';
 /// Base failure class for domain layer errors
 /// Uses sealed class for exhaustive pattern matching
 sealed class Failure extends Equatable {
+  const Failure({required this.message, this.code, this.stackTrace});
   final String message;
   final String? code;
   final StackTrace? stackTrace;
-
-  const Failure({required this.message, this.code, this.stackTrace});
 
   @override
   List<Object?> get props => [message, code];

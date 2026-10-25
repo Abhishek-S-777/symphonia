@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,16 +6,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
 
 /// The signature Big Heart Button - Central CTA
 /// Plays heartbeat vibration with beautiful lub-dub animations
 class HeartButton extends ConsumerStatefulWidget {
+  const HeartButton({super.key, this.onPressed, this.size = 180});
   final VoidCallback? onPressed;
   final double size;
-
-  const HeartButton({super.key, this.onPressed, this.size = 180});
 
   @override
   ConsumerState<HeartButton> createState() => _HeartButtonState();
@@ -40,7 +40,7 @@ class _HeartButtonState extends ConsumerState<HeartButton>
       vsync: this,
     );
 
-    _idlePulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+    _idlePulseAnimation = Tween<double>(begin: 1, end: 1.05).animate(
       CurvedAnimation(parent: _idlePulseController, curve: Curves.easeInOut),
     );
 
@@ -92,7 +92,7 @@ class _HeartButtonState extends ConsumerState<HeartButton>
       return 1.18 - 0.18 * Curves.easeInOut.transform(returnProgress);
     } else {
       // Rest period between beats
-      return 1.0;
+      return 1;
     }
   }
 
@@ -104,13 +104,13 @@ class _HeartButtonState extends ConsumerState<HeartButton>
     });
 
     // Light haptic feedback for tap
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
 
     // Stop idle pulse and play heartbeat
     _idlePulseController.stop();
 
     // Play the heartbeat animation (3 beats)
-    _heartbeatController.forward(from: 0);
+    unawaited(_heartbeatController.forward(from: 0));
 
     // Trigger callback
     widget.onPressed?.call();
@@ -123,7 +123,7 @@ class _HeartButtonState extends ConsumerState<HeartButton>
         _isBeating = false;
       });
       // Resume idle pulse
-      _idlePulseController.repeat(reverse: true);
+      unawaited(_idlePulseController.repeat(reverse: true));
     }
   }
 
@@ -284,10 +284,9 @@ class _HeartButtonState extends ConsumerState<HeartButton>
 
 /// Smaller heart button for quick access
 class MiniHeartButton extends StatelessWidget {
+  const MiniHeartButton({super.key, this.onPressed, this.size = 56});
   final VoidCallback? onPressed;
   final double size;
-
-  const MiniHeartButton({super.key, this.onPressed, this.size = 56});
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +315,7 @@ class MiniHeartButton extends StatelessWidget {
         )
         .animate(onPlay: (controller) => controller.repeat(reverse: true))
         .scale(
-          begin: const Offset(1.0, 1.0),
+          begin: const Offset(1, 1),
           end: const Offset(1.05, 1.05),
           duration: 800.ms,
           curve: Curves.easeInOut,

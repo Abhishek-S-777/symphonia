@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -8,11 +9,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:symphonia/core/constants/app_constants.dart';
+import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
 import 'package:vibration/vibration.dart';
-
-import '../constants/app_constants.dart';
-import '../constants/firebase_collections.dart';
-import '../logging/app_logger.dart';
 
 /// FCM Service Provider
 final fcmServiceProvider = Provider<FCMService>((ref) {
@@ -28,15 +28,7 @@ class FCMService {
   /// Initialize FCM
   Future<void> initialize() async {
     // Request permissions
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
+    final settings = await _messaging.requestPermission();
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
       // Initialize local notifications
@@ -61,11 +53,7 @@ class FCMService {
     const androidSettings = AndroidInitializationSettings(
       '@drawable/ic_notification',
     );
-    const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+    const iosSettings = DarwinInitializationSettings();
 
     const initSettings = InitializationSettings(
       android: androidSettings,
@@ -102,8 +90,8 @@ class FCMService {
           'Your partner wants to know where you are';
       await _localNotifications.show(
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        title,
-        body,
+        title as String?,
+        body as String?,
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'location_channel',
@@ -134,8 +122,8 @@ class FCMService {
           'Tap to open the app';
       await _localNotifications.show(
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        title,
-        body,
+        title as String?,
+        body as String?,
         const NotificationDetails(
           android: AndroidNotificationDetails(
             'ring_channel',
@@ -159,9 +147,9 @@ class FCMService {
 
     if (notification != null) {
       // Use channel IDs that match what Cloud Functions send
-      String channelId = 'message_channel';
-      String channelName = 'Messages';
-      bool enableVibration = true;
+      var channelId = 'message_channel';
+      var channelName = 'Messages';
+      var enableVibration = true;
 
       // Determine channel based on message type
       if (data['type'] == 'heartbeat') {
@@ -179,12 +167,12 @@ class FCMService {
         channelId = 'message_channel';
         channelName = 'Messages';
         // Play message vibration
-        _playMessageVibration();
+        unawaited(_playMessageVibration());
       } else if (data['type'] == 'voice_note') {
         channelId = 'symphonia_voice_notes';
         channelName = 'Voice Notes';
         // Play voice note vibration
-        _playVoiceNoteVibration();
+        unawaited(_playVoiceNoteVibration());
       } else if (data['type'] == 'event_created') {
         channelId = 'event_channel';
         channelName = 'Events';
@@ -207,8 +195,6 @@ class FCMService {
             priority: Priority.high,
             icon: android?.smallIcon ?? '@drawable/ic_notification',
             enableVibration: enableVibration,
-            vibrationPattern:
-                null, // Don't use channel vibration, we handle it manually
           ),
           iOS: const DarwinNotificationDetails(
             presentAlert: true,
@@ -233,7 +219,7 @@ class FCMService {
     try {
       // Start vibration pattern
       final hasVibrator = await Vibration.hasVibrator();
-      if (hasVibrator == true) {
+      if (hasVibrator) {
         await Vibration.vibrate(
           pattern: [0, 1000, 500, 1000, 500, 1000],
           intensities: [0, 255, 0, 255, 0, 255],
@@ -242,9 +228,7 @@ class FCMService {
 
       // Play alarm sound at max volume
       await FlutterRingtonePlayer().playAlarm(
-        volume: 1.0,
-        looping: true,
-        asAlarm: true,
+        volume: 1,
       );
 
       // Auto-stop after 30 seconds
@@ -271,17 +255,17 @@ class FCMService {
   /// Play message vibration
   Future<void> _playMessageVibration() async {
     final hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator != true) return;
+    if (!hasVibrator) return;
 
     await Vibration.vibrate(duration: 50);
-    await Future.delayed(const Duration(milliseconds: 100));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     await Vibration.vibrate(duration: 50);
   }
 
   /// Play voice note vibration
   Future<void> _playVoiceNoteVibration() async {
     final hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator != true) return;
+    if (!hasVibrator) return;
 
     await Vibration.vibrate(duration: 150);
   }
@@ -324,7 +308,7 @@ class FCMService {
 
   /// Get FCM token
   Future<String?> getToken() async {
-    return await _messaging.getToken();
+    return _messaging.getToken();
   }
 
   /// Subscribe to topic
@@ -365,14 +349,14 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (messageType == 'heartbeat') {
     // Play heartbeat vibration pattern
     final hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator == true) {
+    if (hasVibrator) {
       final hasCustom = await Vibration.hasCustomVibrationsSupport();
-      if (hasCustom == true) {
+      if (hasCustom) {
         await Vibration.vibrate(pattern: AppConstants.heartbeatPattern);
       } else {
         // Fallback: simple double vibration
         await Vibration.vibrate(duration: 100);
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
         await Vibration.vibrate(duration: 100);
       }
     }
@@ -384,8 +368,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         data['notificationBody'] ?? 'You received a heartbeat!';
 
     await _showLocalNotification(
-      title: notificationTitle,
-      body: notificationBody,
+      title: notificationTitle as String,
+      body: notificationBody as String,
       channelId: 'heartbeat_channel',
       channelName: 'Heartbeat',
     );
@@ -395,9 +379,9 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (messageType == 'hugs') {
     // Play hugs vibration pattern: long + short (hug + kiss)
     final hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator == true) {
+    if (hasVibrator) {
       final hasCustom = await Vibration.hasCustomVibrationsSupport();
-      if (hasCustom == true) {
+      if (hasCustom) {
         // Long hug + pause + short kiss
         await Vibration.vibrate(
           pattern: [0, 600, 200, 100],
@@ -406,7 +390,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       } else {
         // Fallback: long vibration then short
         await Vibration.vibrate(duration: 600);
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
         await Vibration.vibrate(duration: 100);
       }
     }
@@ -417,8 +401,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         data['notificationBody'] ?? 'You received hugs and kisses!';
 
     await _showLocalNotification(
-      title: notificationTitle,
-      body: notificationBody,
+      title: notificationTitle as String,
+      body: notificationBody as String,
       channelId: 'heartbeat_channel',
       channelName: 'Hugs & Kisses',
     );
@@ -435,11 +419,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     final notificationBody = data['notificationBody'] ?? 'Tap to open the app';
 
     await _showLocalNotification(
-      title: notificationTitle,
-      body: notificationBody,
+      title: notificationTitle as String,
+      body: notificationBody as String,
       channelId: 'ring_channel',
       channelName: 'Ring Phone',
-      playSound: true,
     );
 
     // Play ringtone at max volume and vibrate
@@ -460,11 +443,10 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
         data['notificationBody'] ?? 'Your partner wants to know where you are';
 
     await _showLocalNotification(
-      title: notificationTitle,
-      body: notificationBody,
+      title: notificationTitle as String,
+      body: notificationBody as String,
       channelId: 'location_channel',
       channelName: 'Location Requests',
-      playSound: true,
     );
   }
 }
@@ -573,7 +555,7 @@ Future<void> _playRingtoneInBackground() async {
   try {
     // Start vibration pattern (simple pattern: vibrate, pause, repeat)
     final hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator == true) {
+    if (hasVibrator) {
       // Simple strong vibration pattern - vibrate for 1 second, pause 500ms, repeat
       await Vibration.vibrate(
         pattern: [0, 1000, 500, 1000, 500, 1000],
@@ -584,9 +566,7 @@ Future<void> _playRingtoneInBackground() async {
     // Play alarm/ringtone using flutter_ringtone_player
     // This will play at max volume even if phone is on silent
     await FlutterRingtonePlayer().playAlarm(
-      volume: 1.0, // Max volume
-      looping: true, // Keep playing until stopped
-      asAlarm: true, // This makes it play even in silent mode
+      volume: 1, // Max volume
     );
 
     // Auto-stop after 30 seconds

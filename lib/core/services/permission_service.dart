@@ -1,7 +1,7 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// Permission Service Provider
 final permissionServiceProvider = Provider<PermissionService>((ref) {
@@ -23,12 +23,7 @@ class PermissionService {
 
     // Also request FCM permission
     final messaging = FirebaseMessaging.instance;
-    final settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    final settings = await messaging.requestPermission();
 
     return status.isGranted ||
         settings.authorizationStatus == AuthorizationStatus.authorized;
@@ -80,12 +75,12 @@ class PermissionService {
 
   /// Check notification permission status
   Future<PermissionStatus> getNotificationStatus() async {
-    return await Permission.notification.status;
+    return Permission.notification.status;
   }
 
   /// Check microphone permission status
   Future<PermissionStatus> getMicrophoneStatus() async {
-    return await Permission.microphone.status;
+    return Permission.microphone.status;
   }
 
   /// Check photos permission status
@@ -95,12 +90,12 @@ class PermissionService {
     if (photos.isGranted) return photos;
 
     // Check storage for older versions
-    return await Permission.storage.status;
+    return Permission.storage.status;
   }
 
   /// Check camera permission status
   Future<PermissionStatus> getCameraStatus() async {
-    return await Permission.camera.status;
+    return Permission.camera.status;
   }
 
   /// Check location permission status
@@ -122,13 +117,13 @@ class PermissionService {
 
     // Also request FCM permission
     final messaging = FirebaseMessaging.instance;
-    await messaging.requestPermission(alert: true, badge: true, sound: true);
+    await messaging.requestPermission();
 
     return statuses;
   }
 
   /// Open app settings if permission is permanently denied
   Future<bool> openSettings() async {
-    return await openAppSettings();
+    return openAppSettings();
   }
 }

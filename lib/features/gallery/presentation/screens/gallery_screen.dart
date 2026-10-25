@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../../../core/router/routes.dart';
-import '../../../../core/services/gallery_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../domain/entities/memory.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/gallery_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/gallery/domain/entities/memory.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/custom_button.dart';
 
 /// Gallery screen showing photo timeline
 class GalleryScreen extends ConsumerStatefulWidget {
@@ -48,7 +47,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.error_outline,
                           size: 48,
                           color: AppColors.gray,
@@ -73,7 +72,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addNewMemory(),
+        onPressed: _addNewMemory,
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add_photo_alternate, color: AppColors.white),
       ).animate().scale(delay: 500.ms, curve: Curves.elasticOut),
@@ -90,7 +89,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
             Container(
               width: 120,
               height: 120,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: AppGradients.sunset,
               ),
@@ -119,7 +118,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
             PrimaryButton(
               text: 'Add First Memory',
               icon: Icons.add_photo_alternate,
-              onPressed: () => _addNewMemory(),
+              onPressed: _addNewMemory,
             ),
           ],
         ),
@@ -238,7 +237,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       // Create memory with the file as a list
       await galleryService.createMemory(
         images: [file],
-        note: note?.trim().isNotEmpty == true ? note : null,
+        note: note?.trim().isNotEmpty ?? false ? note : null,
       );
 
       if (mounted) {
@@ -348,17 +347,17 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                     fit: BoxFit.cover,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
-                      return Container(
+                      return const ColoredBox(
                         color: AppColors.grayLight,
-                        child: const Center(
+                        child: Center(
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       );
                     },
                     errorBuilder: (context, error, stackTrace) {
-                      return Container(
+                      return const ColoredBox(
                         color: AppColors.grayLight,
-                        child: const Icon(
+                        child: Icon(
                           Icons.image_not_supported,
                           color: AppColors.gray,
                         ),
@@ -452,11 +451,11 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
         )
         .animate(delay: Duration(milliseconds: 100 * index))
         .fadeIn()
-        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1.0, 1.0));
+        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
   }
 
   void _showMemoryOptions(Memory memory) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
@@ -516,7 +515,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                   ),
                 );
 
-                if (confirmed == true) {
+                if (confirmed ?? false) {
                   try {
                     final galleryService = ref.read(galleryServiceProvider);
                     await galleryService.deleteMemory(memory);

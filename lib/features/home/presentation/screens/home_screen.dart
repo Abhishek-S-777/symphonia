@@ -5,22 +5,23 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart' hide Config;
-
-import '../../../../core/router/routes.dart';
-import '../../../../core/services/audio_service.dart';
-import '../../../../core/services/auth_service.dart';
-import '../../../../core/services/couple_service.dart';
-import '../../../../core/services/message_service.dart';
-import '../../../../core/services/quote_service.dart';
-import '../../../../core/services/vibration_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/app_snackbar.dart';
-import '../../../../shared/widgets/celebration_overlay.dart';
-import '../../../../shared/widgets/glass_card.dart';
-import '../widgets/heart_button.dart';
-import '../widgets/hugs_button.dart';
+import 'package:symphonia/core/router/routes.dart';
+import 'package:symphonia/core/services/audio_service.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/services/couple_service.dart';
+import 'package:symphonia/core/services/message_service.dart';
+import 'package:symphonia/core/services/quote_service.dart';
+import 'package:symphonia/core/services/vibration_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/domain/entities/couple.dart';
+import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
+import 'package:symphonia/features/home/presentation/widgets/heart_button.dart';
+import 'package:symphonia/features/home/presentation/widgets/hugs_button.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/app_snackbar.dart';
+import 'package:symphonia/shared/widgets/celebration_overlay.dart';
+import 'package:symphonia/shared/widgets/glass_card.dart';
 
 /// Home screen with the Big Heart Button as central CTA
 class HomeScreen extends ConsumerStatefulWidget {
@@ -142,12 +143,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ? HugsButton(
                                 key: const ValueKey('hugs'),
                                 onHugsSent: _onHugsSent,
-                                size: 180,
                               )
                             : HeartButton(
                                 key: const ValueKey('heart'),
                                 onPressed: _onHeartPressed,
-                                size: 180,
                               ),
                       ),
                     ).animate().scale(
@@ -264,11 +263,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildPartnerCard(dynamic partner, dynamic couple) {
+    final user = partner as app.User?;
+    final currentCouple = couple as Couple?;
     // Use the actual isOnline field from Firestore
-    final isOnline = partner?.isOnline ?? false;
+    final isOnline = user?.isOnline ?? false;
 
-    final daysTogetherFormatted = couple?.daysTogetherFormatted ?? '0 days';
-    final partnerName = partner?.displayName ?? 'Your Partner';
+    final daysTogetherFormatted =
+        currentCouple?.daysTogetherFormatted ?? '0 days';
+    final partnerName = user?.displayName ?? 'Your Partner';
 
     return GlassCard(
       padding: const EdgeInsets.all(16),
@@ -282,10 +284,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.white),
             ),
-            child: partner?.photoUrl != null
+            child: user?.photoUrl != null
                 ? ClipOval(
                     child: Image.network(
-                      partner.photoUrl,
+                      user!.photoUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => const Icon(
                         Icons.person,
@@ -416,7 +418,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   right: -4,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.error,
                       shape: BoxShape.circle,
                     ),
@@ -457,9 +459,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
 /// Separate widget for daily message card to manage editing state
 class _DailyMessageCardWidget extends ConsumerStatefulWidget {
-  final AsyncValue<DailyQuote> quoteAsync;
-
   const _DailyMessageCardWidget({required this.quoteAsync});
+  final AsyncValue<DailyQuote> quoteAsync;
 
   @override
   ConsumerState<_DailyMessageCardWidget> createState() =>
@@ -495,7 +496,7 @@ class _DailyMessageCardWidgetState
 
   void _startEditing() {
     final currentQuote = widget.quoteAsync.value;
-    _textController.text = currentQuote?.isCustom == true
+    _textController.text = currentQuote?.isCustom ?? false
         ? currentQuote!.quote
         : '';
     setState(() {
@@ -562,7 +563,7 @@ class _DailyMessageCardWidgetState
               ),
               // Edit/Clear button
               if (!_isEditing) ...[
-                if (widget.quoteAsync.value?.isCustom == true)
+                if (widget.quoteAsync.value?.isCustom ?? false)
                   GestureDetector(
                     onTap: _clearCustomQuote,
                     child: Container(
@@ -571,7 +572,7 @@ class _DailyMessageCardWidgetState
                         color: AppColors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.close,
                         size: 18,
                         color: AppColors.white,
@@ -651,7 +652,7 @@ class _DailyMessageCardWidgetState
               children: [
                 TextButton(
                   onPressed: _cancelEditing,
-                  child: Text(
+                  child: const Text(
                     'Cancel',
                     style: TextStyle(color: AppColors.gray),
                   ),
@@ -685,7 +686,6 @@ class _DailyMessageCardWidgetState
                   },
                   config: Config(
                     height: 250,
-                    checkPlatformCompatibility: true,
                     emojiViewConfig: EmojiViewConfig(
                       emojiSizeMax:
                           28 *

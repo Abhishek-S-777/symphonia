@@ -4,18 +4,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
-
-import '../../../../core/logging/app_logger.dart';
-import '../../../../core/services/auth_service.dart';
-import '../../../../core/services/location_service.dart';
-import '../../../../core/services/vibration_service.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_gradients.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/app_snackbar.dart';
-import '../../../../shared/widgets/cached_profile_image.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/services/location_service.dart';
+import 'package:symphonia/core/services/vibration_service.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/app_snackbar.dart';
+import 'package:symphonia/shared/widgets/cached_profile_image.dart';
 
 /// Find Partner Screen - Shows partner's location on a map
 class FindPartnerScreen extends ConsumerStatefulWidget {
@@ -88,7 +88,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
       // Open location settings so user can enable GPS
       await locationService.openLocationSettings();
       // Re-check after returning from settings
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(seconds: 1));
       await _checkPermissionAndLoad();
       return;
     }
@@ -144,7 +144,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
   }
 
   Future<void> _refreshLocations() async {
-    ref.read(vibrationServiceProvider).lightImpact();
+    unawaited(ref.read(vibrationServiceProvider).lightImpact());
 
     setState(() => _isLoading = true);
 
@@ -169,7 +169,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
       }
 
       // Small delay to show loading state
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -178,7 +178,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
   }
 
   Future<void> _ringPartnerPhone() async {
-    ref.read(vibrationServiceProvider).mediumImpact();
+    unawaited(ref.read(vibrationServiceProvider).mediumImpact());
 
     setState(() => _isRinging = true);
 
@@ -186,7 +186,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
     await locationService.requestPartnerRing();
 
     // Show ringing indicator for a few seconds
-    await Future.delayed(const Duration(seconds: 3));
+    await Future<void>.delayed(const Duration(seconds: 3));
 
     if (mounted) {
       setState(() => _isRinging = false);
@@ -343,7 +343,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                 // Loading overlay
                 if (_isLoading)
                   Positioned.fill(
-                    child: Container(
+                    child: ColoredBox(
                       color: Colors.black26,
                       child: Center(child: _buildRadarAnimation()),
                     ),
@@ -422,12 +422,12 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
               ),
               const SizedBox(height: 32),
               ElevatedButton.icon(
-                onPressed: _errorMessage?.contains('permanently') == true
+                onPressed: _errorMessage?.contains('permanently') ?? false
                     ? () => ref.read(locationServiceProvider).openAppSettings()
                     : _requestPermission,
                 icon: const Icon(Icons.location_on),
                 label: Text(
-                  _errorMessage?.contains('permanently') == true
+                  _errorMessage?.contains('permanently') ?? false
                       ? 'Open Settings'
                       : 'Grant Permission',
                 ),
@@ -443,7 +443,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                   ),
                 ),
               ),
-              if (_errorMessage?.contains('services') == true) ...[
+              if (_errorMessage?.contains('services') ?? false) ...[
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () =>
@@ -518,19 +518,17 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
             });
           },
           markers: markers,
-          myLocationEnabled: false, // We use custom marker
           myLocationButtonEnabled: false,
           zoomControlsEnabled: false,
           mapToolbarEnabled: false,
-          compassEnabled: true,
           polylines: _buildRouteLine(partnerLocation),
         ),
         // Show loading indicator if we don't have our position yet
         if (_myPosition == null && !_isLoading)
-          Positioned.fill(
-            child: Container(
+          const Positioned.fill(
+            child: ColoredBox(
               color: Colors.black54,
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -593,6 +591,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
     required PartnerLocation? partnerLocation,
     required String? distanceText,
   }) {
+    final user = partner as app.User?;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -628,8 +627,8 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                       ),
                     ),
                     child: CachedProfileImage(
-                      photoUrl: partner?.photoUrl,
-                      userId: partner?.id,
+                      photoUrl: user?.photoUrl,
+                      userId: user?.id,
                       size: 56,
                     ),
                   ),
@@ -641,7 +640,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          partner?.displayName ?? 'Partner',
+                          user?.displayName ?? 'Partner',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 20,
@@ -681,7 +680,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
                                 const SizedBox(width: 4),
                                 Text(
                                   '$distanceText away',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: AppColors.primary,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,

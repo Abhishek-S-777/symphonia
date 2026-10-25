@@ -2,6 +2,16 @@ import 'package:equatable/equatable.dart';
 
 /// Memory entity for gallery/timeline
 class Memory extends Equatable {
+  const Memory({
+    required this.id,
+    required this.creatorId,
+    required this.imageUrls,
+    required this.localPaths,
+    required this.date,
+    required this.createdAt,
+    this.note,
+    this.isSynced = false,
+  });
   final String id;
   final String creatorId;
   final List<String> imageUrls;
@@ -10,17 +20,6 @@ class Memory extends Equatable {
   final DateTime date;
   final DateTime createdAt;
   final bool isSynced;
-
-  const Memory({
-    required this.id,
-    required this.creatorId,
-    required this.imageUrls,
-    required this.localPaths,
-    this.note,
-    required this.date,
-    required this.createdAt,
-    this.isSynced = false,
-  });
 
   /// Check if memory is from me
   bool isFromMe(String myUserId) => creatorId == myUserId;

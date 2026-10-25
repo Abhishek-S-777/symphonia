@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/animated_gradient_background.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../../shared/widgets/glass_card.dart';
+import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
+import 'package:symphonia/shared/widgets/custom_button.dart';
+import 'package:symphonia/shared/widgets/glass_card.dart';
 
 /// Screen to compose a new message
 class ComposeMessageScreen extends ConsumerStatefulWidget {
@@ -293,7 +293,6 @@ class _ComposeMessageScreenState extends ConsumerState<ComposeMessageScreen> {
                     textEditingController: _messageController,
                     config: Config(
                       height: 280,
-                      checkPlatformCompatibility: true,
                       emojiViewConfig: EmojiViewConfig(
                         emojiSizeMax:
                             28 *
@@ -303,21 +302,12 @@ class _ComposeMessageScreenState extends ConsumerState<ComposeMessageScreen> {
                                 : 1.0),
                         backgroundColor: AppColors.darkCard,
                         columns: 8,
-                        verticalSpacing: 0,
-                        horizontalSpacing: 0,
                       ),
-                      viewOrderConfig: const ViewOrderConfig(
-                        top: EmojiPickerItem.categoryBar,
-                        middle: EmojiPickerItem.emojiView,
-                        bottom: EmojiPickerItem.searchBar,
-                      ),
-                      skinToneConfig: const SkinToneConfig(),
                       categoryViewConfig: CategoryViewConfig(
                         backgroundColor: AppColors.darkCard,
                         indicatorColor: AppColors.primary,
                         iconColor: AppColors.gray,
                         iconColorSelected: AppColors.primary,
-                        tabIndicatorAnimDuration: kTabScrollDuration,
                         dividerColor: AppColors.gray.withValues(alpha: 0.2),
                         customCategoryView:
                             (config, state, tabController, pageController) {
@@ -328,13 +318,9 @@ class _ComposeMessageScreenState extends ConsumerState<ComposeMessageScreen> {
                                 pageController,
                               );
                             },
-                        categoryIcons: const CategoryIcons(),
                       ),
-                      bottomActionBarConfig: BottomActionBarConfig(
+                      bottomActionBarConfig: const BottomActionBarConfig(
                         backgroundColor: AppColors.darkCard,
-                        buttonIconColor: AppColors.white,
-                        showBackspaceButton: true,
-                        showSearchViewButton: true,
                       ),
                       searchViewConfig: SearchViewConfig(
                         backgroundColor: AppColors.darkCard,
