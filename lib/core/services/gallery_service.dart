@@ -7,8 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:symphonia/core/constants/firebase_collections.dart';
-import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/services/fcm_service.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/gallery/domain/entities/memory.dart';
 import 'package:uuid/uuid.dart';
 

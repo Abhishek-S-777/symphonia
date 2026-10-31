@@ -6,7 +6,7 @@ import 'package:geolocator/geolocator.dart';
 
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
-import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 
 /// Location service provider
 final locationServiceProvider = Provider<LocationService>((ref) {

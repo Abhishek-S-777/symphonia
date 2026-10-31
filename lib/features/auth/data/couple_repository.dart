@@ -6,12 +6,12 @@ import 'package:symphonia/core/constants/app_constants.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
 import 'package:symphonia/core/providers/firebase_providers.dart';
-import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/auth/domain/entities/couple.dart';
 
 /// Couple Repository Provider
 final coupleRepositoryProvider = Provider<CoupleRepository>((ref) {
-  final authService = ref.watch(authServiceProvider);
+  final authService = ref.watch(authRepositoryProvider);
   return CoupleRepository(authService, firestore: ref.watch(firestoreProvider));
 });
 
@@ -68,7 +68,7 @@ class CoupleRepository {
   CoupleRepository(this._authService, {required FirebaseFirestore firestore})
     : _firestore = firestore;
 
-  final AuthService _authService;
+  final AuthRepository _authService;
   final FirebaseFirestore _firestore;
 
   /// Generate a pairing code

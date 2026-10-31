@@ -7,9 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:symphonia/core/constants/app_constants.dart';
 import 'package:symphonia/core/constants/storage_keys.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/auth/data/couple_repository.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
@@ -148,7 +148,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
 
     if ((shouldLogout ?? false) && mounted) {
       try {
-        final authService = ref.read(authServiceProvider);
+        final authService = ref.read(authRepositoryProvider);
         await authService.signOut();
         if (mounted) {
           context.go(Routes.loginPath);

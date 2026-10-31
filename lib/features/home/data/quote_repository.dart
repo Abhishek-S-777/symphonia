@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
 import 'package:symphonia/core/providers/firebase_providers.dart';
-import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 
 /// Daily Quote Model
 class DailyQuote {

@@ -6,11 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/services/biometrics_service.dart';
 import 'package:symphonia/core/services/profile_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/auth/data/couple_repository.dart';
 import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
@@ -409,7 +409,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     // Send password reset email
-    final authService = ref.read(authServiceProvider);
+    final authService = ref.read(authRepositoryProvider);
     final email = authService.currentUser?.email;
     if (email != null) {
       authService.sendPasswordResetEmail(email);
@@ -484,7 +484,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               setState(() => _isLoading = true);
 
               try {
-                final authService = ref.read(authServiceProvider);
+                final authService = ref.read(authRepositoryProvider);
                 await authService.signOut();
 
                 if (mounted) {
@@ -653,7 +653,7 @@ class _EditProfileBottomSheetState
       }
 
       // Update profile in Firestore
-      final authService = ref.read(authServiceProvider);
+      final authService = ref.read(authRepositoryProvider);
       await authService.updateProfile(
         displayName: _nameController.text.trim(),
         photoUrl: newPhotoUrl,

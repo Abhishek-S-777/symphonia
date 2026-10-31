@@ -3,11 +3,10 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:symphonia/core/constants/storage_keys.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
 import 'package:symphonia/shared/widgets/custom_button.dart';
@@ -45,7 +44,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      final authService = ref.read(authServiceProvider);
+      final authService = ref.read(authRepositoryProvider);
       await authService.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -115,7 +114,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     try {
-      final authService = ref.read(authServiceProvider);
+      final authService = ref.read(authRepositoryProvider);
       await authService.sendPasswordResetEmail(email);
 
       if (!mounted) return;

@@ -7,10 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart' hide Config;
 import 'package:symphonia/core/router/routes.dart';
 import 'package:symphonia/core/services/audio_service.dart';
-import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/services/vibration_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/auth/data/couple_repository.dart';
 import 'package:symphonia/features/auth/domain/entities/couple.dart';
 import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
@@ -42,7 +42,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _updateLastActive() async {
     // Update last active
-    final authService = ref.read(authServiceProvider);
+    final authService = ref.read(authRepositoryProvider);
     await authService.updateLastActive();
   }
 

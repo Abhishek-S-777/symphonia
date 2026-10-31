@@ -1,16 +1,16 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:symphonia/core/constants/storage_keys.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/services/profile_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/custom_button.dart';
 import 'package:symphonia/shared/widgets/glass_card.dart';
@@ -63,7 +63,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     });
 
     try {
-      final authService = ref.read(authServiceProvider);
+      final authService = ref.read(authRepositoryProvider);
       final credential = await authService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
