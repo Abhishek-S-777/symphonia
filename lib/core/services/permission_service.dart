@@ -2,14 +2,20 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 
 /// Permission Service Provider
 final permissionServiceProvider = Provider<PermissionService>((ref) {
-  return PermissionService();
+  return PermissionService(messaging: ref.watch(firebaseMessagingProvider));
 });
 
 /// Service for handling app permissions
 class PermissionService {
+  PermissionService({required FirebaseMessaging messaging})
+    : _messaging = messaging;
+
+  final FirebaseMessaging _messaging;
+
   /// Check if all required permissions are granted
   Future<bool> hasAllRequiredPermissions() async {
     final notification = await Permission.notification.isGranted;
@@ -22,7 +28,7 @@ class PermissionService {
     final status = await Permission.notification.request();
 
     // Also request FCM permission
-    final messaging = FirebaseMessaging.instance;
+    final messaging = _messaging;
     final settings = await messaging.requestPermission();
 
     return status.isGranted ||
@@ -116,7 +122,7 @@ class PermissionService {
     ].request();
 
     // Also request FCM permission
-    final messaging = FirebaseMessaging.instance;
+    final messaging = _messaging;
     await messaging.requestPermission();
 
     return statuses;

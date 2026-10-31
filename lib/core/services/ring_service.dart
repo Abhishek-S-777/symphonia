@@ -5,12 +5,13 @@ import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:vibration/vibration.dart';
 
 /// Ring service provider
 final ringServiceProvider = Provider<RingService>((ref) {
-  return RingService(ref);
+  return RingService(ref, firestore: ref.watch(firestoreProvider));
 });
 
 /// Notifier for ring state
@@ -29,9 +30,10 @@ final isRingingProvider = NotifierProvider<RingingNotifier, bool>(() {
 
 /// Service for handling phone ringing feature
 class RingService {
-  RingService(this._ref);
+  RingService(this._ref, {required FirebaseFirestore firestore})
+    : _firestore = firestore;
   final Ref _ref;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
 
   Timer? _ringTimer;
   Timer? _vibrationTimer;

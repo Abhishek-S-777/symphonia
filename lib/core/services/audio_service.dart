@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/voice_notes/domain/entities/voice_note.dart';
 import 'package:uuid/uuid.dart';
@@ -55,7 +56,11 @@ final pendingVoiceNotesProvider =
 
 /// Audio Service Provider
 final audioServiceProvider = Provider<AudioService>((ref) {
-  final service = AudioService(ref);
+  final service = AudioService(
+    ref,
+    firestore: ref.watch(firestoreProvider),
+    storage: ref.watch(firebaseStorageProvider),
+  );
   ref.onDispose(service.dispose);
   return service;
 });
@@ -70,7 +75,8 @@ final _firebaseVoiceNotesProvider = StreamProvider<List<VoiceNote>>((ref) {
     return Stream.value([]);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.voiceNotes)
@@ -168,7 +174,12 @@ VoiceNote _voiceNoteFromFirestore(DocumentSnapshot doc) {
 
 /// Audio Service for recording, playing, and managing voice notes
 class AudioService {
-  AudioService(this._ref) {
+  AudioService(
+    this._ref, {
+    required FirebaseFirestore firestore,
+    required FirebaseStorage storage,
+  }) : _firestore = firestore,
+       _storage = storage {
     // Set up a SINGLE listener for player state changes
     _playerStateSubscription = _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
@@ -177,8 +188,8 @@ class AudioService {
     });
   }
   final Ref _ref;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
   final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _player = AudioPlayer();
   final _uuid = const Uuid();
