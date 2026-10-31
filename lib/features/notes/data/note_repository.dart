@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/features/notes/domain/entities/note.dart';
 
-/// Note Service Provider
-final noteServiceProvider = Provider<NoteService>((ref) {
-  return NoteService(ref);
+/// Note Repository Provider
+final noteRepositoryProvider = Provider<NoteRepository>((ref) {
+  return NoteRepository(ref, firestore: ref.watch(firestoreProvider));
 });
 
 /// Notes Stream Provider
@@ -20,7 +21,8 @@ final notesStreamProvider = StreamProvider<List<Note>>((ref) {
     return Stream.value([]);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.notes)
@@ -48,11 +50,13 @@ Note _noteFromFirestore(DocumentSnapshot doc) {
   );
 }
 
-/// Note Service for managing rich text notes
-class NoteService {
-  NoteService(this._ref);
+/// Repository for managing rich text notes.
+class NoteRepository {
+  NoteRepository(this._ref, {required FirebaseFirestore firestore})
+    : _firestore = firestore;
+
   final Ref _ref;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
 
   /// Create a new note
   Future<Note> createNote({
