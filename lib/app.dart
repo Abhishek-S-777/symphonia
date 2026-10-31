@@ -5,15 +5,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:symphonia/core/logging/app_logger.dart';
 import 'package:symphonia/core/router/app_router.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/auth_service.dart';
-import 'package:symphonia/core/services/message_service.dart';
 import 'package:symphonia/core/services/vibration_service.dart';
 import 'package:symphonia/core/theme/app_theme.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/auth/presentation/screens/biometrics_lock_screen.dart';
+import 'package:symphonia/features/messages/data/message_repository.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
 
 /// Global navigator key for accessing root context
@@ -86,7 +85,7 @@ class _GlobalHeartbeatListenerState
   String? _previousCoupleId; // Track previous coupleId to detect unpair
 
   // Store reference to authService for use in dispose
-  AuthService? _authService;
+  AuthRepository? _authService;
 
   @override
   void initState() {
@@ -120,7 +119,7 @@ class _GlobalHeartbeatListenerState
 
     // Refresh FCM token on every app launch
     // This ensures notifications work even after reinstall
-    _authService = ref.read(authServiceProvider);
+    _authService = ref.read(authRepositoryProvider);
     await _authService!.refreshFcmToken();
 
     if (!mounted) {
@@ -170,7 +169,7 @@ class _GlobalHeartbeatListenerState
 
   void _setOnline() {
     try {
-      final authService = ref.read(authServiceProvider);
+      final authService = ref.read(authRepositoryProvider);
       authService.setOnlineStatus(true);
     } catch (e) {
       AppLogger.error('Error setting online', error: e);
@@ -179,7 +178,7 @@ class _GlobalHeartbeatListenerState
 
   void _setOffline() {
     try {
-      final authService = ref.read(authServiceProvider);
+      final authService = ref.read(authRepositoryProvider);
       authService.setOnlineStatus(false);
     } catch (e) {
       AppLogger.error('Error setting offline', error: e);

@@ -9,12 +9,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:uuid/uuid.dart';
 
-/// Profile Service Provider
-final profileServiceProvider = Provider<ProfileService>((ref) {
-  return ProfileService();
+/// Profile Repository Provider
+final profileRepositoryProvider = Provider<ProfileRepository>((ref) {
+  return ProfileRepository(storage: ref.watch(firebaseStorageProvider));
 });
 
 /// Profile Image Cache Provider
@@ -22,16 +23,18 @@ final profileImageCacheProvider = Provider<ProfileImageCache>((ref) {
   return ProfileImageCache();
 });
 
-/// Profile Service for handling profile image operations
-class ProfileService {
+/// Repository for profile image operations.
+class ProfileRepository {
+  ProfileRepository({required FirebaseStorage storage}) : _storage = storage;
+
   final _picker = ImagePicker();
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseStorage _storage;
   final _uuid = const Uuid();
 
   /// Pick image from source and optionally crop it
   Future<File?> pickImage(ImageSource source) async {
     try {
-      AppLogger.debug('ProfileService: Picking image from $source');
+      AppLogger.debug('ProfileRepository: Picking image from $source');
 
       final pickedFile = await _picker.pickImage(
         source: source,
@@ -41,22 +44,24 @@ class ProfileService {
       );
 
       if (pickedFile == null) {
-        AppLogger.debug('ProfileService: No image picked');
+        AppLogger.debug('ProfileRepository: No image picked');
         return null;
       }
 
-      AppLogger.debug('ProfileService: Image picked: ${pickedFile.path}');
+      AppLogger.debug('ProfileRepository: Image picked: ${pickedFile.path}');
       return File(pickedFile.path);
     } catch (e) {
-      AppLogger.error('ProfileService: Error picking image', error: e);
+      AppLogger.error('ProfileRepository: Error picking image', error: e);
       return null;
     }
   }
 
   /// Crop an image file
   Future<File?> cropImage(File imageFile, BuildContext context) async {
-    AppLogger.debug('ProfileService: Starting crop for: ${imageFile.path}');
-    AppLogger.debug('ProfileService: File exists: ${imageFile.existsSync()}');
+    AppLogger.debug('ProfileRepository: Starting crop for: ${imageFile.path}');
+    AppLogger.debug(
+      'ProfileRepository: File exists: ${imageFile.existsSync()}',
+    );
 
     try {
       final cropper = ImageCropper();
@@ -90,18 +95,18 @@ class ProfileService {
 
       if (croppedFile != null) {
         AppLogger.info(
-          'ProfileService: Cropped successfully: ${croppedFile.path}',
+          'ProfileRepository: Cropped successfully: ${croppedFile.path}',
         );
         return File(croppedFile.path);
       }
 
       AppLogger.debug(
-        'ProfileService: User cancelled cropping, using original',
+        'ProfileRepository: User cancelled cropping, using original',
       );
       return imageFile; // Return original if user cancels crop
     } catch (e, stackTrace) {
       AppLogger.error(
-        'ProfileService: Crop error',
+        'ProfileRepository: Crop error',
         error: e,
         stackTrace: stackTrace,
       );
@@ -155,11 +160,11 @@ class ProfileService {
     );
 
     if (source == null) {
-      AppLogger.debug('ProfileService: Source selection cancelled');
+      AppLogger.debug('ProfileRepository: Source selection cancelled');
       return null;
     }
 
-    AppLogger.debug('ProfileService: Selected source: $source');
+    AppLogger.debug('ProfileRepository: Selected source: $source');
 
     // Step 2: Pick image
     final pickedImage = await pickImage(source);
@@ -174,7 +179,7 @@ class ProfileService {
       result = pickedImage;
     }
 
-    AppLogger.debug('ProfileService: Final result: ${result?.path}');
+    AppLogger.debug('ProfileRepository: Final result: ${result?.path}');
     return result;
   }
 
@@ -220,7 +225,7 @@ class ProfileService {
     void Function(double progress)? onProgress,
   }) async {
     try {
-      AppLogger.debug('ProfileService: Uploading image for user $userId');
+      AppLogger.debug('ProfileRepository: Uploading image for user $userId');
 
       final fileName = '${_uuid.v4()}.jpg';
       final ref = _storage.ref().child('profile_images/$userId/$fileName');
@@ -234,7 +239,7 @@ class ProfileService {
       uploadTask.snapshotEvents.listen((event) {
         final progress = event.bytesTransferred / event.totalBytes;
         AppLogger.debug(
-          'ProfileService: Upload progress: ${(progress * 100).toInt()}%',
+          'ProfileRepository: Upload progress: ${(progress * 100).toInt()}%',
         );
         onProgress?.call(progress);
       });
@@ -244,10 +249,10 @@ class ProfileService {
 
       // Get download URL
       final downloadUrl = await ref.getDownloadURL();
-      AppLogger.info('ProfileService: Upload complete: $downloadUrl');
+      AppLogger.info('ProfileRepository: Upload complete: $downloadUrl');
       return downloadUrl;
     } catch (e) {
-      AppLogger.error('ProfileService: Error uploading image', error: e);
+      AppLogger.error('ProfileRepository: Error uploading image', error: e);
       return null;
     }
   }
@@ -259,9 +264,9 @@ class ProfileService {
     try {
       final ref = _storage.refFromURL(photoUrl);
       await ref.delete();
-      AppLogger.info('ProfileService: Deleted old image');
+      AppLogger.info('ProfileRepository: Deleted old image');
     } catch (e) {
-      AppLogger.error('ProfileService: Error deleting image', error: e);
+      AppLogger.error('ProfileRepository: Error deleting image', error: e);
     }
   }
 }

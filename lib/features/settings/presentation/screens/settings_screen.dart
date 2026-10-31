@@ -6,12 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/services/biometrics_service.dart';
-import 'package:symphonia/core/services/couple_service.dart';
-import 'package:symphonia/core/services/profile_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
+import 'package:symphonia/features/auth/data/couple_repository.dart';
+import 'package:symphonia/features/auth/data/profile_repository.dart';
 import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
@@ -409,7 +409,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     // Send password reset email
-    final authService = ref.read(authServiceProvider);
+    final authService = ref.read(authRepositoryProvider);
     final email = authService.currentUser?.email;
     if (email != null) {
       authService.sendPasswordResetEmail(email);
@@ -441,7 +441,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               setState(() => _isLoading = true);
 
               try {
-                final coupleService = ref.read(coupleServiceProvider);
+                final coupleService = ref.read(coupleRepositoryProvider);
                 await coupleService.unpair(coupleId);
 
                 if (mounted) {
@@ -484,7 +484,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               setState(() => _isLoading = true);
 
               try {
-                final authService = ref.read(authServiceProvider);
+                final authService = ref.read(authRepositoryProvider);
                 await authService.signOut();
 
                 if (mounted) {
@@ -596,7 +596,7 @@ class _EditProfileBottomSheetState
 
   Future<void> _pickImage() async {
     AppLogger.debug('EditProfile: Starting image pick');
-    final profileService = ref.read(profileServiceProvider);
+    final profileService = ref.read(profileRepositoryProvider);
     final pickedImage = await profileService.pickAndCropImage(context);
 
     AppLogger.debug('EditProfile: Picked image: ${pickedImage?.path}');
@@ -625,7 +625,7 @@ class _EditProfileBottomSheetState
 
       // Upload new image if selected
       if (_selectedImage != null) {
-        final profileService = ref.read(profileServiceProvider);
+        final profileService = ref.read(profileRepositoryProvider);
         final userId = (widget.user as app.User?)?.id;
 
         if (userId != null) {
@@ -653,7 +653,7 @@ class _EditProfileBottomSheetState
       }
 
       // Update profile in Firestore
-      final authService = ref.read(authServiceProvider);
+      final authService = ref.read(authRepositoryProvider);
       await authService.updateProfile(
         displayName: _nameController.text.trim(),
         photoUrl: newPhotoUrl,

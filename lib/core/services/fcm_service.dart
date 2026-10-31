@@ -12,16 +12,20 @@ import 'package:geolocator/geolocator.dart';
 import 'package:symphonia/core/constants/app_constants.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 import 'package:vibration/vibration.dart';
 
 /// FCM Service Provider
 final fcmServiceProvider = Provider<FCMService>((ref) {
-  return FCMService();
+  return FCMService(messaging: ref.watch(firebaseMessagingProvider));
 });
 
 /// FCM Service for push notifications
 class FCMService {
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  FCMService({FirebaseMessaging? messaging})
+    : _messaging = messaging ?? FirebaseMessaging.instance;
+
+  final FirebaseMessaging _messaging;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -468,6 +472,9 @@ Future<bool> _autoShareLocationForCurrentUser() async {
       return false;
     }
 
+    // This runs in the background message isolate, which has no Riverpod
+    // container, so Firebase is read from the singleton directly rather than
+    // through the shared providers.
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       AppLogger.warning('No authenticated user, cannot auto-share');

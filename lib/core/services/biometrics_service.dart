@@ -7,10 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/constants/storage_keys.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 
 /// Biometrics Service Provider
 final biometricsServiceProvider = Provider<BiometricsService>((ref) {
-  return BiometricsService();
+  return BiometricsService(
+    auth: ref.watch(firebaseAuthProvider),
+    firestore: ref.watch(firestoreProvider),
+  );
 });
 
 /// Provider for biometrics enabled setting
@@ -22,8 +26,15 @@ final biometricsEnabledProvider = FutureProvider<bool>((ref) async {
 /// Biometrics Service for app lock
 /// Stores biometrics preference in both SharedPreferences (cache) and Firestore (sync)
 class BiometricsService {
+  BiometricsService({
+    required fb.FirebaseAuth auth,
+    required FirebaseFirestore firestore,
+  }) : _auth = auth,
+       _firestore = firestore;
+
   final LocalAuthentication _localAuth = LocalAuthentication();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final fb.FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
 
   /// Check if device supports biometrics
   Future<bool> isBiometricsAvailable() async {
@@ -70,7 +81,7 @@ class BiometricsService {
       }
 
       // If not in cache, fetch from Firestore
-      final user = fb.FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user == null) return false;
 
       final doc = await _firestore
@@ -117,7 +128,7 @@ class BiometricsService {
       await prefs.setBool(StorageKeys.biometricsEnabled, enabled);
 
       // Update Firestore (sync)
-      final user = fb.FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user != null) {
         await _firestore
             .collection(FirebaseCollections.users)

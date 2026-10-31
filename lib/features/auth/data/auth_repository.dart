@@ -6,29 +6,35 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/constants/storage_keys.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
 import 'package:uuid/uuid.dart';
 
-/// Auth Service Provider
-final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService();
+/// Auth Repository Provider
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository(
+    auth: ref.watch(firebaseAuthProvider),
+    firestore: ref.watch(firestoreProvider),
+    messaging: ref.watch(firebaseMessagingProvider),
+  );
 });
 
 /// Auth State Provider - Stream of current user
 final authStateChangesProvider = StreamProvider<fb.User?>((ref) {
-  return fb.FirebaseAuth.instance.authStateChanges();
+  return ref.watch(firebaseAuthProvider).authStateChanges();
 });
 
 /// Current App User Provider
 /// Falls back to SharedPreferences userId if Firebase Auth is null (debug mode workaround)
 final currentAppUserProvider = StreamProvider<app.User?>((ref) {
+  final firestore = ref.watch(firestoreProvider);
   final authState = ref.watch(authStateChangesProvider);
 
   return authState.when(
     data: (fbUser) {
       if (fbUser != null) {
         // Firebase Auth has the user - use it
-        return FirebaseFirestore.instance
+        return firestore
             .collection(FirebaseCollections.users)
             .doc(fbUser.uid)
             .snapshots()
@@ -39,7 +45,7 @@ final currentAppUserProvider = StreamProvider<app.User?>((ref) {
       }
 
       // Firebase Auth is null - try SharedPreferences fallback
-      return _getUserFromSharedPrefs();
+      return _getUserFromSharedPrefs(firestore);
     },
     loading: () => Stream.value(null),
     error: (_, _) => Stream.value(null),
@@ -47,7 +53,7 @@ final currentAppUserProvider = StreamProvider<app.User?>((ref) {
 });
 
 /// Fallback: Get user from Firestore using userId stored in SharedPreferences
-Stream<app.User?> _getUserFromSharedPrefs() async* {
+Stream<app.User?> _getUserFromSharedPrefs(FirebaseFirestore firestore) async* {
   final prefs = await SharedPreferences.getInstance();
   final userId = prefs.getString(StorageKeys.userId);
 
@@ -57,7 +63,7 @@ Stream<app.User?> _getUserFromSharedPrefs() async* {
   }
 
   // Stream user data from Firestore using stored userId
-  yield* FirebaseFirestore.instance
+  yield* firestore
       .collection(FirebaseCollections.users)
       .doc(userId)
       .snapshots()
@@ -69,13 +75,14 @@ Stream<app.User?> _getUserFromSharedPrefs() async* {
 
 /// Partner User Provider - streams partner data in real-time
 final partnerUserProvider = StreamProvider<app.User?>((ref) {
+  final firestore = ref.watch(firestoreProvider);
   final currentUser = ref.watch(currentAppUserProvider).value;
   if (currentUser == null || currentUser.coupleId == null) {
     return Stream.value(null);
   }
 
   // First get the couple document to find partner ID
-  return FirebaseFirestore.instance
+  return firestore
       .collection(FirebaseCollections.couples)
       .doc(currentUser.coupleId)
       .snapshots()
@@ -91,7 +98,7 @@ final partnerUserProvider = StreamProvider<app.User?>((ref) {
         if (partnerId == null) return Stream.value(null);
 
         // Stream partner's user document for real-time updates (including online status)
-        return FirebaseFirestore.instance
+        return firestore
             .collection(FirebaseCollections.users)
             .doc(partnerId as String?)
             .snapshots()
@@ -122,11 +129,19 @@ app.User _userFromFirestore(DocumentSnapshot doc) {
   );
 }
 
-/// Authentication Service
-class AuthService {
-  final fb.FirebaseAuth _auth = fb.FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+/// Repository for authentication and the signed-in user document.
+class AuthRepository {
+  AuthRepository({
+    required fb.FirebaseAuth auth,
+    required FirebaseFirestore firestore,
+    required FirebaseMessaging messaging,
+  }) : _auth = auth,
+       _firestore = firestore,
+       _messaging = messaging;
+
+  final fb.FirebaseAuth _auth;
+  final FirebaseFirestore _firestore;
+  final FirebaseMessaging _messaging;
   final _uuid = const Uuid();
 
   fb.User? get currentUser => _auth.currentUser;

@@ -5,13 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:symphonia/core/constants/app_constants.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
-import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/auth/domain/entities/couple.dart';
 
-/// Couple Service Provider
-final coupleServiceProvider = Provider<CoupleService>((ref) {
-  final authService = ref.watch(authServiceProvider);
-  return CoupleService(authService);
+/// Couple Repository Provider
+final coupleRepositoryProvider = Provider<CoupleRepository>((ref) {
+  final authService = ref.watch(authRepositoryProvider);
+  return CoupleRepository(authService, firestore: ref.watch(firestoreProvider));
 });
 
 /// Current Couple Provider
@@ -24,7 +25,8 @@ final currentCoupleProvider = StreamProvider<Couple?>((ref) {
     return Stream.value(null);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .snapshots()
@@ -61,11 +63,13 @@ Couple _coupleFromFirestore(DocumentSnapshot doc) {
   );
 }
 
-/// Couple Service for pairing operations
-class CoupleService {
-  CoupleService(this._authService);
-  final AuthService _authService;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+/// Repository for pairing operations.
+class CoupleRepository {
+  CoupleRepository(this._authService, {required FirebaseFirestore firestore})
+    : _firestore = firestore;
+
+  final AuthRepository _authService;
+  final FirebaseFirestore _firestore;
 
   /// Generate a pairing code
   String _generatePairingCode() {

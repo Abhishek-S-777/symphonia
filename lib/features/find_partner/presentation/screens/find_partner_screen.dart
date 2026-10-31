@@ -7,12 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
-import 'package:symphonia/core/services/auth_service.dart';
-import 'package:symphonia/core/services/location_service.dart';
 import 'package:symphonia/core/services/vibration_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
+import 'package:symphonia/features/find_partner/data/location_repository.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
 import 'package:symphonia/shared/widgets/cached_profile_image.dart';
@@ -55,7 +55,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
   }
 
   Future<void> _checkPermissionAndLoad() async {
-    final locationService = ref.read(locationServiceProvider);
+    final locationService = ref.read(locationRepositoryProvider);
 
     // Check if location service is enabled
     final serviceEnabled = await locationService.isLocationServiceEnabled();
@@ -80,7 +80,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
   }
 
   Future<void> _requestPermission() async {
-    final locationService = ref.read(locationServiceProvider);
+    final locationService = ref.read(locationRepositoryProvider);
 
     // First check if location services are enabled
     final serviceEnabled = await locationService.isLocationServiceEnabled();
@@ -114,7 +114,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
     setState(() => _isLoading = true);
 
     try {
-      final locationService = ref.read(locationServiceProvider);
+      final locationService = ref.read(locationRepositoryProvider);
 
       // Get my position
       AppLogger.debug('FindPartner: Getting current position...');
@@ -149,7 +149,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
     setState(() => _isLoading = true);
 
     try {
-      final locationService = ref.read(locationServiceProvider);
+      final locationService = ref.read(locationRepositoryProvider);
 
       // Get and share my position
       final position = await locationService.getCurrentPosition();
@@ -182,7 +182,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
 
     setState(() => _isRinging = true);
 
-    final locationService = ref.read(locationServiceProvider);
+    final locationService = ref.read(locationRepositoryProvider);
     await locationService.requestPartnerRing();
 
     // Show ringing indicator for a few seconds
@@ -194,7 +194,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
   }
 
   Future<void> _stopRinging() async {
-    final locationService = ref.read(locationServiceProvider);
+    final locationService = ref.read(locationRepositoryProvider);
     await locationService.stopPartnerRing();
     setState(() => _isRinging = false);
   }
@@ -271,7 +271,7 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
   Widget build(BuildContext context) {
     final partnerLocation = ref.watch(partnerLocationProvider).value;
     final partner = ref.watch(partnerUserProvider).value;
-    final locationService = ref.read(locationServiceProvider);
+    final locationService = ref.read(locationRepositoryProvider);
 
     // Calculate distance if both locations available
     String? distanceText;
@@ -423,7 +423,8 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: _errorMessage?.contains('permanently') ?? false
-                    ? () => ref.read(locationServiceProvider).openAppSettings()
+                    ? () =>
+                          ref.read(locationRepositoryProvider).openAppSettings()
                     : _requestPermission,
                 icon: const Icon(Icons.location_on),
                 label: Text(
@@ -446,8 +447,9 @@ class _FindPartnerScreenState extends ConsumerState<FindPartnerScreen>
               if (_errorMessage?.contains('services') ?? false) ...[
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () =>
-                      ref.read(locationServiceProvider).openLocationSettings(),
+                  onPressed: () => ref
+                      .read(locationRepositoryProvider)
+                      .openLocationSettings(),
                   child: const Text(
                     'Open Location Settings',
                     style: TextStyle(color: Colors.white70),

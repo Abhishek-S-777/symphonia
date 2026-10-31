@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
-import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 
 /// Daily Quote Model
 class DailyQuote {
@@ -39,7 +40,8 @@ final dailyQuoteProvider = StreamProvider<DailyQuote>((ref) {
     return Stream.value(DailyQuote.defaultQuote);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .snapshots()
@@ -67,14 +69,17 @@ final dailyQuoteProvider = StreamProvider<DailyQuote>((ref) {
       });
 });
 
-/// Quote Service for setting/clearing quotes
-final quoteServiceProvider = Provider<QuoteService>((ref) {
-  return QuoteService(ref);
+/// Quote Repository for setting/clearing quotes
+final quoteRepositoryProvider = Provider<QuoteRepository>((ref) {
+  return QuoteRepository(ref, firestore: ref.watch(firestoreProvider));
 });
 
-class QuoteService {
-  QuoteService(this._ref);
+class QuoteRepository {
+  QuoteRepository(this._ref, {required FirebaseFirestore firestore})
+    : _firestore = firestore;
+
   final Ref _ref;
+  final FirebaseFirestore _firestore;
 
   /// Set a custom quote
   Future<void> setCustomQuote(String quote) async {
@@ -90,7 +95,7 @@ class QuoteService {
     try {
       final now = DateTime.now();
 
-      await FirebaseFirestore.instance
+      await _firestore
           .collection(FirebaseCollections.couples)
           .doc(coupleId)
           .update({
@@ -116,7 +121,7 @@ class QuoteService {
     if (coupleId == null) return;
 
     try {
-      await FirebaseFirestore.instance
+      await _firestore
           .collection(FirebaseCollections.couples)
           .doc(coupleId)
           .update({'customQuote': FieldValue.delete()});

@@ -5,8 +5,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:symphonia/core/services/note_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/features/notes/data/note_repository.dart';
 import 'package:symphonia/features/notes/domain/entities/note.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
@@ -92,7 +92,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final noteService = ref.read(noteServiceProvider);
+      final noteService = ref.read(noteRepositoryProvider);
 
       if (isEditing) {
         await noteService.updateNote(

@@ -1,12 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
-import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/messages/domain/entities/message.dart';
 
-/// Message Service Provider
-final messageServiceProvider = Provider<MessageService>((ref) {
-  return MessageService(ref);
+/// Message Repository Provider
+final messageRepositoryProvider = Provider<MessageRepository>((ref) {
+  return MessageRepository(ref, firestore: ref.watch(firestoreProvider));
 });
 
 /// Messages Stream Provider
@@ -19,7 +20,8 @@ final messagesStreamProvider = StreamProvider<List<Message>>((ref) {
     return Stream.value([]);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.messages)
@@ -45,7 +47,8 @@ final latestReceivedHeartbeatProvider = StreamProvider<Message?>((ref) {
     return Stream.value(null);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.messages)
@@ -82,7 +85,8 @@ final latestReceivedHugsProvider = StreamProvider<Message?>((ref) {
     return Stream.value(null);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.messages)
@@ -117,7 +121,8 @@ final unreadMessagesCountProvider = StreamProvider<int>((ref) {
     return Stream.value(0);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.messages)
@@ -152,11 +157,13 @@ Message _messageFromFirestore(DocumentSnapshot doc) {
   );
 }
 
-/// Message Service for sending and receiving messages
-class MessageService {
-  MessageService(this._ref);
+/// Repository for sending and receiving messages.
+class MessageRepository {
+  MessageRepository(this._ref, {required FirebaseFirestore firestore})
+    : _firestore = firestore;
+
   final Ref _ref;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
 
   /// Send a text message
   Future<void> sendMessage({

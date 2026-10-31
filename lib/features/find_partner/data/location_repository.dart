@@ -6,11 +6,12 @@ import 'package:geolocator/geolocator.dart';
 
 import 'package:symphonia/core/constants/firebase_collections.dart';
 import 'package:symphonia/core/logging/app_logger.dart';
-import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 
-/// Location service provider
-final locationServiceProvider = Provider<LocationService>((ref) {
-  return LocationService(ref);
+/// Location repository provider
+final locationRepositoryProvider = Provider<LocationRepository>((ref) {
+  return LocationRepository(ref, firestore: ref.watch(firestoreProvider));
 });
 
 /// Entity representing a partner's location
@@ -68,7 +69,8 @@ final partnerLocationProvider = StreamProvider<PartnerLocation?>((ref) {
     return Stream.value(null);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(currentUser.coupleId)
       .collection('locations')
@@ -90,7 +92,8 @@ final myLocationProvider = StreamProvider<PartnerLocation?>((ref) {
     return Stream.value(null);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(currentUser.coupleId)
       .collection('locations')
@@ -104,11 +107,17 @@ final myLocationProvider = StreamProvider<PartnerLocation?>((ref) {
       });
 });
 
-/// Service for handling location tracking
-class LocationService {
-  LocationService(this._ref);
+/// Repository for location sharing between partners.
+///
+/// Reads the device position through geolocator and persists shared locations
+/// and location/ring requests in Firestore (the Cloud Functions backend turns
+/// those request documents into push notifications on the partner's device).
+class LocationRepository {
+  LocationRepository(this._ref, {required FirebaseFirestore firestore})
+    : _firestore = firestore;
+
   final Ref _ref;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
 
   /// Check if location services are enabled
   Future<bool> isLocationServiceEnabled() async {

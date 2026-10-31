@@ -2,14 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:symphonia/core/constants/firebase_collections.dart';
-import 'package:symphonia/core/services/auth_service.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
+import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/events/domain/entities/event.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Event Service Provider
-final eventServiceProvider = Provider<EventService>((ref) {
-  return EventService(ref);
+/// Event Repository Provider
+final eventRepositoryProvider = Provider<EventRepository>((ref) {
+  return EventRepository(ref, firestore: ref.watch(firestoreProvider));
 });
 
 /// Events Stream Provider
@@ -25,7 +26,8 @@ final eventsStreamProvider = StreamProvider<List<Event>>((ref) {
     return Stream.value([]);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.events)
@@ -73,11 +75,17 @@ Event _eventFromFirestore(DocumentSnapshot doc) {
   );
 }
 
-/// Event Service for managing events and countdowns
-class EventService {
-  EventService(this._ref);
+/// Repository for managing events and countdowns.
+///
+/// In addition to persisting events in Firestore, this schedules the creator's
+/// local countdown reminders through flutter_local_notifications (partner push
+/// notifications are handled separately by the Cloud Functions backend).
+class EventRepository {
+  EventRepository(this._ref, {required FirebaseFirestore firestore})
+    : _firestore = firestore;
+
   final Ref _ref;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
 
