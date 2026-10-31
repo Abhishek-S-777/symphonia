@@ -9,9 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:symphonia/app.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/event_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/events/data/event_repository.dart';
 import 'package:symphonia/features/events/domain/entities/event.dart';
 import 'package:symphonia/features/notes/data/note_repository.dart';
 import 'package:symphonia/features/notes/domain/entities/note.dart';
@@ -1241,7 +1241,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
                                     try {
                                       final eventService = ref.read(
-                                        eventServiceProvider,
+                                        eventRepositoryProvider,
                                       );
 
                                       final eventTimeOfDay = TimeOfDay(
@@ -1651,7 +1651,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
     if (confirmed ?? false) {
       try {
-        final eventService = ref.read(eventServiceProvider);
+        final eventService = ref.read(eventRepositoryProvider);
         await eventService.deleteEvent(event.id);
 
         if (mounted) {
