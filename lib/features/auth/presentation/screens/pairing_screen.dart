@@ -8,9 +8,9 @@ import 'package:symphonia/core/constants/app_constants.dart';
 import 'package:symphonia/core/constants/storage_keys.dart';
 import 'package:symphonia/core/router/routes.dart';
 import 'package:symphonia/core/services/auth_service.dart';
-import 'package:symphonia/core/services/couple_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/data/couple_repository.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
 import 'package:symphonia/shared/widgets/custom_button.dart';
@@ -54,7 +54,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     });
 
     try {
-      final coupleService = ref.read(coupleServiceProvider);
+      final coupleService = ref.read(coupleRepositoryProvider);
       final code = await coupleService.createPairingCode();
 
       setState(() {
@@ -86,7 +86,7 @@ class _PairingScreenState extends ConsumerState<PairingScreen>
     });
 
     try {
-      final coupleService = ref.read(coupleServiceProvider);
+      final coupleService = ref.read(coupleRepositoryProvider);
       await coupleService.usePairingCode(code);
 
       // Save paired status to SharedPreferences

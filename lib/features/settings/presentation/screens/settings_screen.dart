@@ -8,10 +8,10 @@ import 'package:symphonia/core/logging/app_logger.dart';
 import 'package:symphonia/core/router/routes.dart';
 import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/services/biometrics_service.dart';
-import 'package:symphonia/core/services/couple_service.dart';
 import 'package:symphonia/core/services/profile_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/auth/data/couple_repository.dart';
 import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
@@ -441,7 +441,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               setState(() => _isLoading = true);
 
               try {
-                final coupleService = ref.read(coupleServiceProvider);
+                final coupleService = ref.read(coupleRepositoryProvider);
                 await coupleService.unpair(coupleId);
 
                 if (mounted) {
