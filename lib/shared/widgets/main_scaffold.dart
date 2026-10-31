@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/message_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/messages/data/message_repository.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 
 /// Main scaffold with persistent bottom navigation bar

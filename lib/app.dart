@@ -5,15 +5,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:symphonia/core/logging/app_logger.dart';
 import 'package:symphonia/core/router/app_router.dart';
 import 'package:symphonia/core/router/routes.dart';
 import 'package:symphonia/core/services/auth_service.dart';
-import 'package:symphonia/core/services/message_service.dart';
 import 'package:symphonia/core/services/vibration_service.dart';
 import 'package:symphonia/core/theme/app_theme.dart';
 import 'package:symphonia/features/auth/presentation/screens/biometrics_lock_screen.dart';
+import 'package:symphonia/features/messages/data/message_repository.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
 
 /// Global navigator key for accessing root context

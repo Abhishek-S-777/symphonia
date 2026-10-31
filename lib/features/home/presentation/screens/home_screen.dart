@@ -9,7 +9,6 @@ import 'package:symphonia/core/router/routes.dart';
 import 'package:symphonia/core/services/audio_service.dart';
 import 'package:symphonia/core/services/auth_service.dart';
 import 'package:symphonia/core/services/couple_service.dart';
-import 'package:symphonia/core/services/message_service.dart';
 import 'package:symphonia/core/services/quote_service.dart';
 import 'package:symphonia/core/services/vibration_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
@@ -18,6 +17,7 @@ import 'package:symphonia/features/auth/domain/entities/couple.dart';
 import 'package:symphonia/features/auth/domain/entities/user.dart' as app;
 import 'package:symphonia/features/home/presentation/widgets/heart_button.dart';
 import 'package:symphonia/features/home/presentation/widgets/hugs_button.dart';
+import 'package:symphonia/features/messages/data/message_repository.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/app_snackbar.dart';
 import 'package:symphonia/shared/widgets/celebration_overlay.dart';
@@ -52,7 +52,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final vibrationService = ref.read(vibrationServiceProvider);
       await vibrationService.lightImpact();
 
-      final messageService = ref.read(messageServiceProvider);
+      final messageService = ref.read(messageRepositoryProvider);
       await messageService.sendHeartbeat();
 
       if (!mounted) return;
@@ -65,7 +65,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _onHugsSent(int seconds) async {
     try {
-      final messageService = ref.read(messageServiceProvider);
+      final messageService = ref.read(messageRepositoryProvider);
       await messageService.sendHugs(seconds);
 
       if (!mounted) return;

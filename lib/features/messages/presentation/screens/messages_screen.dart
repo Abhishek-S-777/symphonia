@@ -8,9 +8,9 @@ import 'package:symphonia/core/constants/app_constants.dart';
 import 'package:symphonia/core/router/routes.dart';
 import 'package:symphonia/core/services/audio_service.dart';
 import 'package:symphonia/core/services/auth_service.dart';
-import 'package:symphonia/core/services/message_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/messages/data/message_repository.dart';
 import 'package:symphonia/features/messages/domain/entities/message.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 
@@ -58,7 +58,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
     // Small delay to ensure the screen is fully loaded
     await Future<void>.delayed(const Duration(milliseconds: 500));
     try {
-      final messageService = ref.read(messageServiceProvider);
+      final messageService = ref.read(messageRepositoryProvider);
       await messageService.markAllAsRead();
     } catch (e) {
       // Ignore errors when marking as read
@@ -117,7 +117,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
 
     try {
       _messageController.clear();
-      final messageService = ref.read(messageServiceProvider);
+      final messageService = ref.read(messageRepositoryProvider);
       await messageService.sendMessage(
         content: content.trim(),
         type: type,
