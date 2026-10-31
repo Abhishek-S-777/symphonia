@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import 'package:symphonia/core/services/gallery_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
+import 'package:symphonia/features/gallery/data/gallery_repository.dart';
 import 'package:symphonia/features/gallery/domain/entities/memory.dart';
 
 /// Full-screen slideshow viewer for memories

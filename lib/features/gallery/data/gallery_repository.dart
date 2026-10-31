@@ -7,14 +7,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:symphonia/core/constants/firebase_collections.dart';
+import 'package:symphonia/core/providers/firebase_providers.dart';
 import 'package:symphonia/core/services/fcm_service.dart';
 import 'package:symphonia/features/auth/data/auth_repository.dart';
 import 'package:symphonia/features/gallery/domain/entities/memory.dart';
 import 'package:uuid/uuid.dart';
 
-/// Gallery Service Provider
-final galleryServiceProvider = Provider<GalleryService>((ref) {
-  return GalleryService(ref);
+/// Gallery Repository Provider
+final galleryRepositoryProvider = Provider<GalleryRepository>((ref) {
+  return GalleryRepository(
+    ref,
+    firestore: ref.watch(firestoreProvider),
+    storage: ref.watch(firebaseStorageProvider),
+  );
 });
 
 /// Memories Stream Provider
@@ -27,7 +32,8 @@ final memoriesStreamProvider = StreamProvider<List<Memory>>((ref) {
     return Stream.value([]);
   }
 
-  return FirebaseFirestore.instance
+  return ref
+      .watch(firestoreProvider)
       .collection(FirebaseCollections.couples)
       .doc(coupleId)
       .collection(FirebaseCollections.memories)
@@ -58,12 +64,18 @@ Memory _memoryFromFirestore(DocumentSnapshot doc) {
   );
 }
 
-/// Gallery Service for managing memories and photos
-class GalleryService {
-  GalleryService(this._ref);
+/// Repository for managing memories and photos.
+class GalleryRepository {
+  GalleryRepository(
+    this._ref, {
+    required FirebaseFirestore firestore,
+    required FirebaseStorage storage,
+  }) : _firestore = firestore,
+       _storage = storage;
+
   final Ref _ref;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
   final ImagePicker _imagePicker = ImagePicker();
   final _uuid = const Uuid();
 

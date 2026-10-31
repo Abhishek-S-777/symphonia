@@ -3,9 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/gallery_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
+import 'package:symphonia/features/gallery/data/gallery_repository.dart';
 import 'package:symphonia/features/gallery/domain/entities/memory.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/custom_button.dart';
@@ -127,7 +127,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
   }
 
   Future<void> _addNewMemory() async {
-    final galleryService = ref.read(galleryServiceProvider);
+    final galleryService = ref.read(galleryRepositoryProvider);
 
     // Show options dialog
     final result = await showModalBottomSheet<String>(
@@ -517,7 +517,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
 
                 if (confirmed ?? false) {
                   try {
-                    final galleryService = ref.read(galleryServiceProvider);
+                    final galleryService = ref.read(galleryRepositoryProvider);
                     await galleryService.deleteMemory(memory);
 
                     if (mounted) {
