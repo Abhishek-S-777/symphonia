@@ -7,10 +7,10 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:symphonia/core/constants/storage_keys.dart';
 import 'package:symphonia/core/router/routes.dart';
-import 'package:symphonia/core/services/profile_service.dart';
 import 'package:symphonia/core/theme/app_colors.dart';
 import 'package:symphonia/core/theme/app_gradients.dart';
 import 'package:symphonia/features/auth/data/auth_repository.dart';
+import 'package:symphonia/features/auth/data/profile_repository.dart';
 import 'package:symphonia/shared/widgets/animated_gradient_background.dart';
 import 'package:symphonia/shared/widgets/custom_button.dart';
 import 'package:symphonia/shared/widgets/glass_card.dart';
@@ -45,7 +45,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _pickImage() async {
-    final profileService = ref.read(profileServiceProvider);
+    final profileService = ref.read(profileRepositoryProvider);
     final pickedImage = await profileService.pickAndCropImage(context);
     if (pickedImage != null && mounted) {
       setState(() {
@@ -72,7 +72,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
       // Upload profile image if selected
       if (_selectedImage != null && credential.user != null) {
-        final profileService = ref.read(profileServiceProvider);
+        final profileService = ref.read(profileRepositoryProvider);
         final photoUrl = await profileService.uploadProfileImage(
           imageFile: _selectedImage!,
           userId: credential.user!.uid,
