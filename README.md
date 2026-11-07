@@ -11,7 +11,7 @@ countdowns, notes, and a live location and "ring my phone" feature.
 ![Backend](https://img.shields.io/badge/Backend-Firebase-orange)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-Built with AI assistance; architecture, review and refactoring by me.
+Built with AI assistance. The architecture, review, and refactoring are mine.
 
 Android only. There is no iOS build in this repository (no `ios/` directory),
 so the platform badge reflects Android alone.
@@ -47,26 +47,26 @@ Screenshots are not committed yet. The screens worth capturing for a gallery:
 ## Features
 
 - Heartbeat. One tap sends a heartbeat to the partner. Their phone plays a
-  lub dub vibration pattern, in the foreground through a Firestore listener and
-  in the background or when the app is killed through a data only push message.
+  lub-dub vibration pattern, in the foreground through a Firestore listener and
+  in the background or when the app is killed through a data-only push message.
 - Hugs and kisses. Hold to build up a duration, release to send. The partner
   feels a matching vibration.
 - Messages. Text messages with read receipts and an unread count.
 - Daily note. A short note shared between the two partners, synced live.
 - Voice notes. Record and send short audio clips, stored in Firebase Storage.
 - Gallery. Shared photo memories with captions and dates.
-- Events and countdowns. Anniversaries and milestones with one time, weekly,
+- Events and countdowns. Anniversaries and milestones with one-time, weekly,
   monthly, or yearly recurrence, local reminders on the creator device, and
   partner push reminders from the backend.
 - Notes. A rich text notepad shared by the couple.
 - Find partner. Live location sharing on a map, plus a "ring my phone" feature
   to make the partner device ring.
-- Partner pairing. A six digit code valid for a day pairs exactly two devices.
+- Partner pairing. A six-digit code valid for a day pairs exactly two devices.
 - Biometric lock. Optional fingerprint or face unlock on launch and on resume.
 
 ## Architecture
 
-The app follows a feature first layout with a small, explicit layering inside
+The app follows a feature-first layout with a small, explicit layering inside
 each feature.
 
 - `presentation` holds screens and widgets.
@@ -79,7 +79,7 @@ each feature.
 Every repository and service reaches Firebase through providers defined in
 `lib/core/providers/firebase_providers.dart` rather than touching
 `FirebaseFirestore.instance` and friends directly. That single seam is what lets
-the tests swap in an in memory fake. The only direct SDK access left is in those
+the tests swap in an in-memory fake. The only direct SDK access left is in those
 provider definitions and in the FCM background isolate, which runs without a
 Riverpod container.
 
@@ -120,7 +120,7 @@ Features: `auth`, `home`, `messages`, `voice_notes`, `gallery`, `events`,
 
 The heartbeat is the signature feature, and it shows how the whole system fits
 together. A heartbeat must reach the partner even when their app is closed, so
-it travels as a data only push message that a background isolate turns into a
+it travels as a data-only push message that a background isolate turns into a
 vibration.
 
 ```mermaid
@@ -133,9 +133,9 @@ sequenceDiagram
 
   A->>FS: write message, type heartbeat, with notification fields
   FS-->>CF: onCreate trigger
-  CF->>FCM: send data only message to partner token
+  CF->>FCM: send data-only message to partner token
   FCM-->>B: deliver data message (background or killed)
-  B->>B: background isolate plays the lub dub vibration
+  B->>B: background isolate plays the lub-dub vibration
   Note over A,B: In the foreground a Firestore listener plays the same vibration without a push
 ```
 
@@ -185,7 +185,7 @@ pairingCodes/{code}
 Access rules live in the repository and are tested on the Firebase emulator:
 
 - `firestore.rules` restricts every couple document and subcollection to the two
-  paired members. User documents are readable by any signed in user (a partner
+  paired members. User documents are readable by any signed-in user (a partner
   must be able to show a profile) and writable only by the owner, with one
   narrow exception: during pairing a partner may set only the `coupleId` field
   on the other user document.
@@ -194,7 +194,7 @@ Access rules live in the repository and are tested on the Firebase emulator:
 - `firestore.indexes.json` holds the composite indexes the queries need.
 - `firestore_tests/` contains emulator tests for the rules above.
 
-A known limitation: the pairing handshake needs a cross user write that the
+A known limitation: the pairing handshake needs a cross-user write that the
 client cannot authorise tightly on its own. The rules keep it as narrow as
 possible (only the `coupleId` field), and the proper fix is to move the
 handshake into a Cloud Function. This is documented rather than hidden.
@@ -266,8 +266,8 @@ npm test
 ## Privacy
 
 Data is scoped to a single couple and stored in the Firebase project you deploy
-to. There are no global feeds and no cross couple access. Sensitive content is
-delivered as data only push messages so the device, not a third party, decides
+to. There are no global feeds and no cross-couple access. Sensitive content is
+delivered as data-only push messages so the device, not a third party, decides
 how to present it. The biometric lock is optional and can gate access on launch
 and on resume.
 
