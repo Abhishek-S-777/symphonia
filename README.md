@@ -11,14 +11,8 @@ countdowns, notes, and a live location and "ring my phone" feature.
 ![Backend](https://img.shields.io/badge/Backend-Firebase-orange)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-Built with AI assistance. The architecture, review, and refactoring are mine.
-
-Android only. There is no iOS build in this repository (no `ios/` directory),
-so the platform badge reflects Android alone.
-
 ## Contents
 
-- [Screenshots](#screenshots)
 - [Features](#features)
 - [Architecture](#architecture)
 - [The heartbeat flow end to end](#the-heartbeat-flow-end-to-end)
@@ -28,21 +22,8 @@ so the platform badge reflects Android alone.
 - [Getting started](#getting-started)
 - [Running the tests](#running-the-tests)
 - [Privacy](#privacy)
+- [How it was built](#how-it-was-built)
 - [License](#license)
-
-## Screenshots
-
-Screenshots are not committed yet. The screens worth capturing for a gallery:
-
-1. Home (heartbeat button, hugs mode, daily note, days together)
-2. Messages with read receipts
-3. Voice notes
-4. Gallery of shared memories
-5. Events and countdowns
-6. Notes (rich text)
-7. Find partner (map and ring)
-8. Pairing screen
-9. Settings with biometric lock
 
 ## Features
 
@@ -270,6 +251,10 @@ to. There are no global feeds and no cross-couple access. Sensitive content is
 delivered as data-only push messages so the device, not a third party, decides
 how to present it. The biometric lock is optional and can gate access on launch
 and on resume.
+
+## How it was built
+
+I built Symphonia with AI tools (Claude Code) for scaffolding and first-pass reviews. I designed the architecture, the heartbeat delivery path and the security rules, and I reviewed, tested and refactored every change. After the first version, I hardened it in a series of small pull requests, one concern each: analyzer fixes, security rules with emulator tests, repositories, tests and CI.
 
 ## License
 
